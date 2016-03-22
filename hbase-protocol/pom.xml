@@ -171,6 +171,7 @@
                           <include>Admin.proto</include>
                           <include>Aggregate.proto</include>
                           <include>Authentication.proto</include>
+                          <include>Backup.proto</include>
                           <include>Cell.proto</include>
                           <include>Client.proto</include>
                           <include>ClusterId.proto</include>

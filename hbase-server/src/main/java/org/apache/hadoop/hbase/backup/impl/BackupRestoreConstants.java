@@ -15,40 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hbase.procedure;
 
-import java.io.IOException;
+package org.apache.hadoop.hbase.backup.impl;
 
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-import org.apache.hadoop.hbase.regionserver.RegionServerServices;
-import org.apache.zookeeper.KeeperException;
 
 /**
- * A life-cycle management interface for globally barriered procedures on
- * region servers.
+ * HConstants holds a bunch of HBase Backup and Restore constants
  */
 @InterfaceAudience.Private
-@InterfaceStability.Evolving
-public abstract class RegionServerProcedureManager extends ProcedureManager {
-  /**
-   * Initialize a globally barriered procedure for region servers.
-   *
-   * @param rss Region Server service interface
-   * @throws KeeperException
-   */
-  public abstract void initialize(RegionServerServices rss) throws IOException;
+@InterfaceStability.Stable
+public final class BackupRestoreConstants {
 
-  /**
-   * Start accepting procedure requests.
-   */
-  public abstract void start();
 
-  /**
-   * Close <tt>this</tt> and all running procedure tasks
-   *
-   * @param force forcefully stop all running tasks
-   * @throws IOException
-   */
-  public abstract void stop(boolean force) throws IOException;
+  // delimiter in tablename list in restore command
+  public static final String TABLENAME_DELIMITER_IN_COMMAND = ",";
+
+  public static final String CONF_STAGING_ROOT = "snapshot.export.staging.root";
+
+  public static final String BACKUPID_PREFIX = "backup_";
+
+  public static enum BackupCommand {
+    CREATE, CANCEL, DELETE, DESCRIBE, HISTORY, STATUS, CONVERT, MERGE, STOP, SHOW, HELP,
+  }
+
+  private BackupRestoreConstants() {
+    // Can't be instantiated with this ctor.
+  }
 }

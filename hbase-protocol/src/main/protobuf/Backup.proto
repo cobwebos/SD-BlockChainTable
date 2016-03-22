@@ -1,0 +1,105 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This file contains Backup manifest
+package hbase.pb;
+
+option java_package = "org.apache.hadoop.hbase.protobuf.generated";
+option java_outer_classname = "BackupProtos";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+option optimize_for = SPEED;
+
+import "HBase.proto";
+
+enum BackupType {
+  FULL = 0;
+  INCREMENTAL = 1;
+}
+
+message BackupImage {
+  required string backup_id = 1;
+  required BackupType backup_type = 2;
+  required string root_dir = 3;
+  repeated TableName table_list = 4;
+  required uint64 start_ts = 5;
+  required uint64 complete_ts = 6;
+  repeated BackupImage ancestors = 7; 
+}
+
+message ServerTimestamp {
+  required string server = 1;
+  required uint64 timestamp = 2;
+}
+
+message TableServerTimestamp {
+  required TableName table = 1;
+  repeated ServerTimestamp server_timestamp = 2;
+}
+
+message BackupManifest {
+  required string version = 1;
+  required string backup_id = 2;
+  required BackupType type = 3;
+  repeated TableName table_list = 4;
+  required uint64 start_ts = 5;
+  required uint64 complete_ts = 6;
+  required int64 total_bytes = 7;
+  optional int64 log_bytes  = 8;
+  repeated TableServerTimestamp tst_map = 9;
+  repeated BackupImage dependent_backup_image = 10;
+  required bool compacted = 11; 
+}
+
+message TableBackupStatus {
+  required TableName table = 1;
+  required string target_dir = 2;
+  optional string snapshot = 3; 	
+}
+
+message BackupContext {
+  required string backup_id = 1;
+  required BackupType type = 2;
+  required string target_root_dir = 3;
+  optional BackupState state = 4;
+  optional BackupPhase phase = 5;
+  optional string failed_message = 6;
+  repeated TableBackupStatus table_backup_status = 7;
+  optional uint64  start_ts = 8;
+  optional uint64  end_ts = 9;
+  optional int64  total_bytes_copied = 10;
+  optional string hlog_target_dir = 11;
+  optional uint32 progress = 12; 
+  
+  enum BackupState {
+    WAITING = 0;
+    RUNNING = 1;
+    COMPLETE = 2;
+    FAILED = 3;
+    CANCELLED = 4;
+  }
+
+  enum BackupPhase {
+    REQUEST = 0;
+    SNAPSHOT = 1;
+    PREPARE_INCREMENTAL = 2;
+    SNAPSHOTCOPY = 3;
+    INCREMENTAL_COPY = 4;
+    STORE_MANIFEST = 5;
+  } 
+}
