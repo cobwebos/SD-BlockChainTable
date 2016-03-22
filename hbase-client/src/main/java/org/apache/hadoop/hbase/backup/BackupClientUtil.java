@@ -24,9 +24,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,9 +34,7 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.fs.RemoteIterator;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.ServerName;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
@@ -47,11 +43,11 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
  */
 @InterfaceAudience.Public
 @InterfaceStability.Evolving
-public final class BackupUtility {
-  protected static final Log LOG = LogFactory.getLog(BackupUtility.class);
+public final class BackupClientUtil {
+  protected static final Log LOG = LogFactory.getLog(BackupClientUtil.class);
   public static final String LOGNAME_SEPARATOR = ".";
 
-  private BackupUtility(){
+  private BackupClientUtil(){
     throw new AssertionError("Instantiating utility class...");
   }
 

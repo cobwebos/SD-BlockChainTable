@@ -33,7 +33,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupUtility;
+import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -217,7 +217,7 @@ public class IncrementalBackupManager {
         }
         currentLogFile = log.getPath().toString();
         resultLogFiles.add(currentLogFile);
-        currentLogTS = BackupUtility.getCreationTime(log.getPath());
+        currentLogTS = BackupClientUtil.getCreationTime(log.getPath());
         // newestTimestamps is up-to-date with the current list of hosts
         // so newestTimestamps.get(host) will not be null.
         if (Long.valueOf(currentLogTS) > Long.valueOf(newestTimestamps.get(host))) {
@@ -237,8 +237,8 @@ public class IncrementalBackupManager {
         }
         continue;
       }
-      host = BackupUtility.parseHostFromOldLog(p);
-      currentLogTS = BackupUtility.getCreationTime(p);
+      host = BackupClientUtil.parseHostFromOldLog(p);
+      currentLogTS = BackupClientUtil.getCreationTime(p);
       oldTimeStamp = olderTimestamps.get(host);
       /*
        * It is possible that there is no old timestamp in hbase:backup for this host. At the time of
@@ -292,7 +292,7 @@ public class IncrementalBackupManager {
       }
       Long timestamp = null;
       try {
-        timestamp = BackupUtility.getCreationTime(path);
+        timestamp = BackupClientUtil.getCreationTime(path);
         return timestamp > Long.valueOf(lastBackupTS);
       } catch (IOException e) {
         LOG.warn("Cannot read timestamp of log file " + path);

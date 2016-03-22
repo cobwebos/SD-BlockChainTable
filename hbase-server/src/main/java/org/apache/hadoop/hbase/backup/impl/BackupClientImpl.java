@@ -32,7 +32,7 @@ import org.apache.hadoop.hbase.DoNotRetryIOException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupClient;
 import org.apache.hadoop.hbase.backup.BackupType;
-import org.apache.hadoop.hbase.backup.BackupUtility;
+import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -157,7 +157,7 @@ public final class BackupClientImpl implements BackupClient {
       throws IOException {
 
     String backupId = BackupRestoreConstants.BACKUPID_PREFIX + EnvironmentEdgeManager.currentTime();
-    BackupUtility.checkTargetDir(backupRootPath, conf);
+    BackupClientUtil.checkTargetDir(backupRootPath, conf);
 
     // table list specified for backup, trigger backup on specified tables
     try {

@@ -48,7 +48,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-import org.apache.hadoop.hbase.backup.BackupUtility;
+import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -104,7 +104,7 @@ public final class BackupUtil {
     }
 
     for (String rs : rsLogTimestampMapByRS.keySet()) {
-      rsLogTimestamptMins.put(rs, BackupUtility.getMinValue(rsLogTimestampMapByRS.get(rs)));
+      rsLogTimestamptMins.put(rs, BackupClientUtil.getMinValue(rsLogTimestampMapByRS.get(rs)));
     }
 
     return rsLogTimestamptMins;
@@ -189,7 +189,7 @@ public final class BackupUtil {
    */
   public static String parseHostNameFromLogFile(Path p) throws IOException {
     if (isArchivedLogFile(p)) {
-      return BackupUtility.parseHostFromOldLog(p);
+      return BackupClientUtil.parseHostFromOldLog(p);
     } else {
       ServerName sname = DefaultWALProvider.getServerNameFromWALDirectoryName(p);
       return sname.getHostname() + ":" + sname.getPort();
@@ -368,8 +368,8 @@ public final class BackupUtil {
     List<String> logFiles = new ArrayList<String>();
 
     FileSystem fs = FileSystem.get(c);
-    logFiles = BackupUtility.getFiles(fs, logDir, logFiles, null);
-    logFiles = BackupUtility.getFiles(fs, oldLogDir, logFiles, null);
+    logFiles = BackupClientUtil.getFiles(fs, logDir, logFiles, null);
+    logFiles = BackupClientUtil.getFiles(fs, oldLogDir, logFiles, null);
     return logFiles;
   }
 
@@ -387,8 +387,8 @@ public final class BackupUtil {
     List<String> logFiles = new ArrayList<String>();
 
     FileSystem fs = FileSystem.get(c);
-    logFiles = BackupUtility.getFiles(fs, logDir, logFiles, filter);
-    logFiles = BackupUtility.getFiles(fs, oldLogDir, logFiles, filter);
+    logFiles = BackupClientUtil.getFiles(fs, logDir, logFiles, filter);
+    logFiles = BackupClientUtil.getFiles(fs, oldLogDir, logFiles, filter);
     return logFiles;
   }
 
@@ -415,7 +415,7 @@ public final class BackupUtil {
           }
           String host = parseHostNameFromLogFile(p);
           Long oldTimestamp = hostTimestampMap.get(host);
-          Long currentLogTS = BackupUtility.getCreationTime(p);
+          Long currentLogTS = BackupClientUtil.getCreationTime(p);
           return currentLogTS <= oldTimestamp;
         } catch (IOException e) {
           LOG.error(e);
@@ -424,8 +424,8 @@ public final class BackupUtil {
       }
     };
     FileSystem fs = FileSystem.get(c);
-    logFiles = BackupUtility.getFiles(fs, logDir, logFiles, filter);
-    logFiles = BackupUtility.getFiles(fs, oldLogDir, logFiles, filter);
+    logFiles = BackupClientUtil.getFiles(fs, logDir, logFiles, filter);
+    logFiles = BackupClientUtil.getFiles(fs, oldLogDir, logFiles, filter);
     return logFiles;
   }
 

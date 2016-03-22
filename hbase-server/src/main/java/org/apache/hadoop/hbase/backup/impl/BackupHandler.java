@@ -33,7 +33,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupRestoreFactory;
 import org.apache.hadoop.hbase.backup.BackupType;
-import org.apache.hadoop.hbase.backup.BackupUtility;
+import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
@@ -195,7 +195,7 @@ public class BackupHandler implements Callable<Void> {
           backupManager.readLogTimestampMap();
 
       Long newStartCode =
-          BackupUtility.getMinValue(BackupUtil.getRSLogTimestampMins(newTableSetTimestampMap));
+          BackupClientUtil.getMinValue(BackupUtil.getRSLogTimestampMins(newTableSetTimestampMap));
       backupManager.writeBackupStartCode(newStartCode);
 
       // backup complete

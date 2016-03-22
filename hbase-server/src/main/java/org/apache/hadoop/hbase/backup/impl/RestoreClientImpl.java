@@ -33,7 +33,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
-import org.apache.hadoop.hbase.backup.BackupUtility;
+import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.RestoreClient;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
@@ -155,7 +155,7 @@ public final class RestoreClientImpl implements RestoreClient {
       for (BackupImage image : imageSet) {
         String imageDir =
             HBackupFileSystem.getTableBackupDir(image.getRootDir(), image.getBackupId(), table);
-        if (!BackupUtility.checkPathExist(imageDir, conf)) {
+        if (!BackupClientUtil.checkPathExist(imageDir, conf)) {
           LOG.error("ERROR: backup image does not exist: " + imageDir);
           isValid = false;
           break;
