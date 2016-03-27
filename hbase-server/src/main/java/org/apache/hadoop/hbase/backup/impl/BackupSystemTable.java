@@ -60,9 +60,7 @@ import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
 public final class BackupSystemTable implements Closeable {
 
   private static final Log LOG = LogFactory.getLog(BackupSystemTable.class);
-  private final static String TABLE_NAMESPACE = "hbase";
-  private final static String TABLE_NAME = "backup";
-  private final static TableName tableName = TableName.valueOf(TABLE_NAMESPACE, TABLE_NAME);
+  private final static TableName tableName = TableName.BACKUP_TABLE_NAME;
   final static byte[] familyName = "f".getBytes();
 
   // Connection to HBase cluster, shared
@@ -86,14 +84,6 @@ public final class BackupSystemTable implements Closeable {
 
   @Override
   public void close() {
-  }
-
-  /**
-   * Gets table name
-   * @return table name
-   */
-  public static TableName getTableName() {
-    return tableName;
   }
 
   private void createSystemTableIfNotExists() throws IOException {

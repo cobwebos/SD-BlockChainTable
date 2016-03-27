@@ -86,6 +86,10 @@ public final class TableName implements Comparable<TableName> {
   public static final TableName NAMESPACE_TABLE_NAME =
       valueOf(NamespaceDescriptor.SYSTEM_NAMESPACE_NAME_STR, "namespace");
 
+  /** The backup table's name. */
+  public static final TableName BACKUP_TABLE_NAME =
+      valueOf(NamespaceDescriptor.SYSTEM_NAMESPACE_NAME_STR, "backup");
+
   public static final String OLD_META_STR = ".META.";
   public static final String OLD_ROOT_STR = "-ROOT-";
 
