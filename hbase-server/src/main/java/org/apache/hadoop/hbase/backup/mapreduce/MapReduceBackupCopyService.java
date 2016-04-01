@@ -32,7 +32,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupContext;
 import org.apache.hadoop.hbase.backup.impl.BackupCopyService;
-import org.apache.hadoop.hbase.backup.impl.BackupHandler;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
@@ -42,6 +41,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.tools.DistCp;
 import org.apache.hadoop.tools.DistCpConstants;
 import org.apache.hadoop.tools.DistCpOptions;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 /**
  * Copier for backup operation. Basically, there are 2 types of copy. One is copying from snapshot,
  * which bases on extending ExportSnapshot's function with copy progress reporting to ZooKeeper
@@ -113,6 +113,25 @@ public class MapReduceBackupCopyService implements BackupCopyService {
     public TableName getTable() {
       return this.table;
     }
+  }
+
+  /**
+   * Update the ongoing back token znode with new progress.
+   * @param backupContext backup context
+   * 
+   * @param newProgress progress
+   * @param bytesCopied bytes copied
+   * @throws NoNodeException exception
+   */
+  static void updateProgress(BackupContext backupContext, BackupManager backupManager,
+      int newProgress, long bytesCopied) throws IOException {
+    // compose the new backup progress data, using fake number for now
+    String backupProgressData = newProgress + "%";
+
+    backupContext.setProgress(newProgress);
+    backupManager.updateBackupStatus(backupContext);
+    LOG.debug("Backup progress data \"" + backupProgressData
+      + "\" has been updated to hbase:backup for " + backupContext.getBackupId());
   }
 
   // Extends DistCp for progress updating to hbase:backup
@@ -203,7 +222,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
                 new BigDecimal(newProgress * 100).setScale(1, BigDecimal.ROUND_HALF_UP);
             String newProgressStr = progressData + "%";
             LOG.info("Progress: " + newProgressStr);
-            BackupHandler.updateProgress(backupContext, backupManager, progressData.intValue(),
+            updateProgress(backupContext, backupManager, progressData.intValue(),
               bytesCopied);
             LOG.debug("Backup progress data updated to hbase:backup: \"Progress: " + newProgressStr
               + ".\"");
@@ -225,7 +244,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
         progressDone = newProgress;
         bytesCopied += totalSrcLgth;
 
-        BackupHandler.updateProgress(backupContext, backupManager, progressData.intValue(),
+        updateProgress(backupContext, backupManager, progressData.intValue(),
           bytesCopied);
         LOG.debug("Backup progress data updated to hbase:backup: \"Progress: " + newProgressStr
           + " - " + bytesCopied + " bytes copied.\"");

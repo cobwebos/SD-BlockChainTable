@@ -286,8 +286,7 @@ public final class RestoreClientImpl implements RestoreClient {
     String backupId = image.getBackupId();
 
     Path rootPath = new Path(rootDir);
-    HBackupFileSystem hFS = new HBackupFileSystem(conf, rootPath, backupId);
-    RestoreUtil restoreTool = new RestoreUtil(conf, hFS);
+    RestoreUtil restoreTool = new RestoreUtil(conf, rootPath, backupId);
     BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, rootPath, backupId);
 
     Path tableBackupPath = HBackupFileSystem.getTableBackupPath(rootPath, sTable, backupId);

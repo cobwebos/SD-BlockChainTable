@@ -22,12 +22,14 @@ import java.io.IOException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.hbase.backup.BackupClient;
-import org.apache.hadoop.hbase.backup.BackupRestoreFactory;
+import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants.BackupCommand;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 
 import com.google.common.collect.Lists;
 
@@ -108,12 +110,15 @@ public final class BackupCommands {
 
       String tables = (args.length == 3) ? args[2] : null;
 
-      try {
-        BackupClient client = BackupRestoreFactory.getBackupClient(getConf());
-        client.create(BackupType.valueOf(args[0].toUpperCase()),
-          Lists.newArrayList(BackupUtil.parseTableNames(tables)), args[1]);
-      } catch (RuntimeException e) {
-        System.out.println("ERROR: " + e.getMessage());
+      try (Connection conn = ConnectionFactory.createConnection(getConf());
+          Admin admin = conn.getAdmin();) {
+        BackupRequest request = new BackupRequest();
+        request.setBackupType(BackupType.valueOf(args[0].toUpperCase()))
+        .setTableList(Lists.newArrayList(BackupUtil.parseTableNames(tables)))
+        .setTargetRootDir(args[1]);
+        admin.backupTables(request);
+      } catch (IOException e) {
+        System.err.println("ERROR: " + e.getMessage());
         System.exit(-1);
       }
     }

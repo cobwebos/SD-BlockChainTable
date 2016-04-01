@@ -11,8 +11,6 @@
 
 package org.apache.hadoop.hbase.backup;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -37,9 +35,8 @@ public class TestFullBackup extends TestBackupBase {
   public void testFullBackupSingle() throws Exception {
     LOG.info("test full backup on a single table with data");
     List<TableName> tables = Lists.newArrayList(table1);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
-    LOG.info("backup complete");
+    String backupId = fullTableBackup(tables);
+    LOG.info("backup complete for " + backupId);
   }
 
   /**
@@ -50,8 +47,7 @@ public class TestFullBackup extends TestBackupBase {
   public void testFullBackupMultiple() throws Exception {
     LOG.info("create full backup image on multiple tables with data");
     List<TableName> tables = Lists.newArrayList(table1, table1);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
   }
 
   /**
@@ -61,7 +57,6 @@ public class TestFullBackup extends TestBackupBase {
   @Test
   public void testFullBackupAll() throws Exception {
     LOG.info("create full backup image on all tables");
-    String backupId = getBackupClient().create(BackupType.FULL, null, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(null);
   }
 }

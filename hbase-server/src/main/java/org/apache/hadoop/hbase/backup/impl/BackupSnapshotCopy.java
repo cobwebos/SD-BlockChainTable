@@ -22,17 +22,11 @@ import org.apache.hadoop.hbase.snapshot.ExportSnapshot;
 
 /* this class will be extended in future jira to support progress report */
 public class BackupSnapshotCopy extends ExportSnapshot {
-  private BackupHandler backupHandler;
   private String table;
 
-  public BackupSnapshotCopy(BackupHandler backupHandler, String table) {
+  public BackupSnapshotCopy(String table) {
     super();
-    this.backupHandler = backupHandler;
     this.table = table;
-  }
-
-  public BackupHandler getBackupHandler() {
-    return this.backupHandler;
   }
 
   public String getTable() {

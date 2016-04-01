@@ -53,6 +53,7 @@ import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableDescriptor;
 import org.apache.hadoop.hbase.TableDescriptors;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.client.ClusterConnection;
 import org.apache.hadoop.hbase.client.HConnectionTestingUtility;
 import org.apache.hadoop.hbase.client.Result;
@@ -85,6 +86,7 @@ import org.apache.hadoop.hbase.testclassification.SmallTests;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.HFileArchiveUtil;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.Triple;
 import org.apache.hadoop.hbase.zookeeper.MetaTableLocator;
 import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
@@ -428,6 +430,16 @@ public class TestCatalogJanitor {
     public List<ProcedureInfo> listProcedures() throws IOException {
       return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
+
+    @Override
+    public Pair<Long, String> backupTables(
+        final BackupType type,
+        final List<TableName> tableList,
+        final String targetRootDir, final int workers,
+        final long bandwidth) throws IOException {
+      return null;
+    }
+
 
     @Override
     public List<HTableDescriptor> listTableDescriptorsByNamespace(String name) throws IOException {

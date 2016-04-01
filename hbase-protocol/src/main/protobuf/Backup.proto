@@ -27,6 +27,24 @@ option optimize_for = SPEED;
 
 import "HBase.proto";
 
+enum FullTableBackupState {
+  PRE_SNAPSHOT_TABLE = 1;
+  SNAPSHOT_TABLES = 2;
+  SNAPSHOT_COPY = 3;
+  BACKUP_COMPLETE = 4;
+}
+
+enum IncrementalTableBackupState {
+  PREPARE_INCREMENTAL = 1;
+  INCREMENTAL_COPY = 2;
+  INCR_BACKUP_COMPLETE = 3;
+}
+
+message SnapshotTableStateData {
+  required TableName table = 1;
+  required string snapshotName = 2;
+}
+
 enum BackupType {
   FULL = 0;
   INCREMENTAL = 1;
@@ -103,3 +121,9 @@ message BackupContext {
     STORE_MANIFEST = 5;
   } 
 }
+
+message BackupProcContext {
+  required BackupContext ctx = 1;
+  repeated ServerTimestamp server_timestamp = 2;
+}
+

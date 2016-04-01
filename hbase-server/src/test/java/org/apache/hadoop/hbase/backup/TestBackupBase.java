@@ -31,9 +31,10 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.BackupHandler.BackupState;
+import org.apache.hadoop.hbase.backup.impl.BackupContext.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupContext;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
+import org.apache.hadoop.hbase.backup.impl.BackupUtil;
 import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
 import org.apache.hadoop.hbase.backup.regionserver.LogRollRegionServerProcedureManager;
 import org.apache.hadoop.hbase.client.Connection;
@@ -46,6 +47,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import com.google.common.collect.Lists;
 
 /**
  * This class is only a base for other integration-level backup tests. Do not add tests here.
@@ -126,6 +129,32 @@ public class TestBackupBase {
     TEST_UTIL.shutdownMiniMapReduceCluster();
   }
 
+  protected String backupTables(BackupType type, List<TableName> tables, String path)
+      throws IOException {
+    Connection conn = null;
+    HBaseAdmin admin = null;
+    String backupId;
+    try {
+      conn = ConnectionFactory.createConnection(conf1);
+      admin = (HBaseAdmin) conn.getAdmin();
+      BackupRequest request = new BackupRequest();
+      request.setBackupType(type).setTableList(tables).setTargetRootDir(path);
+      backupId = admin.backupTables(request);
+    } finally {
+      if (admin != null) {
+        admin.close();
+      }
+      if (conn != null) {
+        conn.close();
+      }
+    }
+    return backupId;
+  }
+
+  protected String fullTableBackup(List<TableName> tables) throws IOException {
+    return backupTables(BackupType.FULL, tables, BACKUP_ROOT_DIR);
+  }
+
   protected static void loadTable(HTable table) throws Exception {
 
     Put p; // 100 + 1 row to t1_syncup
@@ -140,6 +169,7 @@ public class TestBackupBase {
 
     long tid = System.currentTimeMillis();
     table1 = TableName.valueOf("test-" + tid);
+    BackupSystemTable backupTable = new BackupSystemTable(TEST_UTIL.getConnection());
     HBaseAdmin ha = TEST_UTIL.getHBaseAdmin();
     HTableDescriptor desc = new HTableDescriptor(table1);
     HColumnDescriptor fam = new HColumnDescriptor(famName);
@@ -185,10 +215,6 @@ public class TestBackupBase {
       BackupContext status = table.readBackupStatus(backupId);
       return status;
     }
-  }
-
-  protected BackupClient getBackupClient(){
-    return BackupRestoreFactory.getBackupClient(conf1);
   }
 
   protected RestoreClient getRestoreClient()

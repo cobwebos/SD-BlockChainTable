@@ -27,6 +27,7 @@ option java_generate_equals_and_hash = true;
 option optimize_for = SPEED;
 
 import "HBase.proto";
+import "Backup.proto";
 import "Client.proto";
 import "ClusterStatus.proto";
 import "ErrorHandling.proto";
@@ -485,7 +486,7 @@ message GetProcedureResultResponse {
 
 message AbortProcedureRequest {
   required uint64 proc_id = 1;
-  optional bool mayInterruptIfRunning = 2 [default = true];
+  optional bool may_interrupt_if_running = 2 [default = true];
 }
 
 message AbortProcedureResponse {
@@ -538,6 +539,19 @@ message SecurityCapabilitiesResponse {
   }
 
   repeated Capability capabilities = 1;
+}
+
+message BackupTablesRequest {
+  required BackupType type = 1;
+  repeated TableName tables = 2;
+  required string target_root_dir = 3;
+  optional int64 workers = 4;
+  optional int64 bandwidth = 5;
+}
+
+message BackupTablesResponse {
+  optional uint64 proc_id = 1;
+  optional string backup_id = 2;
 }
 
 service MasterService {
@@ -814,4 +828,8 @@ service MasterService {
   /** returns a list of procedures */
   rpc ListProcedures(ListProceduresRequest)
     returns(ListProceduresResponse);
+
+  /** backup table set */
+  rpc backupTables(BackupTablesRequest)
+    returns(BackupTablesResponse);
 }

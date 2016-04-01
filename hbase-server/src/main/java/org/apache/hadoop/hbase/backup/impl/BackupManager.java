@@ -44,7 +44,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
-import org.apache.hadoop.hbase.backup.impl.BackupHandler.BackupState;
+import org.apache.hadoop.hbase.backup.impl.BackupContext.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.backup.impl.BackupUtil.BackupCompleteData;
 import org.apache.hadoop.hbase.backup.master.BackupLogCleaner;
@@ -204,7 +204,7 @@ public class BackupManager implements Closeable {
       throw new BackupException("Wrong backup request parameter: target backup root directory");
     }
 
-    if (type == BackupType.FULL && tableList == null) {
+    if (type == BackupType.FULL && (tableList == null || tableList.isEmpty())) {
       // If table list is null for full backup, which means backup all tables. Then fill the table
       // list with all user tables from meta. It no table available, throw the request exception.
 
@@ -270,37 +270,8 @@ public class BackupManager implements Closeable {
     ((ThreadPoolExecutor) pool).allowCoreThreadTimeOut(true);
   }
 
-  /**
-   * Dispatch and handle a backup request.
-   * @param backupContext backup context
-   * @throws BackupException exception
-   */
-  public void dispatchRequest(BackupContext backupContext) throws BackupException {
-
+  public void setBackupContext(BackupContext backupContext) {
     this.backupContext = backupContext;
-
-    LOG.info("Got a backup request: " + "Type: " + backupContext.getType() + "; Tables: "
-        + backupContext.getTableNames() + "; TargetRootDir: " + backupContext.getTargetRootDir());
-
-    // dispatch the request to a backup handler and put it handler map
-
-    BackupHandler handler = new BackupHandler(this.backupContext, this, conf, this.conn);
-    Future<Void> future = this.pool.submit(handler);
-    // wait for the execution to complete
-    try {
-      future.get();
-    } catch (InterruptedException e) {
-      throw new BackupException(e);
-    } catch (CancellationException e) {
-      throw new BackupException(e);
-    } catch (ExecutionException e) {
-      throw new BackupException(e);
-    }
-
-    // mark the backup complete for exit handler's processing
-    backupComplete = true;
-
-    LOG.info("Backup request " + backupContext.getBackupId() + " has been executed.");
   }
 
   /**
@@ -476,7 +447,7 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public Set<TableName> getIncrementalBackupTableSet() throws IOException {
-    return systemTable.getIncrementalBackupTableSet();
+    return BackupSystemTableHelper.getIncrementalBackupTableSet(getConnection());
   }
 
   /**

@@ -43,15 +43,10 @@ public class TestRestoreBoundaryTests extends TestBackupBase {
   @Test
   public void testFullRestoreSingleEmpty() throws Exception {
     LOG.info("test full restore on a single table empty table");
-    String backupId =
-        getBackupClient().create(BackupType.FULL, toList(table1.getNameAsString()),
-            BACKUP_ROOT_DIR);
+    String backupId = fullTableBackup(toList(table1.getNameAsString()));
     LOG.info("backup complete");
-    assertTrue(checkSucceeded(backupId));
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = new TableName[] { table1_restore };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     getRestoreClient().restore(BACKUP_ROOT_DIR, backupId, false, false, tableset, tablemap,
       false);
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
@@ -68,12 +63,9 @@ public class TestRestoreBoundaryTests extends TestBackupBase {
     LOG.info("create full backup image on multiple tables");
 
     List<TableName> tables = toList(table2.getNameAsString(), table3.getNameAsString());
-    String backupId = getBackupClient().create(BackupType.FULL, tables,BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
     TableName[] restore_tableset = new TableName[] { table2, table3};
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     getRestoreClient().restore(BACKUP_ROOT_DIR, backupId, false, false, restore_tableset,
       tablemap,
       false);

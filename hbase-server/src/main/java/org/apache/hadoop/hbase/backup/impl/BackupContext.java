@@ -19,6 +19,7 @@
 package org.apache.hadoop.hbase.backup.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.Set;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
-import org.apache.hadoop.hbase.backup.impl.BackupHandler.BackupState;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
@@ -77,8 +77,19 @@ public class BackupContext {
     this.totalBytesCopied = totalBytesCopied;
   }
 
+  // backup status flag
+  public static enum BackupState {
+    RUNNING, COMPLETE, FAILED, CANCELLED;
+  }
+
   public void setCancelled(boolean cancelled) {
     this.state = BackupState.CANCELLED;;
+  }
+
+  // backup phase
+  // for overall backup (for table list, some table may go online, while some may go offline)
+  protected static enum BackupPhase {
+    SNAPSHOTCOPY, INCREMENTAL_COPY, STORE_MANIFEST;
   }
 
   // backup id: a timestamp when we request the backup
@@ -91,10 +102,10 @@ public class BackupContext {
   private String targetRootDir;
 
   // overall backup state
-  private BackupHandler.BackupState state;
+  private BackupState state;
 
   // overall backup phase
-  private BackupHandler.BackupPhase phase;
+  private BackupPhase phase;
 
   // overall backup failure message
   private String failedMsg;
@@ -210,19 +221,19 @@ public class BackupContext {
     return totalBytesCopied;
   }
 
-  public BackupHandler.BackupState getState() {
+  public BackupState getState() {
     return state;
   }
 
-  public void setState(BackupHandler.BackupState flag) {
+  public void setState(BackupState flag) {
     this.state = flag;
   }
 
-  public BackupHandler.BackupPhase getPhase() {
+  public BackupPhase getPhase() {
     return phase;
   }
 
-  public void setPhase(BackupHandler.BackupPhase phase) {
+  public void setPhase(BackupPhase phase) {
     this.phase = phase;
   }
 
@@ -308,7 +319,7 @@ public class BackupContext {
     return null;
   }
 
-  public byte[] toByteArray() throws IOException {
+  BackupProtos.BackupContext toBackupContext() {
     BackupProtos.BackupContext.Builder builder =
         BackupProtos.BackupContext.newBuilder();
     builder.setBackupId(getBackupId());
@@ -332,8 +343,11 @@ public class BackupContext {
     builder.setTargetRootDir(getTargetRootDir());
     builder.setTotalBytesCopied(getTotalBytesCopied());
     builder.setType(BackupProtos.BackupType.valueOf(getType().name()));
-    byte[] data = builder.build().toByteArray();
-    return data;
+    return builder.build();
+  }
+
+  public byte[] toByteArray() throws IOException {
+    return toBackupContext().toByteArray();
   }
 
   private void setBackupStatusMap(Builder builder) {
@@ -343,9 +357,15 @@ public class BackupContext {
   }
 
   public static BackupContext fromByteArray(byte[] data) throws IOException {
+    return fromProto(BackupProtos.BackupContext.parseFrom(data));
+  }
+  
+  public static BackupContext fromStream(final InputStream stream) throws IOException {
+    return fromProto(BackupProtos.BackupContext.parseDelimitedFrom(stream));
+  }
 
+  static BackupContext fromProto(BackupProtos.BackupContext proto) {
     BackupContext context = new BackupContext();
-    BackupProtos.BackupContext proto = BackupProtos.BackupContext.parseFrom(data);
     context.setBackupId(proto.getBackupId());
     context.setBackupStatusMap(toMap(proto.getTableBackupStatusList()));
     context.setEndTs(proto.getEndTs());
@@ -353,13 +373,13 @@ public class BackupContext {
       context.setFailedMsg(proto.getFailedMessage());
     }
     if(proto.hasState()) {
-      context.setState(BackupHandler.BackupState.valueOf(proto.getState().name()));
+      context.setState(BackupContext.BackupState.valueOf(proto.getState().name()));
     }
     if(proto.hasHlogTargetDir()) {
       context.setHlogTargetDir(proto.getHlogTargetDir());
     }
     if(proto.hasPhase()) {
-      context.setPhase(BackupHandler.BackupPhase.valueOf(proto.getPhase().name()));
+      context.setPhase(BackupPhase.valueOf(proto.getPhase().name()));
     }
     if(proto.hasProgress()) {
       context.setProgress(proto.getProgress());

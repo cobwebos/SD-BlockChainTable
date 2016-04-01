@@ -11,8 +11,6 @@
 
 package org.apache.hadoop.hbase.backup;
 
-import static org.junit.Assert.assertTrue;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
@@ -35,11 +33,9 @@ public class TestRemoteBackup extends TestBackupBase {
 
     LOG.info("test remote full backup on a single table");
 
-    String backupId =
-        getBackupClient().create(BackupType.FULL,
-          Lists.newArrayList(table1), BACKUP_REMOTE_ROOT_DIR);
-    LOG.info("backup complete");
-    assertTrue(checkSucceeded(backupId));
+    String backupId = backupTables(BackupType.FULL,
+      Lists.newArrayList(table1), BACKUP_REMOTE_ROOT_DIR);
+    LOG.info("backup complete " + backupId);
   }
 
 }

@@ -36,7 +36,7 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.BackupHandler.BackupState;
+import org.apache.hadoop.hbase.backup.impl.BackupContext.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupUtil.BackupCompleteData;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -412,32 +412,6 @@ public final class BackupSystemTable implements Closeable {
   }
 
   /**
-   * Return the current tables covered by incremental backup.
-   * @return set of tableNames
-   * @throws IOException exception
-   */
-  public Set<TableName> getIncrementalBackupTableSet() throws IOException {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("get incr backup table set from hbase:backup");
-    }
-    TreeSet<TableName> set = new TreeSet<>();
-
-    try (Table table = connection.getTable(tableName)) {
-      Get get = BackupSystemTableHelper.createGetForIncrBackupTableSet();
-      Result res = table.get(get);
-      if (res.isEmpty()) {
-        return set;
-      }
-      List<Cell> cells = res.listCells();
-      for (Cell cell : cells) {
-        // qualifier = table name - we use table names as qualifiers
-        set.add(TableName.valueOf(CellUtil.cloneQualifier(cell)));
-      }
-      return set;
-    }
-  }
-
-  /**
    * Add tables to global incremental backup set
    * @param tables - set of tables
    * @throws IOException exception
@@ -445,6 +419,9 @@ public final class BackupSystemTable implements Closeable {
   public void addIncrementalBackupTableSet(Set<TableName> tables) throws IOException {
     if (LOG.isDebugEnabled()) {
       LOG.debug("add incr backup table set to hbase:backup");
+      for (TableName table : tables) {
+        LOG.debug(table);
+      }
     }
     try (Table table = connection.getTable(tableName)) {
       Put put = BackupSystemTableHelper.createPutForIncrBackupTableSet(tables);

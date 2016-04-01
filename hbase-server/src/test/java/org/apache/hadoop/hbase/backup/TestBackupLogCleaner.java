@@ -80,9 +80,8 @@ public class TestBackupLogCleaner extends TestBackupBase {
       assertTrue(Iterables.size(deletable) == walFiles.size());
 
       systemTable.addWALFiles(swalFiles, "backup");
-      String backupIdFull = getBackupClient().create(BackupType.FULL, tableSetFullList,
-        BACKUP_ROOT_DIR);
-      assertTrue(checkSucceeded(backupIdFull));
+      String backupIdFull = fullTableBackup(tableSetFullList);
+      // getBackupClient().create(BackupType.FULL, tableSetFullList, BACKUP_ROOT_DIR);
       // Check one more time
       deletable = cleaner.getDeletableFiles(walFiles);
       // We can delete wal files because they were saved into hbase:backup table
@@ -122,9 +121,8 @@ public class TestBackupLogCleaner extends TestBackupBase {
       // #3 - incremental backup for multiple tables
 
       List<TableName> tableSetIncList = Lists.newArrayList(table1, table2, table3);
-      String backupIdIncMultiple =
-          getBackupClient().create(BackupType.INCREMENTAL, tableSetIncList, BACKUP_ROOT_DIR);
-      assertTrue(checkSucceeded(backupIdIncMultiple));
+      String backupIdIncMultiple = backupTables(BackupType.INCREMENTAL, tableSetIncList,
+        BACKUP_ROOT_DIR);
       deletable = cleaner.getDeletableFiles(newWalFiles);
 
       assertTrue(Iterables.size(deletable) == newWalFiles.size());

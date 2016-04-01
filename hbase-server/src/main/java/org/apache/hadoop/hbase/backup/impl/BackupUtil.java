@@ -18,11 +18,9 @@
 
 package org.apache.hadoop.hbase.backup.impl;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URLDecoder;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -35,25 +33,27 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
-import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.HBackupFileSystem;
+import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.master.snapshot.SnapshotManager;
+import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.SnapshotDescription;
 import org.apache.hadoop.hbase.regionserver.HRegion;
+import org.apache.hadoop.hbase.snapshot.ClientSnapshotDescriptionUtils;
+import org.apache.hadoop.hbase.snapshot.SnapshotCreationException;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSTableDescriptors;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.wal.DefaultWALProvider;
@@ -69,6 +69,40 @@ public final class BackupUtil {
 
   private BackupUtil(){
     throw new AssertionError("Instantiating utility class...");
+  }
+
+  public static void waitForSnapshot(SnapshotDescription snapshot, long max,
+      SnapshotManager snapshotMgr, Configuration conf) throws IOException {
+    boolean done = false;
+    long start = EnvironmentEdgeManager.currentTime();
+    int numRetries = conf.getInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER,
+      HConstants.DEFAULT_HBASE_CLIENT_RETRIES_NUMBER);
+    long maxPauseTime = max / numRetries;
+    int tries = 0;
+    LOG.debug("Waiting a max of " + max + " ms for snapshot '" +
+        ClientSnapshotDescriptionUtils.toString(snapshot) + "'' to complete. (max " +
+        maxPauseTime + " ms per retry)");
+    while (tries == 0
+        || ((EnvironmentEdgeManager.currentTime() - start) < max && !done)) {
+      try {
+        // sleep a backoff <= pauseTime amount
+        long pause = conf.getLong(HConstants.HBASE_CLIENT_PAUSE,
+          HConstants.DEFAULT_HBASE_CLIENT_PAUSE);
+        long sleep = HBaseAdmin.getPauseTime(tries++, pause);
+        sleep = sleep > maxPauseTime ? maxPauseTime : sleep;
+        LOG.debug("(#" + tries + ") Sleeping: " + sleep +
+          "ms while waiting for snapshot completion.");
+        Thread.sleep(sleep);
+      } catch (InterruptedException e) {
+        throw (InterruptedIOException)new InterruptedIOException("Interrupted").initCause(e);
+      }
+      LOG.debug("Getting current status of snapshot ...");
+      done = snapshotMgr.isSnapshotDone(snapshot);
+    }
+    if (!done) {
+      throw new SnapshotCreationException("Snapshot '" + snapshot.getName()
+          + "' wasn't completed in expectedTime:" + max + " ms", snapshot);
+    }
   }
 
   /**
@@ -139,7 +173,6 @@ public final class BackupUtil {
       descriptors.createTableDescriptorForTableDirectory(target, orig, false);
       LOG.debug("Finished copying tableinfo.");
 
-      HBaseAdmin hbadmin = null;
       // TODO: optimize
       List<HRegionInfo> regions = null;
       try(Connection conn = ConnectionFactory.createConnection(conf);

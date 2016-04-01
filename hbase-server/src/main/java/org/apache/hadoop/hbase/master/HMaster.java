@@ -49,6 +49,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.ClusterStatus;
 import org.apache.hadoop.hbase.CoordinatedStateException;
@@ -75,7 +76,14 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotDisabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.UnknownRegionException;
+import org.apache.hadoop.hbase.backup.BackupType;
+import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
+import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
+import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
+import org.apache.hadoop.hbase.backup.impl.BackupSystemTableHelper;
+import org.apache.hadoop.hbase.backup.impl.FullTableBackupProcedure;
+import org.apache.hadoop.hbase.backup.impl.IncrementalTableBackupProcedure;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.RegionReplicaUtil;
@@ -142,6 +150,7 @@ import org.apache.hadoop.hbase.util.Addressing;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CompressionTest;
 import org.apache.hadoop.hbase.util.EncryptionTest;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.HFileArchiveUtil;
 import org.apache.hadoop.hbase.util.HasThread;
@@ -167,6 +176,9 @@ import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Service;
@@ -2599,6 +2611,68 @@ public class HMaster extends HRegionServer implements MasterServices {
     }
 
     return procInfoList;
+  }
+
+  @Override
+  public Pair<Long, String> backupTables(final BackupType type,
+        List<TableName> tableList, final String targetRootDir, final int workers,
+        final long bandwidth) throws IOException {
+    long procId;
+    String backupId = BackupRestoreConstants.BACKUPID_PREFIX + EnvironmentEdgeManager.currentTime();
+    if (type == BackupType.INCREMENTAL) {
+      Set<TableName> incrTableSet =
+          BackupSystemTableHelper.getIncrementalBackupTableSet(clusterConnection);
+      if (incrTableSet.isEmpty()) {
+        LOG.warn("Incremental backup table set contains no table.\n"
+            + "Use 'backup create full' or 'backup stop' to \n "
+            + "change the tables covered by incremental backup.");
+        throw new DoNotRetryIOException("No table covered by incremental backup.");
+      }
+
+      LOG.info("Incremental backup for the following table set: " + incrTableSet);
+      tableList = Lists.newArrayList(incrTableSet);
+    }
+    if (tableList != null && !tableList.isEmpty()) {
+      for (TableName table : tableList) {
+        String targetTableBackupDir =
+            HBackupFileSystem.getTableBackupDir(targetRootDir, backupId, table);
+        Path targetTableBackupDirPath = new Path(targetTableBackupDir);
+        FileSystem outputFs = FileSystem.get(targetTableBackupDirPath.toUri(), conf);
+        if (outputFs.exists(targetTableBackupDirPath)) {
+          throw new DoNotRetryIOException("Target backup directory " + targetTableBackupDir
+            + " exists already.");
+        }
+      }
+      ArrayList<TableName> nonExistingTableList = null;
+      for (TableName tableName : tableList) {
+        if (!MetaTableAccessor.tableExists(getConnection(), tableName)) {
+          if (nonExistingTableList == null) {
+            nonExistingTableList = new ArrayList<>();
+          }
+          nonExistingTableList.add(tableName);
+        }
+      }
+      if (nonExistingTableList != null) {
+        if (type == BackupType.INCREMENTAL ) {
+          LOG.warn("Incremental backup table set contains non-exising table: "
+              + nonExistingTableList);
+        } else {
+          // Throw exception only in full mode - we try to backup non-existing table
+          throw new DoNotRetryIOException("Non-existing tables found in the table list: "
+              + nonExistingTableList);
+        }
+      }
+    }
+    if (type == BackupType.FULL) {
+      procId = this.procedureExecutor.submitProcedure(
+        new FullTableBackupProcedure(procedureExecutor.getEnvironment(), backupId,
+          tableList, targetRootDir, workers, bandwidth));
+    } else {
+      procId = this.procedureExecutor.submitProcedure(
+        new IncrementalTableBackupProcedure(procedureExecutor.getEnvironment(), backupId,
+          tableList, targetRootDir, workers, bandwidth));
+    }
+    return new Pair<>(procId, backupId);
   }
 
   /**

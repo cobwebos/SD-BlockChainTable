@@ -18,7 +18,6 @@
 package org.apache.hadoop.hbase.backup;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.backup.impl.BackupClientImpl;
 import org.apache.hadoop.hbase.backup.impl.BackupCopyService;
 import org.apache.hadoop.hbase.backup.impl.IncrementalRestoreService;
 import org.apache.hadoop.hbase.backup.impl.RestoreClientImpl;
@@ -34,7 +33,6 @@ public final class BackupRestoreFactory {
 
   public final static String HBASE_INCR_RESTORE_IMPL_CLASS = "hbase.incremental.restore.class";
   public final static String HBASE_BACKUP_COPY_IMPL_CLASS = "hbase.backup.copy.class";
-  public final static String HBASE_BACKUP_CLIENT_IMPL_CLASS = "hbase.backup.client.class";
   public final static String HBASE_RESTORE_CLIENT_IMPL_CLASS = "hbase.restore.client.class";
 
   private BackupRestoreFactory(){
@@ -63,20 +61,6 @@ public final class BackupRestoreFactory {
         conf.getClass(HBASE_BACKUP_COPY_IMPL_CLASS, MapReduceBackupCopyService.class,
           BackupCopyService.class);
     return ReflectionUtils.newInstance(cls, conf);
-  }
-  
-  /**
-   * Gets backup client implementation
-   * @param conf - configuration
-   * @return backup client
-   */
-  public static BackupClient getBackupClient(Configuration conf) {
-    Class<? extends BackupClient> cls =
-        conf.getClass(HBASE_BACKUP_CLIENT_IMPL_CLASS, BackupClientImpl.class,
-          BackupClient.class);
-    BackupClient client = ReflectionUtils.newInstance(cls, conf);
-    client.setConf(conf);
-    return client;
   }
   
   /**

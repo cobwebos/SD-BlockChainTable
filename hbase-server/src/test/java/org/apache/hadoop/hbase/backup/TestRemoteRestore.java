@@ -35,15 +35,12 @@ public class TestRemoteRestore extends TestBackupBase {
   public void testFullRestoreRemote() throws Exception {
 
     LOG.info("test remote full backup on a single table");
-    String backupId =
-        getBackupClient().create(BackupType.FULL, toList(table1.getNameAsString()),
-          BACKUP_REMOTE_ROOT_DIR);
+    String backupId = backupTables(BackupType.FULL, toList(table1.getNameAsString()),
+      BACKUP_REMOTE_ROOT_DIR);
     LOG.info("backup complete");
-    assertTrue(checkSucceeded(backupId));
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = new TableName[] { table1_restore };
     Path path = new Path(BACKUP_REMOTE_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     getRestoreClient().restore(BACKUP_REMOTE_ROOT_DIR, backupId, false, false, tableset,
       tablemap, false);
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();

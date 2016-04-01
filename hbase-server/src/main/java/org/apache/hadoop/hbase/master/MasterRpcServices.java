@@ -40,6 +40,7 @@ import org.apache.hadoop.hbase.ServerLoad;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.UnknownRegionException;
+import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.TableState;
@@ -1046,6 +1047,25 @@ public class MasterRpcServices extends RSRpcServices
         response.addProcedure(ProcedureInfo.convertToProcedureProto(p));
       }
       return response.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
+  public MasterProtos.BackupTablesResponse backupTables(
+      RpcController controller,
+      MasterProtos.BackupTablesRequest request)  throws ServiceException {
+    try {
+      BackupTablesResponse.Builder response = BackupTablesResponse.newBuilder();
+      List<TableName> tablesList = new ArrayList<>(request.getTablesList().size());
+      for (HBaseProtos.TableName table : request.getTablesList()) {
+        tablesList.add(ProtobufUtil.toTableName(table));
+      }
+      Pair<Long, String> pair = master.backupTables(
+        BackupType.valueOf(request.getType().name()), tablesList, request.getTargetRootDir(),
+        (int)request.getWorkers(), request.getBandwidth());
+      return response.setProcId(pair.getFirst()).setBackupId(pair.getSecond()).build();
     } catch (IOException e) {
       throw new ServiceException(e);
     }

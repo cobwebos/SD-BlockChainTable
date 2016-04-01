@@ -46,17 +46,20 @@ public class TestIncrementalBackup extends TestBackupBase {
   //implement all testcases in 1 test since incremental backup/restore has dependencies
   @Test
   public void TestIncBackupRestore() throws Exception {
-    HBackupFileSystem hbfs;
-
     // #1 - create full backup for all tables
     LOG.info("create full backup image for all tables");
 
     List<TableName> tables = Lists.newArrayList(table1, table2, table3, table4);
-    String backupIdFull = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
+    HBaseAdmin admin = null;
+    Connection conn = ConnectionFactory.createConnection(conf1);
+    admin = (HBaseAdmin) conn.getAdmin();
+
+    BackupRequest request = new BackupRequest();
+    request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);
+    String backupIdFull = admin.backupTables(request);
 
     assertTrue(checkSucceeded(backupIdFull));
 
-    Connection conn = ConnectionFactory.createConnection(conf1);
     // #2 - insert some data to table
     HTable t1 = (HTable) conn.getTable(table1);
     Put p1;
@@ -81,13 +84,11 @@ public class TestIncrementalBackup extends TestBackupBase {
     t2.close();
 
     // #3 - incremental backup for multiple tables
-
-
     tables = Lists.newArrayList(table1, table2, table3);
-    String backupIdIncMultiple = getBackupClient().create(BackupType.INCREMENTAL,
-      tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupIdIncMultiple));
-
+    request = new BackupRequest();
+    request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
+    .setTargetRootDir(BACKUP_ROOT_DIR);
+    String backupIdIncMultiple = admin.backupTables(request);
 
     // #4 - restore full backup for all tables, without overwrite
     TableName[] tablesRestoreFull =
@@ -96,7 +97,6 @@ public class TestIncrementalBackup extends TestBackupBase {
     TableName[] tablesMapFull =
         new TableName[] { table1_restore, table2_restore, table3_restore, table4_restore };
 
-    hbfs = new HBackupFileSystem(conf1, new Path(BACKUP_ROOT_DIR), backupIdFull);
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupIdFull, false, false,
       tablesRestoreFull,
@@ -133,7 +133,7 @@ public class TestIncrementalBackup extends TestBackupBase {
         new TableName[] { table1, table2, table3 };
     TableName[] tablesMapIncMultiple =
         new TableName[] { table1_restore, table2_restore, table3_restore };
-    hbfs = new HBackupFileSystem(conf1, new Path(BACKUP_ROOT_DIR), backupIdIncMultiple);
+    LOG.info("restore inc backup " + backupIdIncMultiple);
     client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupIdIncMultiple, false, false,
       tablesRestoreIncMultiple, tablesMapIncMultiple, true);
@@ -153,15 +153,15 @@ public class TestIncrementalBackup extends TestBackupBase {
     // #7 - incremental backup for single, empty table
 
     tables = toList(table4.getNameAsString());
-    String backupIdIncEmpty =
-        getBackupClient().create(BackupType.INCREMENTAL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupIdIncEmpty));
+    request = new BackupRequest();
+    request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
+    .setTargetRootDir(BACKUP_ROOT_DIR);
+    String backupIdIncEmpty = admin.backupTables(request);
 
 
     // #8 - restore incremental backup for single empty table, with overwrite
     TableName[] tablesRestoreIncEmpty = new TableName[] { table4 };
     TableName[] tablesMapIncEmpty = new TableName[] { table4_restore };
-    hbfs = new HBackupFileSystem(conf1, new Path(BACKUP_ROOT_DIR), backupIdIncEmpty);
 
     getRestoreClient().restore(BACKUP_ROOT_DIR, backupIdIncEmpty, false, false,
       tablesRestoreIncEmpty,
@@ -170,8 +170,8 @@ public class TestIncrementalBackup extends TestBackupBase {
     hTable = (HTable) conn.getTable(table4_restore);
     Assert.assertThat(TEST_UTIL.countRows(hTable), CoreMatchers.equalTo(0));
     hTable.close();
+    admin.close();
     conn.close();
-
   }
 
 }

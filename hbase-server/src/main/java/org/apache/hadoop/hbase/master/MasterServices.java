@@ -20,6 +20,7 @@ package org.apache.hadoop.hbase.master;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HRegionInfo;
@@ -30,6 +31,7 @@ import org.apache.hadoop.hbase.TableDescriptors;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotDisabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.executor.ExecutorService;
 import org.apache.hadoop.hbase.master.normalizer.RegionNormalizer;
@@ -39,6 +41,7 @@ import org.apache.hadoop.hbase.procedure.MasterProcedureManagerHost;
 import org.apache.hadoop.hbase.procedure2.ProcedureExecutor;
 import org.apache.hadoop.hbase.quotas.MasterQuotaManager;
 import org.apache.hadoop.hbase.security.User;
+import org.apache.hadoop.hbase.util.Pair;
 
 import com.google.protobuf.Service;
 
@@ -177,6 +180,23 @@ public interface MasterServices extends Server {
       final long nonceGroup,
       final long nonce)
       throws IOException;
+
+  /**
+   * Full backup given list of tables
+   * @param type whether the backup is full or incremental
+   * @param tableList list of tables to backup
+   * @param targetRootDir root dir for saving the backup
+   * @param workers number of paralle workers. -1 - system defined
+   * @param bandwidth bandwidth per worker in MB per sec. -1 - unlimited
+   * @return pair of procedure Id and backupId
+   * @throws IOException
+   */
+  public Pair<Long, String> backupTables(
+      final BackupType type,
+      List<TableName> tableList,
+      final String targetRootDir,
+      final int workers,
+      final long bandwidth) throws IOException;
 
   /**
    * Enable an existing table

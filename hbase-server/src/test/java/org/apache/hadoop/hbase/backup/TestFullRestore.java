@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
@@ -42,14 +41,11 @@ public class TestFullRestore extends TestBackupBase {
     LOG.info("test full restore on a single table empty table");
 
     List<TableName> tables = Lists.newArrayList(table1);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
     LOG.info("backup complete");
 
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = new TableName[] { table1_restore };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupId, false, false, tableset, tablemap, false);
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
@@ -66,13 +62,10 @@ public class TestFullRestore extends TestBackupBase {
   public void testFullRestoreMultiple() throws Exception {
     LOG.info("create full backup image on multiple tables");
     List<TableName> tables = Lists.newArrayList(table2, table3);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
 
     TableName[] restore_tableset = new TableName[] { table2, table3 };
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupId, false, false,
       restore_tableset, tablemap, false);
@@ -93,13 +86,10 @@ public class TestFullRestore extends TestBackupBase {
 
     LOG.info("test full restore on a single table empty table");
     List<TableName> tables = Lists.newArrayList(table1);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
     LOG.info("backup complete");
 
     TableName[] tableset = new TableName[] { table1 };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupId, false, false, tableset, null,
       true);
@@ -114,12 +104,9 @@ public class TestFullRestore extends TestBackupBase {
     LOG.info("create full backup image on multiple tables");
 
     List<TableName> tables = Lists.newArrayList(table2, table3);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
 
     TableName[] restore_tableset = new TableName[] { table2, table3 };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupId, false,
       false, restore_tableset, null, true);
@@ -134,14 +121,12 @@ public class TestFullRestore extends TestBackupBase {
 
     LOG.info("test restore fails on a single table that does not exist");
     List<TableName> tables = Lists.newArrayList(table1);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
+
     LOG.info("backup complete");
 
     TableName[] tableset = new TableName[] { TableName.valueOf("faketable") };
     TableName[] tablemap = new TableName[] { table1_restore };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupId, false, false, tableset, tablemap,
       false);
@@ -157,14 +142,11 @@ public class TestFullRestore extends TestBackupBase {
     LOG.info("test restore fails on multiple tables that do not exist");
 
     List<TableName> tables = Lists.newArrayList(table2, table3);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    String backupId = fullTableBackup(tables);
 
     TableName[] restore_tableset
       = new TableName[] { TableName.valueOf("faketable1"), TableName.valueOf("faketable2") };
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
-    Path path = new Path(BACKUP_ROOT_DIR);
-    HBackupFileSystem hbfs = new HBackupFileSystem(conf1, path, backupId);
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupId, false,
       false, restore_tableset, tablemap, false);

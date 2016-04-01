@@ -22,17 +22,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 
 
@@ -43,7 +48,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public final class BackupSystemTableHelper {
-
+  private static final Log LOG = LogFactory.getLog(BackupSystemTableHelper.class);
   /**
    * hbase:backup schema:
    * 1. Backup sessions rowkey= "session." + backupId; value = serialized
@@ -154,6 +159,33 @@ public final class BackupSystemTableHelper {
     get.addFamily(BackupSystemTable.familyName);
     get.setMaxVersions(1);
     return get;
+  }
+
+  /**
+   * Return the current tables covered by incremental backup.
+   * @return set of tableNames
+   * @throws IOException exception
+   */
+  public static Set<TableName> getIncrementalBackupTableSet(Connection connection)
+      throws IOException {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("get incr backup table set from hbase:backup");
+    }
+    TreeSet<TableName> set = new TreeSet<>();
+
+    try (Table table = connection.getTable(TableName.BACKUP_TABLE_NAME)) {
+      Get get = BackupSystemTableHelper.createGetForIncrBackupTableSet();
+      Result res = table.get(get);
+      if (res.isEmpty()) {
+        return set;
+      }
+      List<Cell> cells = res.listCells();
+      for (Cell cell : cells) {
+        // qualifier = table name - we use table names as qualifiers
+        set.add(TableName.valueOf(CellUtil.cloneQualifier(cell)));
+      }
+      return set;
+    }
   }
 
   /**

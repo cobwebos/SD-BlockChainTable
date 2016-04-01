@@ -29,6 +29,7 @@ import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Action;
 import org.apache.hadoop.hbase.client.Admin;
@@ -62,6 +63,7 @@ import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.StopServerRequest;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.UpdateFavoredNodesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.UpdateFavoredNodesRequest.RegionUpdateInfo;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.WarmupRegionRequest;
+import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.BackupTablesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos.BulkLoadHFileRequest;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos.BulkLoadHFileRequest.FamilyPath;
@@ -1265,6 +1267,22 @@ public final class RequestConverter {
     builder.setTableSchema(hTableDesc.convert());
     builder.setNonceGroup(nonceGroup);
     builder.setNonce(nonce);
+    return builder.build();
+  }
+
+  public static BackupTablesRequest buildBackupTablesRequest(
+      final BackupType type, List<TableName> tableList, String targetRootDir, final int workers,
+      final long bandwidth) {
+    BackupTablesRequest.Builder builder = BackupTablesRequest.newBuilder();
+    builder.setType(ProtobufUtil.toProtoBackupType(type));
+    builder.setTargetRootDir(targetRootDir);
+    builder.setWorkers(workers);
+    builder.setBandwidth(bandwidth);
+    if (tableList != null) {
+      for (TableName table : tableList) {
+        builder.addTables(ProtobufUtil.toProtoTableName(table));
+      }
+    }
     return builder.build();
   }
 

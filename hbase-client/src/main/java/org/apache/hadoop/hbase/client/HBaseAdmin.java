@@ -61,6 +61,8 @@ import org.apache.hadoop.hbase.TableNotDisabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.UnknownRegionException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.backup.BackupRequest;
+import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.security.SecurityCapability;
@@ -83,6 +85,8 @@ import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.RollWALWriterReque
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.RollWALWriterResponse;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.StopServerRequest;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.UpdateConfigurationRequest;
+import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.BackupTablesRequest;
+import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.BackupTablesResponse;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.NameStringPair;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ProcedureDescription;
@@ -418,14 +422,6 @@ public class HBaseAdmin implements Admin {
       throw new TableNotFoundException(tableName.getNameAsString());
   }
 
-  private long getPauseTime(int tries) {
-    int triesCount = tries;
-    if (triesCount >= HConstants.RETRY_BACKOFF.length) {
-      triesCount = HConstants.RETRY_BACKOFF.length - 1;
-    }
-    return this.pause * HConstants.RETRY_BACKOFF[triesCount];
-  }
-
   @Override
   public void createTable(HTableDescriptor desc)
   throws IOException {
@@ -690,7 +686,7 @@ public class HBaseAdmin implements Admin {
       if (enabled) {
         break;
       }
-      long sleep = getPauseTime(tries);
+      long sleep = getPauseTime(tries, pause);
       if (LOG.isDebugEnabled()) {
         LOG.debug("Sleeping= " + sleep + "ms, waiting for all regions to be " +
           "enabled in " + tableName);
@@ -1568,6 +1564,73 @@ public class HBaseAdmin implements Admin {
   }
 
   @Override
+  public Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException {
+    BackupClientUtil.checkTargetDir(userRequest.getTargetRootDir(), conf);
+    if (userRequest.getTableList() != null) {
+      for (TableName table : userRequest.getTableList()) {
+        if (!tableExists(table)) {
+          throw new DoNotRetryIOException(table + "does not exist");
+        }
+      }
+    }
+
+    BackupTablesResponse response = executeCallable(
+      new MasterCallable<BackupTablesResponse>(getConnection()) {
+        @Override
+        public BackupTablesResponse call(int callTimeout) throws ServiceException {
+          BackupTablesRequest request = RequestConverter.buildBackupTablesRequest(
+            userRequest.getBackupType(), userRequest.getTableList(), userRequest.getTargetRootDir(),
+            userRequest.getWorkers(), userRequest.getBandwidth());
+          return master.backupTables(null, request);
+        }
+      });
+    return new TableBackupFuture(this, TableName.BACKUP_TABLE_NAME, response);
+  }
+
+  @Override
+  public String backupTables(final BackupRequest userRequest) throws IOException {
+    return get(
+      backupTablesAsync(userRequest),
+      syncWaitTimeout,
+      TimeUnit.MILLISECONDS);
+  }
+
+  public static class TableBackupFuture extends TableFuture<String> {
+    String backupId;
+    public TableBackupFuture(final HBaseAdmin admin, final TableName tableName,
+        final BackupTablesResponse response) {
+      super(admin, tableName,
+          (response != null && response.hasProcId()) ? response.getProcId() : null);
+      backupId = response.getBackupId();
+    }
+
+    String getBackupId() {
+      return backupId;
+    }
+
+    @Override
+    public String getOperationType() {
+      return "BACKUP";
+    }
+
+    @Override
+    protected String convertResult(final GetProcedureResultResponse response) throws IOException {
+      if (response.hasException()) {
+        throw ForeignExceptionUtil.toIOException(response.getException());
+      }
+      ByteString result = response.getResult();
+      if (result == null) return null;
+      return Bytes.toStringBinary(result.toByteArray());
+    }
+
+    @Override
+    protected String postOperationResult(final String result,
+      final long deadlineTs) throws IOException, TimeoutException {
+      return result;
+    }
+  }
+
+  @Override
   public Future<Void> modifyTable(final TableName tableName, final HTableDescriptor htd)
   throws IOException {
     if (!tableName.equals(htd.getTableName())) {
@@ -2173,17 +2236,13 @@ public class HBaseAdmin implements Admin {
     snapshot(builder.build());
   }
 
-  @Override
-  public void snapshot(SnapshotDescription snapshot) throws IOException, SnapshotCreationException,
-      IllegalArgumentException {
-    // actually take the snapshot
-    SnapshotResponse response = takeSnapshotAsync(snapshot);
+  public void waitForSnapshot(SnapshotDescription snapshot, long max,
+      HConnection conn) throws IOException {
     final IsSnapshotDoneRequest request = IsSnapshotDoneRequest.newBuilder().setSnapshot(snapshot)
         .build();
     IsSnapshotDoneResponse done = null;
     long start = EnvironmentEdgeManager.currentTime();
-    long max = response.getExpectedTimeout();
-    long maxPauseTime = max / this.numRetries;
+    long maxPauseTime = max / numRetries;
     int tries = 0;
     LOG.debug("Waiting a max of " + max + " ms for snapshot '" +
         ClientSnapshotDescriptionUtils.toString(snapshot) + "'' to complete. (max " +
@@ -2192,7 +2251,7 @@ public class HBaseAdmin implements Admin {
         || ((EnvironmentEdgeManager.currentTime() - start) < max && !done.getDone())) {
       try {
         // sleep a backoff <= pauseTime amount
-        long sleep = getPauseTime(tries++);
+        long sleep = getPauseTime(tries++, pause);
         sleep = sleep > maxPauseTime ? maxPauseTime : sleep;
         LOG.debug("(#" + tries + ") Sleeping: " + sleep +
           "ms while waiting for snapshot completion.");
@@ -2201,7 +2260,7 @@ public class HBaseAdmin implements Admin {
         throw (InterruptedIOException)new InterruptedIOException("Interrupted").initCause(e);
       }
       LOG.debug("Getting current status of snapshot from master...");
-      done = executeCallable(new MasterCallable<IsSnapshotDoneResponse>(getConnection()) {
+      done = executeCallable(new MasterCallable<IsSnapshotDoneResponse>(conn) {
         @Override
         public IsSnapshotDoneResponse call(int callTimeout) throws ServiceException {
           return master.isSnapshotDone(null, request);
@@ -2212,6 +2271,14 @@ public class HBaseAdmin implements Admin {
       throw new SnapshotCreationException("Snapshot '" + snapshot.getName()
           + "' wasn't completed in expectedTime:" + max + " ms", snapshot);
     }
+  }
+
+  @Override
+  public void snapshot(SnapshotDescription snapshot) throws IOException, SnapshotCreationException,
+      IllegalArgumentException {
+    // actually take the snapshot
+    SnapshotResponse response = takeSnapshotAsync(snapshot);
+    waitForSnapshot(snapshot, response.getExpectedTimeout(), getConnection());
   }
 
   @Override
@@ -2377,6 +2444,14 @@ public class HBaseAdmin implements Admin {
     return response.hasReturnData() ? response.getReturnData().toByteArray() : null;
   }
 
+  public static long getPauseTime(int tries, long pause) {
+    int triesCount = tries;
+    if (triesCount >= HConstants.RETRY_BACKOFF.length) {
+      triesCount = HConstants.RETRY_BACKOFF.length - 1;
+    }
+    return pause * HConstants.RETRY_BACKOFF[triesCount];
+  }
+
   @Override
   public void execProcedure(String signature, String instance, Map<String, String> props)
       throws IOException {
@@ -2410,7 +2485,7 @@ public class HBaseAdmin implements Admin {
         || ((EnvironmentEdgeManager.currentTime() - start) < max && !done)) {
       try {
         // sleep a backoff <= pauseTime amount
-        long sleep = getPauseTime(tries++);
+        long sleep = getPauseTime(tries++, pause);
         sleep = sleep > maxPauseTime ? maxPauseTime : sleep;
         LOG.debug("(#" + tries + ") Sleeping: " + sleep +
           "ms while waiting for procedure completion.");
@@ -2475,7 +2550,7 @@ public class HBaseAdmin implements Admin {
     while (!done.getDone()) {
       try {
         // sleep a backoff <= pauseTime amount
-        long sleep = getPauseTime(tries++);
+        long sleep = getPauseTime(tries++, pause);
         sleep = sleep > maxPauseTime ? maxPauseTime : sleep;
         LOG.debug(tries + ") Sleeping: " + sleep
             + " ms while we wait for snapshot restore to complete.");
@@ -3042,7 +3117,7 @@ public class HBaseAdmin implements Admin {
         }
 
         try {
-          Thread.sleep(getAdmin().getPauseTime(tries++));
+          Thread.sleep(getPauseTime(tries++, getAdmin().pause));
         } catch (InterruptedException e) {
           throw new InterruptedException(
             "Interrupted while waiting for the result of proc " + procId);
@@ -3144,7 +3219,7 @@ public class HBaseAdmin implements Admin {
           serverEx = e;
         }
         try {
-          Thread.sleep(getAdmin().getPauseTime(tries++));
+          Thread.sleep(getPauseTime(tries++, getAdmin().pause));
         } catch (InterruptedException e) {
           callable.throwInterruptedException();
         }
@@ -3321,7 +3396,7 @@ public class HBaseAdmin implements Admin {
         }
 
         try {
-          Thread.sleep(getAdmin().getPauseTime(tries++));
+          Thread.sleep(getPauseTime(tries++, getAdmin().pause));
         } catch (InterruptedException e) {
           throw new InterruptedIOException("Interrupted when opening" + " regions; "
               + actualRegCount.get() + " of " + numRegs + " regions processed so far");

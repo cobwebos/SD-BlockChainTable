@@ -46,9 +46,7 @@ public class TestBackupBoundaryTests extends TestBackupBase {
 
     LOG.info("create full backup image on single table");
     List<TableName> tables = Lists.newArrayList(table3);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    LOG.info("Finished Backup");
-    assertTrue(checkSucceeded(backupId));
+    LOG.info("Finished Backup " + fullTableBackup(tables));
   }
 
   /**
@@ -60,8 +58,7 @@ public class TestBackupBoundaryTests extends TestBackupBase {
     LOG.info("create full backup image on mulitple empty tables");
 
     List<TableName> tables = Lists.newArrayList(table3, table4);
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    fullTableBackup(tables);
   }
 
   /**
@@ -73,8 +70,7 @@ public class TestBackupBoundaryTests extends TestBackupBase {
 
     LOG.info("test full backup fails on a single table that does not exist");
     List<TableName> tables = toList("tabledne");
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    fullTableBackup(tables);
   }
 
   /**
@@ -86,8 +82,7 @@ public class TestBackupBoundaryTests extends TestBackupBase {
 
     LOG.info("test full backup fails on multiple tables that do not exist");
     List<TableName> tables = toList("table1dne", "table2dne");
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    assertTrue(checkSucceeded(backupId));
+    fullTableBackup(tables);
   }
 
   /**
@@ -99,7 +94,6 @@ public class TestBackupBoundaryTests extends TestBackupBase {
     LOG.info("create full backup fails on tableset containing real and fake table");
 
     List<TableName> tables = toList(table1.getNameAsString(), "tabledne");
-    String backupId = getBackupClient().create(BackupType.FULL, tables, BACKUP_ROOT_DIR);
-    //assertTrue(checkSucceeded(backupId)); // TODO
+    fullTableBackup(tables);
   }
 }

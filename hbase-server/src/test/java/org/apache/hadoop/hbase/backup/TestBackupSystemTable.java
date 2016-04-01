@@ -39,8 +39,9 @@ import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupContext;
-import org.apache.hadoop.hbase.backup.impl.BackupHandler.BackupState;
+import org.apache.hadoop.hbase.backup.impl.BackupContext.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
+import org.apache.hadoop.hbase.backup.impl.BackupSystemTableHelper;
 import org.apache.hadoop.hbase.backup.impl.BackupUtil.BackupCompleteData;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
@@ -188,7 +189,8 @@ public class TestBackupSystemTable {
     tables2.add(TableName.valueOf("t5"));
 
     table.addIncrementalBackupTableSet(tables1);
-    TreeSet<TableName> res1 = (TreeSet<TableName>) table.getIncrementalBackupTableSet();
+    TreeSet<TableName> res1 = (TreeSet<TableName>) BackupSystemTableHelper
+        .getIncrementalBackupTableSet(conn);
     assertTrue(tables1.size() == res1.size());
     Iterator<TableName> desc1 = tables1.descendingIterator();
     Iterator<TableName> desc2 = res1.descendingIterator();
@@ -197,7 +199,8 @@ public class TestBackupSystemTable {
     }
 
     table.addIncrementalBackupTableSet(tables2);
-    TreeSet<TableName> res2 = (TreeSet<TableName>) table.getIncrementalBackupTableSet();
+    TreeSet<TableName> res2 = (TreeSet<TableName>) BackupSystemTableHelper
+        .getIncrementalBackupTableSet(conn);
     assertTrue((tables2.size() + tables1.size() - 1) == res2.size());
 
     tables1.addAll(tables2);
