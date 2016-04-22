@@ -19,6 +19,7 @@
 package org.apache.hadoop.hbase.backup.impl;
 
 import org.apache.hadoop.hbase.HBaseIOException;
+import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
@@ -29,7 +30,7 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public class BackupException extends HBaseIOException {
-  private BackupContext description;
+  private BackupInfo description;
 
   /**
    * Some exception happened for a backup and don't even know the backup that it was about
@@ -52,7 +53,7 @@ public class BackupException extends HBaseIOException {
    * @param msg reason why the backup failed
    * @param desc description of the backup that is being failed
    */
-  public BackupException(String msg, BackupContext desc) {
+  public BackupException(String msg, BackupInfo desc) {
     super(msg);
     this.description = desc;
   }
@@ -63,7 +64,7 @@ public class BackupException extends HBaseIOException {
    * @param cause root cause of the failure
    * @param desc description of the backup that is being failed
    */
-  public BackupException(String msg, Throwable cause, BackupContext desc) {
+  public BackupException(String msg, Throwable cause, BackupInfo desc) {
     super(msg, cause);
     this.description = desc;
   }
@@ -78,7 +79,7 @@ public class BackupException extends HBaseIOException {
     super(message, e);
   }
 
-  public BackupContext getBackupContext() {
+  public BackupInfo getBackupContext() {
     return this.description;
   }
 

@@ -81,9 +81,8 @@ import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
-import org.apache.hadoop.hbase.backup.impl.BackupSystemTableHelper;
-import org.apache.hadoop.hbase.backup.impl.FullTableBackupProcedure;
-import org.apache.hadoop.hbase.backup.impl.IncrementalTableBackupProcedure;
+import org.apache.hadoop.hbase.backup.master.FullTableBackupProcedure;
+import org.apache.hadoop.hbase.backup.master.IncrementalTableBackupProcedure;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.RegionReplicaUtil;
@@ -2618,10 +2617,14 @@ public class HMaster extends HRegionServer implements MasterServices {
         List<TableName> tableList, final String targetRootDir, final int workers,
         final long bandwidth) throws IOException {
     long procId;
-    String backupId = BackupRestoreConstants.BACKUPID_PREFIX + EnvironmentEdgeManager.currentTime();
+    String backupId = BackupRestoreConstants.BACKUPID_PREFIX + 
+        EnvironmentEdgeManager.currentTime();
     if (type == BackupType.INCREMENTAL) {
-      Set<TableName> incrTableSet =
-          BackupSystemTableHelper.getIncrementalBackupTableSet(clusterConnection);
+      Set<TableName> incrTableSet = null;
+      try (BackupSystemTable table = new BackupSystemTable(getConnection())) {
+        incrTableSet = table.getIncrementalBackupTableSet(targetRootDir);
+      }
+         
       if (incrTableSet.isEmpty()) {
         LOG.warn("Incremental backup table set contains no table.\n"
             + "Use 'backup create full' or 'backup stop' to \n "

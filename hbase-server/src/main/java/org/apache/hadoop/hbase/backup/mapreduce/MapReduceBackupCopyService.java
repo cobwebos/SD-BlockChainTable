@@ -28,19 +28,26 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.BackupContext;
+import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.impl.BackupCopyService;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.snapshot.ExportSnapshot;
+import org.apache.hadoop.mapreduce.Cluster;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobID;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.tools.DistCp;
 import org.apache.hadoop.tools.DistCpConstants;
 import org.apache.hadoop.tools.DistCpOptions;
+import org.apache.hadoop.util.ClassUtil;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 /**
  * Copier for backup operation. Basically, there are 2 types of copy. One is copying from snapshot,
@@ -101,10 +108,10 @@ public class MapReduceBackupCopyService implements BackupCopyService {
   }
 
   class SnapshotCopy extends ExportSnapshot {
-    private BackupContext backupContext;
+    private BackupInfo backupContext;
     private TableName table;
 
-    public SnapshotCopy(BackupContext backupContext, TableName table) {
+    public SnapshotCopy(BackupInfo backupContext, TableName table) {
       super();
       this.backupContext = backupContext;
       this.table = table;
@@ -123,13 +130,13 @@ public class MapReduceBackupCopyService implements BackupCopyService {
    * @param bytesCopied bytes copied
    * @throws NoNodeException exception
    */
-  static void updateProgress(BackupContext backupContext, BackupManager backupManager,
+  static void updateProgress(BackupInfo backupContext, BackupManager backupManager,
       int newProgress, long bytesCopied) throws IOException {
     // compose the new backup progress data, using fake number for now
     String backupProgressData = newProgress + "%";
 
     backupContext.setProgress(newProgress);
-    backupManager.updateBackupStatus(backupContext);
+    backupManager.updateBackupInfo(backupContext);
     LOG.debug("Backup progress data \"" + backupProgressData
       + "\" has been updated to hbase:backup for " + backupContext.getBackupId());
   }
@@ -142,10 +149,10 @@ public class MapReduceBackupCopyService implements BackupCopyService {
   // no more DistCp options.
   class BackupDistCp extends DistCp {
 
-    private BackupContext backupContext;
+    private BackupInfo backupContext;
     private BackupManager backupManager;
 
-    public BackupDistCp(Configuration conf, DistCpOptions options, BackupContext backupContext,
+    public BackupDistCp(Configuration conf, DistCpOptions options, BackupInfo backupContext,
         BackupManager backupManager)
         throws Exception {
       super(conf, options);
@@ -189,13 +196,13 @@ public class MapReduceBackupCopyService implements BackupCopyService {
           // Don't cleanup while we are setting up.
           fieldMetaFolder.set(this, methodCreateMetaFolderPath.invoke(this));
           fieldJobFS.set(this, ((Path) fieldMetaFolder.get(this)).getFileSystem(getConf()));
-
           job = (Job) methodCreateJob.invoke(this);
         }
         methodCreateInputFileListing.invoke(this, job);
 
         // Get the total length of the source files
         List<Path> srcs = ((DistCpOptions) fieldInputOptions.get(this)).getSourcePaths();
+        
         long totalSrcLgth = 0;
         for (Path aSrc : srcs) {
           totalSrcLgth += BackupUtil.getFilesLength(aSrc.getFileSystem(getConf()), aSrc);
@@ -230,7 +237,6 @@ public class MapReduceBackupCopyService implements BackupCopyService {
           }
           Thread.sleep(progressReportFreq);
         }
-
         // update the progress data after copy job complete
         float newProgress =
             progressDone + job.mapProgress() * subTaskPercntgInWholeTask * (1 - INIT_PROGRESS);
@@ -264,6 +270,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
 
   }
 
+  
   /**
    * Do backup copy based on different types.
    * @param context The backup context
@@ -273,7 +280,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
    * @throws Exception exception
    */
   @Override
-  public int copy(BackupContext context, BackupManager backupManager, Configuration conf,
+  public int copy(BackupInfo context, BackupManager backupManager, Configuration conf,
       BackupCopyService.Type copyType, String[] options) throws IOException {
     int res = 0;
 
@@ -285,6 +292,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
         // Make a new instance of conf to be used by the snapshot copy class.
         snapshotCp.setConf(new Configuration(conf));
         res = snapshotCp.run(options);
+
       } else if (copyType == Type.INCREMENTAL) {
         LOG.debug("Doing COPY_TYPE_DISTCP");
         setSubTaskPercntgInWholeTask(1f);
@@ -303,7 +311,6 @@ public class MapReduceBackupCopyService implements BackupCopyService {
             destfs.mkdirs(dest);
           }
         }
-
         res = distcp.run(options);
       }
       return res;
@@ -312,5 +319,26 @@ public class MapReduceBackupCopyService implements BackupCopyService {
       throw new IOException(e);
     }
   }
+
+   @Override
+   public void cancelCopyJob(String jobId) throws IOException {
+     JobID id = JobID.forName(jobId);     
+     Cluster cluster = new Cluster(getConf());
+     try {
+       Job job = cluster.getJob(id);
+       if (job == null) {
+         LOG.error("No job found for " + id);
+         // should we throw exception
+       }
+       if (job.isComplete() || job.isRetired()) {
+         return;
+       }
+ 
+       job.killJob();
+       LOG.debug("Killed job " + id);
+     } catch (InterruptedException e) {
+       throw new IOException(e);
+     }
+   }
 
 }

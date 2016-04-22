@@ -18,8 +18,6 @@
 
 package org.apache.hadoop.hbase.backup.impl;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,10 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -42,17 +37,22 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
-import org.apache.hadoop.hbase.backup.impl.BackupContext.BackupState;
+import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
-import org.apache.hadoop.hbase.backup.impl.BackupUtil.BackupCompleteData;
+import org.apache.hadoop.hbase.backup.master.BackupController;
 import org.apache.hadoop.hbase.backup.master.BackupLogCleaner;
+import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
+import org.apache.hadoop.hbase.backup.regionserver.LogRollRegionServerProcedureManager;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * Handles backup requests on server-side, creates backup context records in hbase:backup
@@ -65,7 +65,7 @@ public class BackupManager implements Closeable {
   private static final Log LOG = LogFactory.getLog(BackupManager.class);
 
   private Configuration conf = null;
-  private BackupContext backupContext = null;
+  private BackupInfo backupContext = null;
 
   private ExecutorService pool = null;
 
@@ -86,11 +86,20 @@ public class BackupManager implements Closeable {
           HConstants.BACKUP_ENABLE_KEY + " setting.");
     }
     this.conf = conf;
-    this.conn = ConnectionFactory.createConnection(conf); // TODO: get Connection from elsewhere?
+    this.conn = ConnectionFactory.createConnection(conf);
     this.systemTable = new BackupSystemTable(conn);
+     
     Runtime.getRuntime().addShutdownHook(new ExitHandler());
+
   }
 
+  /**
+   * Return backup context
+   */
+  protected BackupInfo getBackupContext()
+  {
+    return backupContext;
+  }
   /**
    * This method modifies the master's configuration in order to inject backup-related features
    * @param conf configuration
@@ -99,16 +108,61 @@ public class BackupManager implements Closeable {
     if (!isBackupEnabled(conf)) {
       return;
     }
+    // Add WAL archive cleaner plug-in
     String plugins = conf.get(HConstants.HBASE_MASTER_LOGCLEANER_PLUGINS);
     String cleanerClass = BackupLogCleaner.class.getCanonicalName();
     if (!plugins.contains(cleanerClass)) {
       conf.set(HConstants.HBASE_MASTER_LOGCLEANER_PLUGINS, plugins + "," + cleanerClass);
+    }    
+    
+    String classes = conf.get("hbase.procedure.master.classes");
+    String masterProcedureClass = LogRollMasterProcedureManager.class.getName();
+    if(classes == null){    
+      conf.set("hbase.procedure.master.classes", masterProcedureClass);
+    } else if(!classes.contains(masterProcedureClass)){
+      conf.set("hbase.procedure.master.classes", classes +","+masterProcedureClass);
+    }    
+ 
+    // Set Master Observer - Backup Controller
+    classes = conf.get("hbase.coprocessor.master.classes");
+    String observerClass = BackupController.class.getName();
+    if(classes == null){    
+      conf.set("hbase.coprocessor.master.classes", observerClass);
+    } else if(!classes.contains(observerClass)){
+      conf.set("hbase.coprocessor.master.classes", classes +","+observerClass);
+    }    
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Added log cleaner: " + cleanerClass);
+      LOG.debug("Added master procedure manager: "+masterProcedureClass);
+      LOG.debug("Added master observer: "+observerClass);      
     }
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("Added log cleaner: " + cleanerClass);
-    }
+    
   }
 
+  /**
+   * This method modifies the RS configuration in order to inject backup-related features
+   * @param conf configuration
+   */
+  public static void decorateRSConfiguration(Configuration conf) {
+    if (!isBackupEnabled(conf)) {
+      return;
+    }
+    
+    String classes = conf.get("hbase.procedure.regionserver.classes");
+    String regionProcedureClass = LogRollRegionServerProcedureManager.class.getName();
+    if(classes == null){    
+      conf.set("hbase.procedure.regionserver.classes", regionProcedureClass);
+    } else if(!classes.contains(regionProcedureClass)){
+      conf.set("hbase.procedure.regionserver.classes", classes +","+regionProcedureClass);
+    }    
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Added region procedure manager: "+regionProcedureClass);
+    }
+    
+  }
+  
+  
   private static boolean isBackupEnabled(Configuration conf) {
     return conf.getBoolean(HConstants.BACKUP_ENABLE_KEY, HConstants.BACKUP_ENABLE_DEFAULT);
   }
@@ -172,9 +226,9 @@ public class BackupManager implements Closeable {
       this.pool.shutdownNow();
     }
     if (systemTable != null) {
-      try{
+      try {
         systemTable.close();
-      } catch(Exception e){
+      } catch (Exception e) {
         LOG.error(e);
       }
     }
@@ -197,9 +251,9 @@ public class BackupManager implements Closeable {
    * @return BackupContext context
    * @throws BackupException exception
    */
-  protected BackupContext createBackupContext(String backupId, BackupType type,
-      List<TableName> tableList, String targetRootDir) throws BackupException {
-
+  public BackupInfo createBackupContext(String backupId, BackupType type,
+      List<TableName> tableList, String targetRootDir, int workers, long bandwidth)
+          throws BackupException {
     if (targetRootDir == null) {
       throw new BackupException("Wrong backup request parameter: target backup root directory");
     }
@@ -228,8 +282,12 @@ public class BackupManager implements Closeable {
     }
 
     // there are one or more tables in the table list
-    return new BackupContext(backupId, type, tableList.toArray(new TableName[tableList.size()]),
+    backupContext = new BackupInfo(backupId, type, 
+      tableList.toArray(new TableName[tableList.size()]),
       targetRootDir);
+    backupContext.setBandwidth(bandwidth);
+    backupContext.setWorkers(workers);
+    return backupContext;
   }
 
   /**
@@ -241,7 +299,7 @@ public class BackupManager implements Closeable {
    */
   private String getOngoingBackupId() throws IOException {
 
-    ArrayList<BackupContext> sessions = systemTable.getBackupContexts(BackupState.RUNNING);
+    ArrayList<BackupInfo> sessions = systemTable.getBackupContexts(BackupState.RUNNING);
     if (sessions.size() == 0) {
       return null;
     }
@@ -270,7 +328,7 @@ public class BackupManager implements Closeable {
     ((ThreadPoolExecutor) pool).allowCoreThreadTimeOut(true);
   }
 
-  public void setBackupContext(BackupContext backupContext) {
+  public void setBackupContext(BackupInfo backupContext) {
     this.backupContext = backupContext;
   }
 
@@ -281,9 +339,10 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    * @throws BackupException exception
    */
-  protected ArrayList<BackupImage> getAncestors(BackupContext backupCtx) throws IOException,
+  public ArrayList<BackupImage> getAncestors(BackupInfo backupCtx) throws IOException,
       BackupException {
-    LOG.debug("Getting the direct ancestors of the current backup ...");
+    LOG.debug("Getting the direct ancestors of the current backup "+ 
+      backupCtx.getBackupId());
 
     ArrayList<BackupImage> ancestors = new ArrayList<BackupImage>();
 
@@ -295,15 +354,15 @@ public class BackupManager implements Closeable {
 
     // get all backup history list in descending order
 
-    ArrayList<BackupCompleteData> allHistoryList = getBackupHistory();
-    for (BackupCompleteData backup : allHistoryList) {
+    ArrayList<BackupInfo> allHistoryList = getBackupHistory(true);
+    for (BackupInfo backup : allHistoryList) {
       BackupImage image =
-          new BackupImage(backup.getBackupToken(), BackupType.valueOf(backup.getType()),
-            backup.getBackupRootPath(),
-              backup.getTableList(), Long.parseLong(backup.getStartTime()), Long.parseLong(backup
-                  .getEndTime()));
+          new BackupImage(backup.getBackupId(), backup.getType(),
+            backup.getTargetRootDir(),
+              backup.getTableNames(), backup.getStartTs(), backup
+                  .getEndTs());
       // add the full backup image as an ancestor until the last incremental backup
-      if (backup.getType().equals(BackupType.FULL.toString())) {
+      if (backup.getType().equals(BackupType.FULL)) {
         // check the backup image coverage, if previous image could be covered by the newer ones,
         // then no need to add
         if (!BackupManifest.canCoverImage(ancestors, image)) {
@@ -324,12 +383,11 @@ public class BackupManager implements Closeable {
           }
         } else {
           Path logBackupPath =
-              HBackupFileSystem.getLogBackupPath(backup.getBackupRootPath(),
-                backup.getBackupToken());
+              HBackupFileSystem.getLogBackupPath(backup.getTargetRootDir(),
+                backup.getBackupId());
           LOG.debug("Current backup has an incremental backup ancestor, "
               + "touching its image manifest in " + logBackupPath.toString()
               + " to construct the dependency.");
-
           BackupManifest lastIncrImgManifest = new BackupManifest(conf, logBackupPath);
           BackupImage lastIncrImage = lastIncrImgManifest.getBackupImage();
           ancestors.add(lastIncrImage);
@@ -352,7 +410,7 @@ public class BackupManager implements Closeable {
    * @throws BackupException exception
    * @throws IOException exception
    */
-  protected ArrayList<BackupImage> getAncestors(BackupContext backupContext, TableName table)
+  public ArrayList<BackupImage> getAncestors(BackupInfo backupContext, TableName table)
       throws BackupException, IOException {
     ArrayList<BackupImage> ancestors = getAncestors(backupContext);
     ArrayList<BackupImage> tableAncestors = new ArrayList<BackupImage>();
@@ -376,8 +434,8 @@ public class BackupManager implements Closeable {
    * @param context context
    * @throws IOException exception
    */
-  public void updateBackupStatus(BackupContext context) throws IOException {
-    systemTable.updateBackupStatus(context);
+  public void updateBackupInfo(BackupInfo context) throws IOException {
+    systemTable.updateBackupInfo(context);
   }
 
   /**
@@ -388,7 +446,7 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public String readBackupStartCode() throws IOException {
-    return systemTable.readBackupStartCode();
+    return systemTable.readBackupStartCode(backupContext.getTargetRootDir());
   }
 
   /**
@@ -397,7 +455,7 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public void writeBackupStartCode(Long startCode) throws IOException {
-    systemTable.writeBackupStartCode(startCode);
+    systemTable.writeBackupStartCode(startCode, backupContext.getTargetRootDir());
   }
 
   /**
@@ -406,7 +464,7 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public HashMap<String, Long> readRegionServerLastLogRollResult() throws IOException {
-    return systemTable.readRegionServerLastLogRollResult();
+    return systemTable.readRegionServerLastLogRollResult(backupContext.getTargetRootDir());
   }
 
   /**
@@ -414,10 +472,13 @@ public class BackupManager implements Closeable {
    * @return history info of BackupCompleteData
    * @throws IOException exception
    */
-  public ArrayList<BackupCompleteData> getBackupHistory() throws IOException {
+  public ArrayList<BackupInfo> getBackupHistory() throws IOException {
     return systemTable.getBackupHistory();
   }
 
+  public ArrayList<BackupInfo> getBackupHistory(boolean completed) throws IOException {
+    return systemTable.getBackupHistory(completed);
+  }
   /**
    * Write the current timestamps for each regionserver to hbase:backup after a successful full or
    * incremental backup. Each table may have a different set of log timestamps. The saved timestamp
@@ -427,7 +488,8 @@ public class BackupManager implements Closeable {
    */
   public void writeRegionServerLogTimestamp(Set<TableName> tables,
       HashMap<String, Long> newTimestamps) throws IOException {
-    systemTable.writeRegionServerLogTimestamp(tables, newTimestamps);
+    systemTable.writeRegionServerLogTimestamp(tables, newTimestamps, 
+      backupContext.getTargetRootDir());
   }
 
   /**
@@ -438,7 +500,7 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public HashMap<TableName, HashMap<String, Long>> readLogTimestampMap() throws IOException {
-    return systemTable.readLogTimestampMap();
+    return systemTable.readLogTimestampMap(backupContext.getTargetRootDir());
   }
 
   /**
@@ -447,7 +509,7 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public Set<TableName> getIncrementalBackupTableSet() throws IOException {
-    return BackupSystemTableHelper.getIncrementalBackupTableSet(getConnection());
+    return systemTable.getIncrementalBackupTableSet(backupContext.getTargetRootDir());
   }
 
   /**
@@ -456,7 +518,7 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public void addIncrementalBackupTableSet(Set<TableName> tables) throws IOException {
-    systemTable.addIncrementalBackupTableSet(tables);
+    systemTable.addIncrementalBackupTableSet(tables, backupContext.getTargetRootDir());
   }
 
   /**
@@ -465,7 +527,8 @@ public class BackupManager implements Closeable {
    * safely purged.
    */
   public void recordWALFiles(List<String> files) throws IOException {
-    systemTable.addWALFiles(files, backupContext.getBackupId());
+    systemTable.addWALFiles(files, 
+      backupContext.getBackupId(), backupContext.getTargetRootDir());
   }
 
   /**
@@ -473,8 +536,8 @@ public class BackupManager implements Closeable {
    * @return WAL files iterator from hbase:backup
    * @throws IOException
    */
-  public Iterator<String> getWALFilesFromBackupSystem() throws IOException {
-    return  systemTable.getWALFilesIterator();
+  public Iterator<BackupSystemTable.WALItem> getWALFilesFromBackupSystem() throws IOException {
+    return  systemTable.getWALFilesIterator(backupContext.getTargetRootDir());
   }
 
   public Connection getConnection() {

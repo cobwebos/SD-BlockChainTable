@@ -98,7 +98,7 @@ public class RestoreUtil {
    */
   Path getTableArchivePath(TableName tableName)
       throws IOException {
-    Path baseDir = new Path(HBackupFileSystem.getTableBackupPath(backupRootPath, tableName,
+    Path baseDir = new Path(HBackupFileSystem.getTableBackupPath(tableName, backupRootPath, 
       backupId), HConstants.HFILE_ARCHIVE_DIRECTORY);
     Path dataDir = new Path(baseDir, HConstants.BASE_NAMESPACE_DIR);
     Path archivePath = new Path(dataDir, tableName.getNamespaceAsString());
@@ -140,11 +140,11 @@ public class RestoreUtil {
    * @param newTableNames : target tableNames(table names to be restored to)
    * @throws IOException exception
    */
-  void incrementalRestoreTable(String logDir,
+  void incrementalRestoreTable(Path[] logDirs,
       TableName[] tableNames, TableName[] newTableNames) throws IOException {
 
     if (tableNames.length != newTableNames.length) {
-      throw new IOException("Number of source tables adn taget Tables does not match!");
+      throw new IOException("Number of source tables and target tables does not match!");
     }
 
     // for incremental backup image, expect the table already created either by user or previous
@@ -161,7 +161,7 @@ public class RestoreUtil {
       IncrementalRestoreService restoreService =
           BackupRestoreFactory.getIncrementalRestoreService(conf);
 
-      restoreService.run(logDir, tableNames, newTableNames);
+      restoreService.run(logDirs, tableNames, newTableNames);
     }
   }
 
@@ -180,7 +180,7 @@ public class RestoreUtil {
    */
   static Path getTableSnapshotPath(Path backupRootPath, TableName tableName,
       String backupId) {
-    return new Path(HBackupFileSystem.getTableBackupPath(backupRootPath, tableName, backupId),
+    return new Path(HBackupFileSystem.getTableBackupPath(tableName, backupRootPath, backupId),
       HConstants.SNAPSHOT_DIR_NAME);
   }
 
@@ -221,10 +221,12 @@ public class RestoreUtil {
     SnapshotDescription desc = SnapshotDescriptionUtils.readSnapshotInfo(fs, tableInfoPath);
     SnapshotManifest manifest = SnapshotManifest.open(conf, fs, tableInfoPath, desc);
     HTableDescriptor tableDescriptor = manifest.getTableDescriptor();
-    if (!tableDescriptor.getNameAsString().equals(tableName)) {
+    if (!tableDescriptor.getTableName().equals(tableName)) {
       LOG.error("couldn't find Table Desc for table: " + tableName + " under tableInfoPath: "
           + tableInfoPath.toString());
       LOG.error("tableDescriptor.getNameAsString() = " + tableDescriptor.getNameAsString());
+      throw new FileNotFoundException("couldn't find Table Desc for table: " + tableName + 
+        " under tableInfoPath: " + tableInfoPath.toString());
     }
     return tableDescriptor;
   }
@@ -464,6 +466,9 @@ public class RestoreUtil {
       this.conf.setInt("hbase.rpc.timeout", resultMillis);
     }
 
+    // By default, it is 32 and loader will fail if # of files in any region exceed this
+    // limit. Bad for snapshot restore.
+    this.conf.setInt(LoadIncrementalHFiles.MAX_FILES_PER_REGION_PER_FAMILY, Integer.MAX_VALUE);
     LoadIncrementalHFiles loader = null;
     try {
       loader = new LoadIncrementalHFiles(this.conf);

@@ -15,7 +15,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
@@ -40,7 +39,6 @@ public class TestRemoteRestore extends TestBackupBase {
     LOG.info("backup complete");
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = new TableName[] { table1_restore };
-    Path path = new Path(BACKUP_REMOTE_ROOT_DIR);
     getRestoreClient().restore(BACKUP_REMOTE_ROOT_DIR, backupId, false, false, tableset,
       tablemap, false);
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();

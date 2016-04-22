@@ -20,13 +20,9 @@ package org.apache.hadoop.hbase.backup;
 import java.io.IOException;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupUtil;
@@ -38,8 +34,7 @@ import org.apache.log4j.Logger;
 
 public class RestoreDriver extends AbstractHBaseTool {
 
-  private static final Log LOG = LogFactory.getLog(BackupDriver.class);
-  private Options opt;
+  private static final Log LOG = LogFactory.getLog(RestoreDriver.class);
   private CommandLine cmd;
 
   private static final String OPTION_OVERWRITE = "overwrite";
@@ -68,27 +63,25 @@ public class RestoreDriver extends AbstractHBaseTool {
           + "                   or using \"hbase backup describe\" command. Without this option, "
           + "only\n" + "                   this backup image is restored\n";
 
+    
+  protected RestoreDriver() throws IOException
+  {
+    init();
+  }
+  
   protected void init() throws IOException {
     // define supported options
-    opt = new Options();
-    opt.addOption(OPTION_OVERWRITE, false,
+    addOptNoArg(OPTION_OVERWRITE,
         "Overwrite the data if any of the restore target tables exists");
-    opt.addOption(OPTION_CHECK, false, "Check restore sequence and dependencies");
-    opt.addOption(OPTION_AUTOMATIC, false, "Restore all dependencies");
-    opt.addOption("debug", false, "Enable debug logging");
+    addOptNoArg(OPTION_CHECK, "Check restore sequence and dependencies");
+    addOptNoArg(OPTION_AUTOMATIC, "Restore all dependencies");
+    addOptNoArg("debug",  "Enable debug logging");
 
     // disable irrelevant loggers to avoid it mess up command output
     LogUtils.disableUselessLoggers(LOG);
   }
 
   private int parseAndRun(String[] args) {
-    CommandLine cmd = null;
-    try {
-      cmd = new PosixParser().parse(opt, args);
-    } catch (ParseException e) {
-      LOG.error("Could not parse command", e);
-      return -1;
-    }
 
     // enable debug logging
     Logger backupClientLogger = Logger.getLogger("org.apache.hadoop.hbase.backup");
@@ -119,34 +112,34 @@ public class RestoreDriver extends AbstractHBaseTool {
 
     // parse main restore command options
     String[] remainArgs = cmd.getArgs();
-    if (remainArgs.length < 3) {
-      System.out.println("ERROR: missing arguments");
+    if (remainArgs.length < 4) {
       System.out.println(USAGE);
       return -1;
     }
 
-    String backupRootDir = remainArgs[0];
-    String backupId = remainArgs[1];
-    String tables = remainArgs[2];
-
-    String tableMapping = (remainArgs.length > 3) ? remainArgs[3] : null;
+    String backupRootDir = remainArgs[1];
+    String backupId = remainArgs[2];
+    String tables = remainArgs[3];
+    
+    String tableMapping = (remainArgs.length > 4) ? remainArgs[4] : null;
 
     TableName[] sTableArray = BackupUtil.parseTableNames(tables);
     TableName[] tTableArray = BackupUtil.parseTableNames(tableMapping);
 
     if (sTableArray != null && tTableArray != null && (sTableArray.length != tTableArray.length)) {
-      System.err.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
+      System.out.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
       System.out.println(USAGE);
-      return -1;
+      return -2;
     }
 
-    try {
-      RestoreClient client = BackupRestoreFactory.getRestoreClient(conf);
+    
+    RestoreClient client = BackupRestoreFactory.getRestoreClient(getConf());
+    try{
       client.restore(backupRootDir, backupId, check, autoRestore, sTableArray,
         tTableArray, isOverwrite);
-    } catch (IOException e) {
-      System.err.println("ERROR: " + e.getMessage());
-      return -1;
+    } catch (Exception e){
+      e.printStackTrace();
+      return -3;
     }
     return 0;
   }
@@ -162,13 +155,12 @@ public class RestoreDriver extends AbstractHBaseTool {
 
   @Override
   protected int doWork() throws Exception {
-    init();
     return parseAndRun(cmd.getArgs());
   }
 
   public static void main(String[] args) throws Exception {
     Configuration conf = HBaseConfiguration.create();
-    int ret = ToolRunner.run(conf, new BackupDriver(), args);
+    int ret = ToolRunner.run(conf, new RestoreDriver(), args);
     System.exit(ret);
   }
 }

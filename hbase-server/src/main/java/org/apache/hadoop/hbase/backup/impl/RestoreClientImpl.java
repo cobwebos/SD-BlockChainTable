@@ -22,11 +22,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -52,7 +53,6 @@ public final class RestoreClientImpl implements RestoreClient {
 
   private static final Log LOG = LogFactory.getLog(RestoreClientImpl.class);
   private Configuration conf;
-  private Set<BackupImage> lastRestoreImagesSet;
 
   public RestoreClientImpl() {
   }
@@ -111,11 +111,10 @@ public final class RestoreClientImpl implements RestoreClient {
       checkTargetTables(tTableArray, isOverwrite);
 
       // start restore process
-      Set<BackupImage> restoreImageSet =
-          restoreStage(backupManifestMap, sTableArray, tTableArray, autoRestore);
+      
+      restoreStage(backupManifestMap, sTableArray, tTableArray, autoRestore);
 
       LOG.info("Restore for " + Arrays.asList(sTableArray) + " are successful!");
-      lastRestoreImagesSet = restoreImageSet;
 
     } catch (IOException e) {
       LOG.error("ERROR: restore failed with error: " + e.getMessage());
@@ -126,13 +125,6 @@ public final class RestoreClientImpl implements RestoreClient {
     return false;
   }
 
-  /**
-   * Get last restore image set. The value is globally set for the latest finished restore.
-   * @return the last restore image set
-   */
-  public Set<BackupImage> getLastRestoreImagesSet() {
-    return lastRestoreImagesSet;
-  }
 
   private  boolean validate(HashMap<TableName, BackupManifest> backupManifestMap)
       throws IOException {
@@ -147,10 +139,6 @@ public final class RestoreClientImpl implements RestoreClient {
         imageSet.addAll(depList);
       }
 
-      // todo merge
-      LOG.debug("merge will be implemented in future jira");
-      // BackupUtil.clearMergedImages(table, imageSet, conf);
-
       LOG.info("Dependent image(s) from old to new:");
       for (BackupImage image : imageSet) {
         String imageDir =
@@ -164,6 +152,7 @@ public final class RestoreClientImpl implements RestoreClient {
         LOG.info("Backup image: " + image.getBackupId() + " for '" + table + "' is available");
       }
     }
+
     return isValid;
   }
 
@@ -189,7 +178,7 @@ public final class RestoreClientImpl implements RestoreClient {
           }
         } else {
           LOG.info("HBase table " + tableName
-              + " does not exist. It will be create during backup process");
+              + " does not exist. It will be created during restore process");
         }
       }
     }
@@ -223,54 +212,57 @@ public final class RestoreClientImpl implements RestoreClient {
    * @return set of BackupImages restored
    * @throws IOException exception
    */
-  private Set<BackupImage> restoreStage(
+  private void restoreStage(
     HashMap<TableName, BackupManifest> backupManifestMap, TableName[] sTableArray,
     TableName[] tTableArray, boolean autoRestore) throws IOException {
     TreeSet<BackupImage> restoreImageSet = new TreeSet<BackupImage>();
-
-    for (int i = 0; i < sTableArray.length; i++) {
-      restoreImageSet.clear();
-      TableName table = sTableArray[i];
-      BackupManifest manifest = backupManifestMap.get(table);
-      if (autoRestore) {
-        // Get the image list of this backup for restore in time order from old
-        // to new.
-        TreeSet<BackupImage> restoreList =
-            new TreeSet<BackupImage>(manifest.getDependentListByTable(table));
-        LOG.debug("need to clear merged Image. to be implemented in future jira");
-
-        for (BackupImage image : restoreList) {
+    try {
+      for (int i = 0; i < sTableArray.length; i++) {
+        TableName table = sTableArray[i];
+        BackupManifest manifest = backupManifestMap.get(table);
+        if (autoRestore) {
+          // Get the image list of this backup for restore in time order from old
+          // to new.
+          List<BackupImage> list = new ArrayList<BackupImage>();
+          list.add(manifest.getBackupImage());
+          List<BackupImage> depList = manifest.getDependentListByTable(table);
+          list.addAll(depList);
+          TreeSet<BackupImage> restoreList = new TreeSet<BackupImage>(list);
+          LOG.debug("need to clear merged Image. to be implemented in future jira");
+          restoreImages(restoreList.iterator(), table, tTableArray[i]);
+          restoreImageSet.addAll(restoreList);
+        } else {
+          BackupImage image = manifest.getBackupImage();
+          List<BackupImage> depList = manifest.getDependentListByTable(table);
+          // The dependency list always contains self.
+          if (depList != null && depList.size() > 1) {
+            LOG.warn("Backup image " + image.getBackupId() + " depends on other images.\n"
+                + "this operation will only restore the delta contained within backupImage "
+                + image.getBackupId());
+          }
           restoreImage(image, table, tTableArray[i]);
+          restoreImageSet.add(image);
         }
-        restoreImageSet.addAll(restoreList);
-      } else {
-        BackupImage image = manifest.getBackupImage();
-        List<BackupImage> depList = manifest.getDependentListByTable(table);
-        // The dependency list always contains self.
-        if (depList != null && depList.size() > 1) {
-          LOG.warn("Backup image " + image.getBackupId() + " depends on other images.\n"
-              + "this operation will only restore the delta contained within backupImage "
-              + image.getBackupId());
-        }
-        restoreImage(image, table, tTableArray[i]);
-        restoreImageSet.add(image);
-      }
 
-      if (autoRestore) {
-        if (restoreImageSet != null && !restoreImageSet.isEmpty()) {
-          LOG.info("Restore includes the following image(s):");
-          for (BackupImage image : restoreImageSet) {
-            LOG.info("  Backup: "
-                + image.getBackupId()
-                + " "
-                + HBackupFileSystem.getTableBackupDir(image.getRootDir(), image.getBackupId(),
-                  table));
+        if (autoRestore) {
+          if (restoreImageSet != null && !restoreImageSet.isEmpty()) {
+            LOG.info("Restore includes the following image(s):");
+            for (BackupImage image : restoreImageSet) {
+              LOG.info("Backup: "
+                  + image.getBackupId()
+                  + " "
+                  + HBackupFileSystem.getTableBackupDir(image.getRootDir(), image.getBackupId(),
+                    table));
+            }
           }
         }
       }
-
+    } catch (Exception e) {
+      LOG.error("Failed", e);
+      throw new IOException(e);
     }
-    return restoreImageSet;
+    LOG.debug("restoreStage finished");
+
   }
 
   /**
@@ -289,9 +281,9 @@ public final class RestoreClientImpl implements RestoreClient {
     RestoreUtil restoreTool = new RestoreUtil(conf, rootPath, backupId);
     BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, rootPath, backupId);
 
-    Path tableBackupPath = HBackupFileSystem.getTableBackupPath(rootPath, sTable, backupId);
+    Path tableBackupPath = HBackupFileSystem.getTableBackupPath(sTable, rootPath,  backupId);
 
-    // todo: convert feature will be provided in a future jira
+    // TODO: convert feature will be provided in a future JIRA
     boolean converted = false;
 
     if (manifest.getType() == BackupType.FULL || converted) {
@@ -303,10 +295,66 @@ public final class RestoreClientImpl implements RestoreClient {
           HBackupFileSystem.getLogBackupDir(image.getRootDir(), image.getBackupId());
       LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from incremental backup image "
           + logBackupDir);
-      restoreTool.incrementalRestoreTable(logBackupDir, new TableName[] { sTable },
+      restoreTool.incrementalRestoreTable(new Path[]{ new Path(logBackupDir)}, new TableName[] { sTable },
         new TableName[] { tTable });
     }
 
     LOG.info(sTable + " has been successfully restored to " + tTable);
   }
+  
+  /**
+   * Restore operation handle each backupImage in iterator
+   * @param it: backupImage iterator - ascending
+   * @param sTable: table to be restored
+   * @param tTable: table to be restored to
+   * @throws IOException exception
+   */
+  private void restoreImages(Iterator<BackupImage> it, TableName sTable, TableName tTable)
+      throws IOException {
+
+    // First image MUST be image of a FULL backup
+    BackupImage image = it.next();
+
+    String rootDir = image.getRootDir();
+    String backupId = image.getBackupId();
+    Path backupRoot = new Path(rootDir);
+    
+    // We need hFS only for full restore (see the code)
+    RestoreUtil restoreTool = new RestoreUtil(conf, backupRoot, backupId);
+    BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, backupRoot, backupId);
+
+    Path tableBackupPath = HBackupFileSystem.getTableBackupPath(sTable, backupRoot, backupId);
+
+    // TODO: convert feature will be provided in a future JIRA
+    boolean converted = false;
+
+    if (manifest.getType() == BackupType.FULL || converted) {
+      LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from "
+          + (converted ? "converted" : "full") + " backup image " + tableBackupPath.toString());
+      restoreTool.fullRestoreTable(tableBackupPath, sTable, tTable, converted);
+      
+    } else { // incremental Backup
+      throw new IOException("Unexpected backup type " + image.getType());
+    }
+
+    // The rest one are incremental
+    if (it.hasNext()) {
+      List<String> logDirList = new ArrayList<String>();
+      while (it.hasNext()) {
+        BackupImage im = it.next();
+        String logBackupDir = HBackupFileSystem.getLogBackupDir(im.getRootDir(), im.getBackupId());
+        logDirList.add(logBackupDir);
+      }
+      String logDirs = StringUtils.join(logDirList, ",");
+      LOG.info("Restoring '" + sTable + "' to '" + tTable
+          + "' from log dirs: " + logDirs);
+      String[] sarr = new String[logDirList.size()];
+      logDirList.toArray(sarr);
+      Path[] paths = org.apache.hadoop.util.StringUtils.stringToPath(sarr);
+      restoreTool.incrementalRestoreTable(paths, new TableName[] { sTable },
+        new TableName[] { tTable });
+    }
+    LOG.info(sTable + " has been successfully restored to " + tTable);
+  }
+  
 }

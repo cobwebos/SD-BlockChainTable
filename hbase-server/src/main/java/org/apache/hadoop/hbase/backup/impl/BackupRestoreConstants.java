@@ -37,7 +37,8 @@ public final class BackupRestoreConstants {
   public static final String BACKUPID_PREFIX = "backup_";
 
   public static enum BackupCommand {
-    CREATE, CANCEL, DELETE, DESCRIBE, HISTORY, STATUS, CONVERT, MERGE, STOP, SHOW, HELP,
+    CREATE, CANCEL, DELETE, DESCRIBE, HISTORY, STATUS, CONVERT, MERGE, STOP, SHOW, HELP, PROGRESS, SET,
+    SET_ADD, SET_REMOVE, SET_DELETE, SET_DESCRIBE, SET_LIST
   }
 
   private BackupRestoreConstants() {

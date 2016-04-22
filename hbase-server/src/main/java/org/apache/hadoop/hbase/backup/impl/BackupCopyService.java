@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
@@ -32,6 +33,24 @@ public interface BackupCopyService extends Configurable {
     FULL, INCREMENTAL
   }
 
-  public int copy(BackupContext backupContext, BackupManager backupManager, Configuration conf,
+  /**
+   * Copy backup data
+   * @param backupContext - context
+   * @param backupManager  - manager
+   * @param conf - configuration
+   * @param copyType - copy type
+   * @param options - list of options
+   * @return result (0 - success)
+   * @throws IOException
+   */
+  public int copy(BackupInfo backupContext, BackupManager backupManager, Configuration conf,
       BackupCopyService.Type copyType, String[] options) throws IOException;
+  
+
+   /**
+    * Cancel copy job
+    * @param jobHandler - copy job handler
+    * @throws IOException
+    */
+   public void cancelCopyJob(String jobHandler) throws IOException;  
 }

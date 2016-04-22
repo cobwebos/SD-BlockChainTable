@@ -38,14 +38,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.BackupContext;
-import org.apache.hadoop.hbase.backup.impl.BackupContext.BackupState;
+import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
-import org.apache.hadoop.hbase.backup.impl.BackupSystemTableHelper;
-import org.apache.hadoop.hbase.backup.impl.BackupUtil.BackupCompleteData;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.testclassification.MediumTests;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -69,10 +65,21 @@ public class TestBackupSystemTable {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    cluster = UTIL.startMiniCluster();
-    conn = ConnectionFactory.createConnection(UTIL.getConfiguration());
+    cluster = UTIL.startMiniCluster(); 
+    conn = UTIL.getConnection();
+    waitForSystemTable();
   }
-
+  
+  static void waitForSystemTable() throws Exception
+  {
+    try(Admin admin = UTIL.getAdmin();) {
+      while (!admin.tableExists(BackupSystemTable.getTableName()) 
+          || !admin.isTableAvailable(BackupSystemTable.getTableName())) {
+        Thread.sleep(1000);
+      }      
+    }
+  }
+  
   @Before
   public void before() throws IOException {
     table = new BackupSystemTable(conn);
@@ -83,22 +90,21 @@ public class TestBackupSystemTable {
     if (table != null) {
       table.close();
     }
+
   }
 
   @Test
   public void testUpdateReadDeleteBackupStatus() throws IOException {
-    BackupContext ctx = createBackupContext();
-    table.updateBackupStatus(ctx);
-    BackupContext readCtx = table.readBackupStatus(ctx.getBackupId());
+    BackupInfo ctx = createBackupContext();
+    table.updateBackupInfo(ctx);
+    BackupInfo readCtx = table.readBackupInfo(ctx.getBackupId());
     assertTrue(compare(ctx, readCtx));
-
     // try fake backup id
-    readCtx = table.readBackupStatus("fake");
-
+    readCtx = table.readBackupInfo("fake");
     assertNull(readCtx);
     // delete backup context
-    table.deleteBackupStatus(ctx.getBackupId());
-    readCtx = table.readBackupStatus(ctx.getBackupId());
+    table.deleteBackupInfo(ctx.getBackupId());
+    readCtx = table.readBackupInfo(ctx.getBackupId());
     assertNull(readCtx);
     cleanBackupTable();
   }
@@ -106,8 +112,8 @@ public class TestBackupSystemTable {
   @Test
   public void testWriteReadBackupStartCode() throws IOException {
     Long code = 100L;
-    table.writeBackupStartCode(code);
-    String readCode = table.readBackupStartCode();
+    table.writeBackupStartCode(code, "root");
+    String readCode = table.readBackupStartCode("root");
     assertEquals(code, new Long(Long.parseLong(readCode)));
     cleanBackupTable();
   }
@@ -124,23 +130,23 @@ public class TestBackupSystemTable {
   @Test
   public void testBackupHistory() throws IOException {
     int n = 10;
-    List<BackupContext> list = createBackupContextList(n);
+    List<BackupInfo> list = createBackupContextList(n);
 
     // Load data
-    for (BackupContext bc : list) {
+    for (BackupInfo bc : list) {
       // Make sure we set right status
       bc.setState(BackupState.COMPLETE);
-      table.updateBackupStatus(bc);
+      table.updateBackupInfo(bc);
     }
 
     // Reverse list for comparison
     Collections.reverse(list);
-    ArrayList<BackupCompleteData> history = table.getBackupHistory();
+    ArrayList<BackupInfo> history = table.getBackupHistory();
     assertTrue(history.size() == n);
 
     for (int i = 0; i < n; i++) {
-      BackupContext ctx = list.get(i);
-      BackupCompleteData data = history.get(i);
+      BackupInfo ctx = list.get(i);
+      BackupInfo data = history.get(i);
       assertTrue(compare(ctx, data));
     }
 
@@ -149,15 +155,52 @@ public class TestBackupSystemTable {
   }
 
   @Test
+  public void testBackupDelete() throws IOException {
+    
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      int n = 10;
+      List<BackupInfo> list = createBackupContextList(n);
+
+      // Load data
+      for (BackupInfo bc : list) {
+        // Make sure we set right status
+        bc.setState(BackupState.COMPLETE);
+        table.updateBackupInfo(bc);
+      }
+
+      // Verify exists
+      for (BackupInfo bc : list) {
+        assertNotNull(table.readBackupInfo(bc.getBackupId()));
+      }
+
+      // Delete all
+      for (BackupInfo bc : list) {
+        table.deleteBackupInfo(bc.getBackupId());
+      }
+
+      // Verify do not exists
+      for (BackupInfo bc : list) {
+        assertNull(table.readBackupInfo(bc.getBackupId()));
+      }
+
+      cleanBackupTable();
+    }
+
+  }
+
+  
+  
+  @Test
   public void testRegionServerLastLogRollResults() throws IOException {
     String[] servers = new String[] { "server1", "server2", "server3" };
     Long[] timestamps = new Long[] { 100L, 102L, 107L };
 
     for (int i = 0; i < servers.length; i++) {
-      table.writeRegionServerLastLogRollResult(servers[i], timestamps[i]);
+      table.writeRegionServerLastLogRollResult(servers[i], timestamps[i], "root");
     }
 
-    HashMap<String, Long> result = table.readRegionServerLastLogRollResult();
+    HashMap<String, Long> result = table.readRegionServerLastLogRollResult("root");
     assertTrue(servers.length == result.size());
     Set<String> keys = result.keySet();
     String[] keysAsArray = new String[keys.size()];
@@ -188,9 +231,10 @@ public class TestBackupSystemTable {
     tables2.add(TableName.valueOf("t4"));
     tables2.add(TableName.valueOf("t5"));
 
-    table.addIncrementalBackupTableSet(tables1);
-    TreeSet<TableName> res1 = (TreeSet<TableName>) BackupSystemTableHelper
-        .getIncrementalBackupTableSet(conn);
+    table.addIncrementalBackupTableSet(tables1, "root");
+    BackupSystemTable table = new BackupSystemTable(conn);
+    TreeSet<TableName> res1 = (TreeSet<TableName>) 
+        table.getIncrementalBackupTableSet("root");
     assertTrue(tables1.size() == res1.size());
     Iterator<TableName> desc1 = tables1.descendingIterator();
     Iterator<TableName> desc2 = res1.descendingIterator();
@@ -198,9 +242,9 @@ public class TestBackupSystemTable {
       assertEquals(desc1.next(), desc2.next());
     }
 
-    table.addIncrementalBackupTableSet(tables2);
-    TreeSet<TableName> res2 = (TreeSet<TableName>) BackupSystemTableHelper
-        .getIncrementalBackupTableSet(conn);
+    table.addIncrementalBackupTableSet(tables2, "root");
+    TreeSet<TableName> res2 = (TreeSet<TableName>) 
+        table.getIncrementalBackupTableSet("root");
     assertTrue((tables2.size() + tables1.size() - 1) == res2.size());
 
     tables1.addAll(tables2);
@@ -229,9 +273,9 @@ public class TestBackupSystemTable {
     rsTimestampMap.put("rs2", 101L);
     rsTimestampMap.put("rs3", 103L);
 
-    table.writeRegionServerLogTimestamp(tables, rsTimestampMap);
+    table.writeRegionServerLogTimestamp(tables, rsTimestampMap, "root");
 
-    HashMap<TableName, HashMap<String, Long>> result = table.readLogTimestampMap();
+    HashMap<TableName, HashMap<String, Long>> result = table.readLogTimestampMap("root");
 
     assertTrue(tables.size() == result.size());
 
@@ -255,9 +299,9 @@ public class TestBackupSystemTable {
     rsTimestampMap1.put("rs2", 201L);
     rsTimestampMap1.put("rs3", 203L);
 
-    table.writeRegionServerLogTimestamp(tables1, rsTimestampMap1);
+    table.writeRegionServerLogTimestamp(tables1, rsTimestampMap1, "root");
 
-    result = table.readLogTimestampMap();
+    result = table.readLogTimestampMap("root");
 
     assertTrue(5 == result.size());
 
@@ -295,7 +339,7 @@ public class TestBackupSystemTable {
             "hdfs://server/WALs/srv3,103,17777/srv3,103,17777.default.3");
     String newFile = "hdfs://server/WALs/srv1,101,15555/srv1,101,15555.default.5";
 
-    table.addWALFiles(files, "backup");
+    table.addWALFiles(files, "backup", "root");
 
     assertTrue(table.checkWALFile(files.get(0)));
     assertTrue(table.checkWALFile(files.get(1)));
@@ -305,26 +349,155 @@ public class TestBackupSystemTable {
     cleanBackupTable();
   }
 
-  private boolean compare(BackupContext ctx, BackupCompleteData data) {
+  
+  /**
+   * Backup set tests
+   */
 
-    return ctx.getBackupId().equals(data.getBackupToken())
-        && ctx.getTargetRootDir().equals(data.getBackupRootPath())
-        && ctx.getType().toString().equals(data.getType())
-        && ctx.getStartTs() == Long.parseLong(data.getStartTime())
-        && ctx.getEndTs() == Long.parseLong(data.getEndTime());
+  @Test
+  public void testBackupSetAddNotExists() throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      String[] tables = new String[] { "table1", "table2", "table3" };
+      String setName = "name";
+      table.addToBackupSet(setName, tables);
+      List<TableName> tnames = table.describeBackupSet(setName);
+      assertTrue(tnames != null);
+      assertTrue(tnames.size() == tables.length);
+      for (int i = 0; i < tnames.size(); i++) {
+        assertTrue(tnames.get(i).getNameAsString().equals(tables[i]));
+      }
+      cleanBackupTable();
+    }
 
   }
 
-  private boolean compare(BackupContext one, BackupContext two) {
+  @Test
+  public void testBackupSetAddExists() throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      String[] tables = new String[] { "table1", "table2", "table3" };
+      String setName = "name";
+      table.addToBackupSet(setName, tables);
+      String[] addTables = new String[] { "table4", "table5", "table6" };
+      table.addToBackupSet(setName, addTables);
+
+      List<TableName> tnames = table.describeBackupSet(setName);
+      assertTrue(tnames != null);
+      assertTrue(tnames.size() == tables.length + addTables.length);
+      for (int i = 0; i < tnames.size(); i++) {
+        assertTrue(tnames.get(i).getNameAsString().equals("table" + (i + 1)));
+      }
+      cleanBackupTable();
+    }
+  }
+
+  @Test
+  public void testBackupSetAddExistsIntersects() throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      String[] tables = new String[] { "table1", "table2", "table3" };
+      String setName = "name";
+      table.addToBackupSet(setName, tables);
+      String[] addTables = new String[] { "table3", "table4", "table5", "table6" };
+      table.addToBackupSet(setName, addTables);
+
+      List<TableName> tnames = table.describeBackupSet(setName);
+      assertTrue(tnames != null);
+      assertTrue(tnames.size()== tables.length + addTables.length - 1);
+      for (int i = 0; i < tnames.size(); i++) {
+        assertTrue(tnames.get(i).getNameAsString().equals("table" + (i + 1)));
+      }
+      cleanBackupTable();
+    } 
+  }
+
+  @Test
+  public void testBackupSetRemoveSomeNotExists() throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      String[] tables = new String[] { "table1", "table2", "table3", "table4" };
+      String setName = "name";
+      table.addToBackupSet(setName, tables);
+      String[] removeTables = new String[] { "table4", "table5", "table6" };
+      table.removeFromBackupSet(setName, removeTables);
+
+      List<TableName> tnames = table.describeBackupSet(setName);
+      assertTrue(tnames != null);
+      assertTrue(tnames.size() == tables.length - 1);
+      for (int i = 0; i < tnames.size(); i++) {
+        assertTrue(tnames.get(i).getNameAsString().equals("table" + (i + 1)));
+      }
+      cleanBackupTable();
+    }
+  }
+
+  @Test
+  public void testBackupSetRemove() throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      String[] tables = new String[] { "table1", "table2", "table3", "table4" };
+      String setName = "name";
+      table.addToBackupSet(setName, tables);
+      String[] removeTables = new String[] { "table4", "table3" };
+      table.removeFromBackupSet(setName, removeTables);
+
+      List<TableName> tnames = table.describeBackupSet(setName);
+      assertTrue(tnames != null);
+      assertTrue(tnames.size() == tables.length - 2);
+      for (int i = 0; i < tnames.size(); i++) {
+        assertTrue(tnames.get(i).getNameAsString().equals("table" + (i + 1)));
+      }
+      cleanBackupTable();
+    }
+  }
+
+  @Test
+  public void testBackupSetDelete() throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      String[] tables = new String[] { "table1", "table2", "table3", "table4" };
+      String setName = "name";
+      table.addToBackupSet(setName, tables);
+      table.deleteBackupSet(setName);
+
+      List<TableName> tnames = table.describeBackupSet(setName);
+      assertTrue(tnames.size() == 0);
+      cleanBackupTable();
+    }
+  }
+
+  @Test
+  public void testBackupSetList() throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(conn)) {
+
+      String[] tables = new String[] { "table1", "table2", "table3", "table4" };
+      String setName1 = "name1";
+      String setName2 = "name2";
+      table.addToBackupSet(setName1, tables);
+      table.addToBackupSet(setName2, tables);
+
+      List<String> list = table.listBackupSets();
+
+      assertTrue(list.size() == 2);
+      assertTrue(list.get(0).equals(setName1));
+      assertTrue(list.get(1).equals(setName2));
+
+      cleanBackupTable();
+    }
+  }
+   
+
+  private boolean compare(BackupInfo one, BackupInfo two) {
     return one.getBackupId().equals(two.getBackupId()) && one.getType().equals(two.getType())
         && one.getTargetRootDir().equals(two.getTargetRootDir())
         && one.getStartTs() == two.getStartTs() && one.getEndTs() == two.getEndTs();
   }
 
-  private BackupContext createBackupContext() {
+  private BackupInfo createBackupContext() {
 
-    BackupContext ctxt =
-        new BackupContext("backup_" + System.nanoTime(), BackupType.FULL,
+    BackupInfo ctxt =
+        new BackupInfo("backup_" + System.nanoTime(), BackupType.FULL,
           new TableName[] {
               TableName.valueOf("t1"), TableName.valueOf("t2"), TableName.valueOf("t3") },
           "/hbase/backup");
@@ -333,8 +506,8 @@ public class TestBackupSystemTable {
     return ctxt;
   }
 
-  private List<BackupContext> createBackupContextList(int size) {
-    List<BackupContext> list = new ArrayList<BackupContext>();
+  private List<BackupInfo> createBackupContextList(int size) {
+    List<BackupInfo> list = new ArrayList<BackupInfo>();
     for (int i = 0; i < size; i++) {
       list.add(createBackupContext());
       try {

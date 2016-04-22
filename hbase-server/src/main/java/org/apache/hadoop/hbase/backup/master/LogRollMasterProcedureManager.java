@@ -36,6 +36,7 @@ import org.apache.hadoop.hbase.procedure.MasterProcedureManager;
 import org.apache.hadoop.hbase.procedure.Procedure;
 import org.apache.hadoop.hbase.procedure.ProcedureCoordinator;
 import org.apache.hadoop.hbase.procedure.ProcedureCoordinatorRpcs;
+import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.NameStringPair;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ProcedureDescription;
 import org.apache.zookeeper.KeeperException;
 
@@ -94,7 +95,14 @@ public class LogRollMasterProcedureManager extends MasterProcedureManager {
     for (ServerName sn : serverNames) {
       servers.add(sn.toString());
     }
-    Procedure proc = coordinator.startProcedure(monitor, desc.getInstance(), new byte[0], servers);
+    
+    List<NameStringPair> conf = desc.getConfigurationList();
+    byte[] data = new byte[0];
+    if(conf.size() > 0){
+      // Get backup root path
+      data = conf.get(0).getValue().getBytes();
+    }
+    Procedure proc = coordinator.startProcedure(monitor, desc.getInstance(), data, servers);
     if (proc == null) {
       String msg = "Failed to submit distributed procedure for '" + desc.getInstance() + "'";
       LOG.error(msg);

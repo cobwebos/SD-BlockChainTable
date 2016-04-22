@@ -20,9 +20,6 @@ package org.apache.hadoop.hbase.backup;
 import java.io.IOException;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -39,13 +36,22 @@ import org.apache.log4j.Logger;
 public class BackupDriver extends AbstractHBaseTool {
 
   private static final Log LOG = LogFactory.getLog(BackupDriver.class);
-  private Options opt;
   private CommandLine cmd;
-
+    
+  public BackupDriver() throws IOException
+  {
+    init();
+  }
+  
   protected void init() throws IOException {
     // define supported options
-    opt = new Options();
-    opt.addOption("debug", false, "Enable debug loggings");
+    addOptNoArg("debug", "Enable debug loggings");
+    addOptNoArg("all", "All tables");
+    addOptWithArg("t", "Table name");
+    addOptWithArg("b", "Bandwidth (MB/s)");
+    addOptWithArg("w", "Number of workers");
+    addOptWithArg("n", "History length");
+    addOptWithArg("set", "Backup set name");
 
     // disable irrelevant loggers to avoid it mess up command output
     LogUtils.disableUselessLoggers(LOG);
@@ -64,19 +70,22 @@ public class BackupDriver extends AbstractHBaseTool {
         System.arraycopy(args, 1, remainArgs, 0, args.length - 1);
       }
     }
-    CommandLine cmdline = null;
-    try {
-      cmdline = new PosixParser().parse(opt, remainArgs);
-    } catch (ParseException e) {
-      LOG.error("Could not parse command", e);
-      return -1;
-    }
 
     BackupCommand type = BackupCommand.HELP;
     if (BackupCommand.CREATE.name().equalsIgnoreCase(cmd)) {
       type = BackupCommand.CREATE;
     } else if (BackupCommand.HELP.name().equalsIgnoreCase(cmd)) {
       type = BackupCommand.HELP;
+    } else if (BackupCommand.DELETE.name().equalsIgnoreCase(cmd)) {
+      type = BackupCommand.DELETE;
+    } else if (BackupCommand.DESCRIBE.name().equalsIgnoreCase(cmd)) {
+      type = BackupCommand.DESCRIBE;
+    } else if (BackupCommand.HISTORY.name().equalsIgnoreCase(cmd)) {
+      type = BackupCommand.HISTORY;
+    } else if (BackupCommand.PROGRESS.name().equalsIgnoreCase(cmd)) {
+      type = BackupCommand.PROGRESS;
+    } else if (BackupCommand.SET.name().equalsIgnoreCase(cmd)) {
+      type = BackupCommand.SET;
     } else {
       System.out.println("Unsupported command for backup: " + cmd);
       return -1;
@@ -84,14 +93,18 @@ public class BackupDriver extends AbstractHBaseTool {
 
     // enable debug logging
     Logger backupClientLogger = Logger.getLogger("org.apache.hadoop.hbase.backup");
-    if (cmdline.hasOption("debug")) {
+    if (this.cmd.hasOption("debug")) {
       backupClientLogger.setLevel(Level.DEBUG);
     } else {
       backupClientLogger.setLevel(Level.INFO);
     }
 
     // TODO: get rid of Command altogether?
-    BackupCommands.createCommand(getConf(), type, cmdline).execute();
+    BackupCommands.Command command = BackupCommands.createCommand(getConf(), type, this.cmd);
+    if( type == BackupCommand.CREATE && conf != null) {
+      ((BackupCommands.CreateCommand) command).setConf(conf);
+    }   
+    command.execute();
     return 0;
   }
 
@@ -106,14 +119,14 @@ public class BackupDriver extends AbstractHBaseTool {
 
   @Override
   protected int doWork() throws Exception {
-    init();
     return parseAndRun(cmd.getArgs());
   }
 
   public static void main(String[] args) throws Exception {
     Configuration conf = HBaseConfiguration.create();
-    int ret = ToolRunner.run(conf, new BackupDriver(), args);
-    System.exit(ret);
+    int ret = ToolRunner.run(conf, new BackupDriver(), args);    
+    System.exit(ret);    
   }
+  
 
 }

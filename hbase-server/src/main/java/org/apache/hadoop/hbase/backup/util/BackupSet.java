@@ -15,28 +15,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.hadoop.hbase.backup.util;
+import java.util.List;
 
-package org.apache.hadoop.hbase.backup.impl;
-
-import java.io.IOException;
-
-import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-
-@InterfaceAudience.Private
+/**
+ * Backup set is a named group of HBase tables,
+ * which are managed together by Backup/Restore  
+ * framework. Instead of using list of tables in backup or restore 
+ * operation, one can use set's name instead.
+ */
+@InterfaceAudience.Public
 @InterfaceStability.Evolving
-public interface IncrementalRestoreService extends Configurable{
+public class BackupSet {
+  private final String name;
+  private final List<TableName> tables;
 
-  /**
-   * Run restore operation
-   * @param logDirectoryPaths - path array of WAL log directories
-   * @param fromTables - from tables
-   * @param toTables - to tables
-   * @throws IOException
-   */
-  public void run(Path[] logDirectoryPaths, TableName[] fromTables, TableName[] toTables)
-    throws IOException;
+  public BackupSet(String name, List<TableName> tables) {
+    this.name = name;
+    this.tables = tables;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public List<TableName> getTables() {
+    return tables;
+  }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(name).append("={");
+    for (int i = 0; i < tables.size(); i++) {
+      sb.append(tables.get(i));
+      if (i < tables.size() - 1) {
+        sb.append(",");
+      }
+    }
+    sb.append("}");
+    return sb.toString();
+  }
+
 }

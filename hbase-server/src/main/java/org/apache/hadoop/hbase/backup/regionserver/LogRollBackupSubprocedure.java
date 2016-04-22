@@ -42,16 +42,20 @@ public class LogRollBackupSubprocedure extends Subprocedure {
   private final RegionServerServices rss;
   private final LogRollBackupSubprocedurePool taskManager;
   private FSHLog hlog;
+  private String backupRoot;
 
   public LogRollBackupSubprocedure(RegionServerServices rss, ProcedureMember member,
       ForeignExceptionDispatcher errorListener, long wakeFrequency, long timeout,
-      LogRollBackupSubprocedurePool taskManager) {
+      LogRollBackupSubprocedurePool taskManager, byte[] data) {
 
     super(member, LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, errorListener,
       wakeFrequency, timeout);
     LOG.info("Constructing a LogRollBackupSubprocedure.");
     this.rss = rss;
     this.taskManager = taskManager;
+    if(data != null) {
+      backupRoot = new String(data);
+    }
   }
 
   /**
@@ -77,7 +81,7 @@ public class LogRollBackupSubprocedure extends Subprocedure {
       Connection connection = rss.getConnection();
       try(final BackupSystemTable table = new BackupSystemTable(connection)) {
         // sanity check, good for testing
-        HashMap<String, Long> serverTimestampMap = table.readRegionServerLastLogRollResult();
+        HashMap<String, Long> serverTimestampMap = table.readRegionServerLastLogRollResult(backupRoot);
         String host = rss.getServerName().getHostname();
         int port = rss.getServerName().getPort();
         String server = host + ":" + port;
@@ -88,7 +92,7 @@ public class LogRollBackupSubprocedure extends Subprocedure {
           return null;
         }
         // write the log number to hbase:backup.
-        table.writeRegionServerLastLogRollResult(server, filenum);
+        table.writeRegionServerLastLogRollResult(server, filenum, backupRoot);
         return null;
       } catch (Exception e) {
         LOG.error(e);

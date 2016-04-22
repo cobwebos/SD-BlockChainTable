@@ -77,11 +77,8 @@ message BackupManifest {
   repeated TableName table_list = 4;
   required uint64 start_ts = 5;
   required uint64 complete_ts = 6;
-  required int64 total_bytes = 7;
-  optional int64 log_bytes  = 8;
-  repeated TableServerTimestamp tst_map = 9;
-  repeated BackupImage dependent_backup_image = 10;
-  required bool compacted = 11; 
+  repeated TableServerTimestamp tst_map = 7;
+  repeated BackupImage dependent_backup_image = 8;
 }
 
 message TableBackupStatus {
@@ -90,7 +87,7 @@ message TableBackupStatus {
   optional string snapshot = 3; 	
 }
 
-message BackupContext {
+message BackupInfo {
   required string backup_id = 1;
   required BackupType type = 2;
   required string target_root_dir = 3;
@@ -100,9 +97,10 @@ message BackupContext {
   repeated TableBackupStatus table_backup_status = 7;
   optional uint64  start_ts = 8;
   optional uint64  end_ts = 9;
-  optional int64  total_bytes_copied = 10;
-  optional string hlog_target_dir = 11;
-  optional uint32 progress = 12; 
+  optional uint32 progress = 10; 
+  optional string job_id = 11;
+  required uint32 workers_number = 12;
+  required uint64 bandwidth = 13;
   
   enum BackupState {
     WAITING = 0;
@@ -123,7 +121,7 @@ message BackupContext {
 }
 
 message BackupProcContext {
-  required BackupContext ctx = 1;
+  required BackupInfo ctx = 1;
   repeated ServerTimestamp server_timestamp = 2;
 }
 

@@ -65,8 +65,7 @@ public class TestBackupLogCleaner extends TestBackupBase {
 
     List<TableName> tableSetFullList = Lists.newArrayList(table1, table2, table3, table4);
 
-    try (Connection connection = ConnectionFactory.createConnection(TEST_UTIL.getConfiguration());
-        BackupSystemTable systemTable = new BackupSystemTable(connection)) {
+    try (BackupSystemTable systemTable = new BackupSystemTable(TEST_UTIL.getConnection())) {
       // Verify that we have no backup sessions yet
       assertFalse(systemTable.hasBackupSessions());
 
@@ -76,16 +75,18 @@ public class TestBackupLogCleaner extends TestBackupBase {
       cleaner.setConf(TEST_UTIL.getConfiguration());
 
       Iterable<FileStatus> deletable = cleaner.getDeletableFiles(walFiles);
-      // We can delete all files because we do not have yet recorded backup sessions
-      assertTrue(Iterables.size(deletable) == walFiles.size());
+      int size = Iterables.size(deletable);
 
-      systemTable.addWALFiles(swalFiles, "backup");
+      // We can delete all files because we do not have yet recorded backup sessions
+      assertTrue(size == walFiles.size());
+
+      systemTable.addWALFiles(swalFiles, "backup", "root");
       String backupIdFull = fullTableBackup(tableSetFullList);
-      // getBackupClient().create(BackupType.FULL, tableSetFullList, BACKUP_ROOT_DIR);
+      assertTrue(checkSucceeded(backupIdFull));
       // Check one more time
       deletable = cleaner.getDeletableFiles(walFiles);
       // We can delete wal files because they were saved into hbase:backup table
-      int size = Iterables.size(deletable);
+      size = Iterables.size(deletable);
       assertTrue(size == walFiles.size());
 
       List<FileStatus> newWalFiles = getListOfWALFiles(TEST_UTIL.getConfiguration());
@@ -95,7 +96,6 @@ public class TestBackupLogCleaner extends TestBackupBase {
       // New list of wal files is greater than the previous one,
       // because new wal per RS have been opened after full backup
       assertTrue(walFiles.size() < newWalFiles.size());
-      // TODO : verify that result files are not walFiles collection
       Connection conn = ConnectionFactory.createConnection(conf1);
       // #2 - insert some data to table
       HTable t1 = (HTable) conn.getTable(table1);
@@ -123,6 +123,7 @@ public class TestBackupLogCleaner extends TestBackupBase {
       List<TableName> tableSetIncList = Lists.newArrayList(table1, table2, table3);
       String backupIdIncMultiple = backupTables(BackupType.INCREMENTAL, tableSetIncList,
         BACKUP_ROOT_DIR);
+      assertTrue(checkSucceeded(backupIdIncMultiple));
       deletable = cleaner.getDeletableFiles(newWalFiles);
 
       assertTrue(Iterables.size(deletable) == newWalFiles.size());

@@ -24,7 +24,10 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -43,7 +46,7 @@ import com.google.common.collect.Lists;
 @Category(LargeTests.class)
 public class TestIncrementalBackup extends TestBackupBase {
   private static final Log LOG = LogFactory.getLog(TestIncrementalBackup.class);
-  //implement all testcases in 1 test since incremental backup/restore has dependencies
+  //implement all test cases in 1 test since incremental backup/restore has dependencies
   @Test
   public void TestIncBackupRestore() throws Exception {
     // #1 - create full backup for all tables
@@ -89,6 +92,7 @@ public class TestIncrementalBackup extends TestBackupBase {
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
     .setTargetRootDir(BACKUP_ROOT_DIR);
     String backupIdIncMultiple = admin.backupTables(request);
+    assertTrue(checkSucceeded(backupIdIncMultiple));
 
     // #4 - restore full backup for all tables, without overwrite
     TableName[] tablesRestoreFull =
@@ -133,7 +137,6 @@ public class TestIncrementalBackup extends TestBackupBase {
         new TableName[] { table1, table2, table3 };
     TableName[] tablesMapIncMultiple =
         new TableName[] { table1_restore, table2_restore, table3_restore };
-    LOG.info("restore inc backup " + backupIdIncMultiple);
     client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupIdIncMultiple, false, false,
       tablesRestoreIncMultiple, tablesMapIncMultiple, true);

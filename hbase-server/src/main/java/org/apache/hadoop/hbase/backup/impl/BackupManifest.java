@@ -37,6 +37,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -102,11 +103,18 @@ public class BackupManifest {
       for(HBaseProtos.TableName tn : tableListList) {
         tableList.add(ProtobufUtil.toTableName(tn));
       }
+      
+      List<BackupProtos.BackupImage> ancestorList = im.getAncestorsList();
+      
       BackupType type =
           im.getBackupType() == BackupProtos.BackupType.FULL ? BackupType.FULL:
             BackupType.INCREMENTAL;
 
-      return new BackupImage(backupId, type, rootDir, tableList, startTs, completeTs);
+      BackupImage image = new BackupImage(backupId, type, rootDir, tableList, startTs, completeTs);
+      for(BackupProtos.BackupImage img: ancestorList) {
+        image.addAncestor(fromProto(img));
+      }
+      return image;
     }
 
     BackupProtos.BackupImage toProto() {
@@ -204,7 +212,7 @@ public class BackupManifest {
 
     public boolean hasTable(TableName table) {
       for (TableName t : tableList) {
-        if (t.getNameAsString().equals(table)) {
+        if (t.equals(table)) {
           return true;
         }
       }
@@ -251,50 +259,41 @@ public class BackupManifest {
   // actual complete timestamp of the backup process
   private long completeTs;
 
-  // total bytes for table backup image
-  private long totalBytes;
-
-  // total bytes for the backed-up logs for incremental backup
-  private long logBytes;
-
   // the region server timestamp for tables:
   // <table, <rs, timestamp>>
   private Map<TableName, HashMap<String, Long>> incrTimeRanges;
 
   // dependency of this backup, including all the dependent images to do PIT recovery
   private Map<String, BackupImage> dependency;
-
-  // the indicator of the image compaction
-  private boolean isCompacted = false;
+  
   /**
    * Construct manifest for a ongoing backup.
    * @param backupCtx The ongoing backup context
    */
-  public BackupManifest(BackupContext backupCtx) {
+  public BackupManifest(BackupInfo backupCtx) {
     this.backupId = backupCtx.getBackupId();
     this.type = backupCtx.getType();
     this.rootDir = backupCtx.getTargetRootDir();
     if (this.type == BackupType.INCREMENTAL) {
       this.logBackupDir = backupCtx.getHLogTargetDir();
-      this.logBytes = backupCtx.getTotalBytesCopied();
     }
     this.startTs = backupCtx.getStartTs();
     this.completeTs = backupCtx.getEndTs();
     this.loadTableList(backupCtx.getTableNames());
   }
-
+  
+  
   /**
    * Construct a table level manifest for a backup of the named table.
    * @param backupCtx The ongoing backup context
    */
-  public BackupManifest(BackupContext backupCtx, TableName table) {
+  public BackupManifest(BackupInfo backupCtx, TableName table) {
     this.backupId = backupCtx.getBackupId();
     this.type = backupCtx.getType();
     this.rootDir = backupCtx.getTargetRootDir();
     this.tableBackupDir = backupCtx.getBackupStatus(table).getTargetDir();
     if (this.type == BackupType.INCREMENTAL) {
       this.logBackupDir = backupCtx.getHLogTargetDir();
-      this.logBytes = backupCtx.getTotalBytesCopied();
     }
     this.startTs = backupCtx.getStartTs();
     this.completeTs = backupCtx.getEndTs();
@@ -361,15 +360,8 @@ public class BackupManifest {
           loadTableList(proto);
           this.startTs = proto.getStartTs();
           this.completeTs = proto.getCompleteTs();
-          this.totalBytes = proto.getTotalBytes();
-          if (this.type == BackupType.INCREMENTAL) {
-            this.logBytes = proto.getLogBytes();
-            //TODO: convert will be implemented by future jira
-          }
-
           loadIncrementalTimestampMap(proto);
           loadDependency(proto);
-          this.isCompacted = proto.getCompacted();
           //TODO: merge will be implemented by future jira
           LOG.debug("Loaded manifest instance from manifest file: "
               + FSUtils.getPath(subFile.getPath()));
@@ -377,11 +369,9 @@ public class BackupManifest {
         }
       }
       String errorMsg = "No manifest file found in: " + backupPath.toString();
-      LOG.error(errorMsg);
       throw new IOException(errorMsg);
 
     } catch (IOException e) {
-      LOG.error(e);
       throw new BackupException(e.getMessage());
     }
   }
@@ -405,10 +395,20 @@ public class BackupManifest {
   }
 
   private void loadDependency(BackupProtos.BackupManifest proto) {
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("load dependency for: "+proto.getBackupId());
+    }
+
     dependency = new HashMap<String, BackupImage>();
     List<BackupProtos.BackupImage> list = proto.getDependentBackupImageList();
     for (BackupProtos.BackupImage im : list) {
-      dependency.put(im.getBackupId(), BackupImage.fromProto(im));
+      BackupImage bim = BackupImage.fromProto(im);
+      if(im.getBackupId() != null){
+        dependency.put(im.getBackupId(), bim);
+      } else{
+        LOG.warn("Load dependency for backup manifest: "+ backupId+ 
+          ". Null backup id in dependent image");
+      }
     }
   }
 
@@ -463,6 +463,7 @@ public class BackupManifest {
 
   public void store(Configuration conf) throws BackupException {
     byte[] data = toByteArray();
+
     // write the file, overwrite if already exist
     Path manifestFilePath =
         new Path(new Path((this.tableBackupDir != null ? this.tableBackupDir : this.logBackupDir))
@@ -472,13 +473,11 @@ public class BackupManifest {
           manifestFilePath.getFileSystem(conf).create(manifestFilePath, true);
       out.write(data);
       out.close();
-    } catch (IOException e) {
-      LOG.error(e);
+    } catch (IOException e) {      
       throw new BackupException(e.getMessage());
     }
 
-    LOG.debug("Manifestfilestored_to " + this.tableBackupDir != null ? this.tableBackupDir
-        : this.logBackupDir + Path.SEPARATOR + MANIFEST_FILE_NAME);
+    LOG.info("Manifest file stored to " + manifestFilePath);
   }
 
   /**
@@ -493,18 +492,15 @@ public class BackupManifest {
     setTableList(builder);
     builder.setStartTs(this.startTs);
     builder.setCompleteTs(this.completeTs);
-    builder.setTotalBytes(this.totalBytes);
-    if (this.type == BackupType.INCREMENTAL) {
-      builder.setLogBytes(this.logBytes);
-    }
     setIncrementalTimestampMap(builder);
     setDependencyMap(builder);
-    builder.setCompacted(this.isCompacted);
     return builder.build().toByteArray();
   }
 
   private void setIncrementalTimestampMap(BackupProtos.BackupManifest.Builder builder) {
-    if (this.incrTimeRanges == null) return;
+    if (this.incrTimeRanges == null) {
+      return;
+    }
     for (Entry<TableName, HashMap<String,Long>> entry: this.incrTimeRanges.entrySet()) {
       TableName key = entry.getKey();
       HashMap<String, Long> value = entry.getValue();

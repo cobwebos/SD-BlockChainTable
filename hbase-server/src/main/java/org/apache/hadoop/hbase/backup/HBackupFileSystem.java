@@ -51,7 +51,7 @@ public class HBackupFileSystem {
   /**
    * Given the backup root dir, backup id and the table name, return the backup image location,
    * which is also where the backup manifest file is. return value look like:
-   * "hdfs://backup.hbase.org:9000/user/biadmin/backup1/default/t1_dn/backup_1396650096738"
+   * "hdfs://backup.hbase.org:9000/user/biadmin/backup1/backup_1396650096738/default/t1_dn/"
    * @param backupRootDir backup root directory
    * @param backupId  backup id
    * @param table table name
@@ -59,22 +59,22 @@ public class HBackupFileSystem {
    */
   public static String getTableBackupDir(String backupRootDir, String backupId,
       TableName tableName) {
-    return backupRootDir + Path.SEPARATOR + tableName.getNamespaceAsString() + Path.SEPARATOR
-        + tableName.getQualifierAsString() + Path.SEPARATOR + backupId;
+    return backupRootDir + Path.SEPARATOR+ backupId + Path.SEPARATOR + 
+        tableName.getNamespaceAsString() + Path.SEPARATOR
+        + tableName.getQualifierAsString() + Path.SEPARATOR ;
   }
 
   /**
    * Given the backup root dir, backup id and the table name, return the backup image location,
    * which is also where the backup manifest file is. return value look like:
-   * "hdfs://backup.hbase.org:9000/user/biadmin/backup1/default/t1_dn/backup_1396650096738"
+   * "hdfs://backup.hbase.org:9000/user/biadmin/backup_1396650096738/backup1/default/t1_dn/"
    * @param backupRootPath backup root path
    * @param tableName table name
    * @param backupId backup Id
    * @return backupPath for the particular table
    */
-  public static Path getTableBackupPath(Path backupRootPath, TableName tableName, String backupId) {
-    return new Path(backupRootPath, tableName.getNamespaceAsString() + Path.SEPARATOR
-      + tableName.getQualifierAsString() + Path.SEPARATOR + backupId);
+  public static Path getTableBackupPath(TableName tableName, Path backupRootPath, String backupId) {
+    return new Path(getTableBackupDir(backupRootPath.toString(), backupId, tableName));
   }
 
   /**
@@ -85,8 +85,8 @@ public class HBackupFileSystem {
    * @return logBackupDir: ".../user/biadmin/backup1/WALs/backup_1396650096738"
    */
   public static String getLogBackupDir(String backupRootDir, String backupId) {
-    return backupRootDir + Path.SEPARATOR + HConstants.HREGION_LOGDIR_NAME + Path.SEPARATOR
-        + backupId;
+    return backupRootDir + Path.SEPARATOR + backupId+ Path.SEPARATOR
+        + HConstants.HREGION_LOGDIR_NAME;
   }
 
   public static Path getLogBackupPath(String backupRootDir, String backupId) {
@@ -95,7 +95,7 @@ public class HBackupFileSystem {
 
   private static Path getManifestPath(TableName tableName, Configuration conf,
       Path backupRootPath, String backupId) throws IOException {
-    Path manifestPath = new Path(getTableBackupPath(backupRootPath, tableName, backupId),
+    Path manifestPath = new Path(getTableBackupPath(tableName, backupRootPath, backupId),
       BackupManifest.MANIFEST_FILE_NAME);
     FileSystem fs = backupRootPath.getFileSystem(conf);
     if (!fs.exists(manifestPath)) {

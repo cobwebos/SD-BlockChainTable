@@ -18,9 +18,6 @@
  */
 package org.apache.hadoop.hbase.backup.master;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,11 +61,11 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
     // TODO: LogCleaners do not have a way to get the Connection from Master. We should find a
     // way to pass it down here, so that this connection is not re-created every time.
     // It is expensive
-    try(Connection connection = ConnectionFactory.createConnection(this.getConf());
-        final BackupSystemTable table = new BackupSystemTable(connection)) {
-
+    try (final Connection conn = ConnectionFactory.createConnection(getConf());
+        final BackupSystemTable table = new BackupSystemTable(conn)) {
       // If we do not have recorded backup sessions
       if (!table.hasBackupSessions()) {
+        LOG.debug("BackupLogCleaner has no backup sessions");
         return files;
       }
       

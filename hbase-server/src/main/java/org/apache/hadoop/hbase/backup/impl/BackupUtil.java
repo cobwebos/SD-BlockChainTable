@@ -42,6 +42,8 @@ import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupClientUtil;
+import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
@@ -111,7 +113,7 @@ public final class BackupUtil {
    * @param rsLogTimestampMap timestamp map
    * @return the min timestamp of each RS
    */
-  protected static HashMap<String, Long> getRSLogTimestampMins(
+  public static HashMap<String, Long> getRSLogTimestampMins(
     HashMap<TableName, HashMap<String, Long>> rsLogTimestampMap) {
 
     if (rsLogTimestampMap == null || rsLogTimestampMap.isEmpty()) {
@@ -152,7 +154,7 @@ public final class BackupUtil {
    * @throws IOException exception
    * @throws InterruptedException exception
    */
-  protected static void copyTableRegionInfo(BackupContext backupContext, Configuration conf)
+  public static void copyTableRegionInfo(BackupInfo backupContext, Configuration conf)
       throws IOException, InterruptedException {
 
     Path rootDir = FSUtils.getRootDir(conf);
@@ -277,109 +279,19 @@ public final class BackupUtil {
     return totalLength;
   }
 
-  /**
-   * Keep the record for dependency for incremental backup and history info p.s, we may be able to
-   * merge this class into backupImage class later
-   */
-  public static class BackupCompleteData implements Comparable<BackupCompleteData> {
-    private String startTime;
-    private String endTime;
-    private String type;
-    private String backupRootPath;
-    private List<TableName> tableList;
-    private String backupToken;
-    private String bytesCopied;
-    private List<String> ancestors;
 
-    public List<String> getAncestors() {
-      if (this.ancestors == null) {
-        this.ancestors = new ArrayList<String>();
-      }
-      return this.ancestors;
-    }
-
-    public void addAncestor(String backupToken) {
-      this.getAncestors().add(backupToken);
-    }
-
-    public String getBytesCopied() {
-      return bytesCopied;
-    }
-
-    public void setBytesCopied(String bytesCopied) {
-      this.bytesCopied = bytesCopied;
-    }
-
-    public String getBackupToken() {
-      return backupToken;
-    }
-
-    public void setBackupToken(String backupToken) {
-      this.backupToken = backupToken;
-    }
-
-    public String getStartTime() {
-      return startTime;
-    }
-
-    public void setStartTime(String startTime) {
-      this.startTime = startTime;
-    }
-
-    public String getEndTime() {
-      return endTime;
-    }
-
-    public void setEndTime(String endTime) {
-      this.endTime = endTime;
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public void setType(String type) {
-      this.type = type;
-    }
-
-    public String getBackupRootPath() {
-      return backupRootPath;
-    }
-
-    public void setBackupRootPath(String backupRootPath) {
-      this.backupRootPath = backupRootPath;
-    }
-
-    public List<TableName> getTableList() {
-      return tableList;
-    }
-
-    public void setTableList(List<TableName> tableList) {
-      this.tableList = tableList;
-    }
-
-    @Override
-    public int compareTo(BackupCompleteData o) {
-      Long thisTS =
-          new Long(this.getBackupToken().substring(this.getBackupToken().lastIndexOf("_") + 1));
-      Long otherTS =
-          new Long(o.getBackupToken().substring(o.getBackupToken().lastIndexOf("_") + 1));
-      return thisTS.compareTo(otherTS);
-    }
-
-  }
-
+  
   /**
    * Sort history list by start time in descending order.
    * @param historyList history list
    * @return sorted list of BackupCompleteData
    */
-  public static ArrayList<BackupCompleteData> sortHistoryListDesc(
-    ArrayList<BackupCompleteData> historyList) {
-    ArrayList<BackupCompleteData> list = new ArrayList<BackupCompleteData>();
-    TreeMap<String, BackupCompleteData> map = new TreeMap<String, BackupCompleteData>();
-    for (BackupCompleteData h : historyList) {
-      map.put(h.getStartTime(), h);
+  public static ArrayList<BackupInfo> sortHistoryListDesc(
+    ArrayList<BackupInfo> historyList) {
+    ArrayList<BackupInfo> list = new ArrayList<BackupInfo>();
+    TreeMap<String, BackupInfo> map = new TreeMap<String, BackupInfo>();
+    for (BackupInfo h : historyList) {
+      map.put(Long.toString(h.getStartTs()), h);
     }
     Iterator<String> i = map.descendingKeySet().iterator();
     while (i.hasNext()) {
@@ -483,4 +395,78 @@ public final class BackupUtil {
     }
     return ret;
   }
+  
+  public static void cleanupBackupData(BackupInfo context, Configuration conf) 
+      throws IOException 
+  {
+    cleanupHLogDir(context, conf);
+    cleanupTargetDir(context, conf);
+  }
+
+  /**
+   * Clean up directories which are generated when DistCp copying hlogs.
+   * @throws IOException
+   */
+  private static void cleanupHLogDir(BackupInfo backupContext, Configuration conf)
+      throws IOException {
+
+    String logDir = backupContext.getHLogTargetDir();
+    if (logDir == null) {
+      LOG.warn("No log directory specified for " + backupContext.getBackupId());
+      return;
+    }
+
+    Path rootPath = new Path(logDir).getParent();
+    FileSystem fs = FileSystem.get(rootPath.toUri(), conf);
+    FileStatus[] files = FSUtils.listStatus(fs, rootPath);
+    if (files == null) {
+      return;
+    }
+    for (FileStatus file : files) {
+      LOG.debug("Delete log files: " + file.getPath().getName());
+      FSUtils.delete(fs, file.getPath(), true);
+    }
+  }
+
+  /**
+   * Clean up the data at target directory
+   */
+  private static void cleanupTargetDir(BackupInfo backupContext, Configuration conf) {
+    try {
+      // clean up the data at target directory
+      LOG.debug("Trying to cleanup up target dir : " + backupContext.getBackupId());
+      String targetDir = backupContext.getTargetRootDir();
+      if (targetDir == null) {
+        LOG.warn("No target directory specified for " + backupContext.getBackupId());
+        return;
+      }
+
+      FileSystem outputFs =
+          FileSystem.get(new Path(backupContext.getTargetRootDir()).toUri(), conf);
+
+      for (TableName table : backupContext.getTables()) {
+        Path targetDirPath =
+            new Path(HBackupFileSystem.getTableBackupDir(backupContext.getTargetRootDir(),
+              backupContext.getBackupId(), table));
+        if (outputFs.delete(targetDirPath, true)) {
+          LOG.info("Cleaning up backup data at " + targetDirPath.toString() + " done.");
+        } else {
+          LOG.info("No data has been found in " + targetDirPath.toString() + ".");
+        }
+
+        Path tableDir = targetDirPath.getParent();
+        FileStatus[] backups = FSUtils.listStatus(outputFs, tableDir);
+        if (backups == null || backups.length == 0) {
+          outputFs.delete(tableDir, true);
+          LOG.debug(tableDir.toString() + " is empty, remove it.");
+        }
+      }
+
+    } catch (IOException e1) {
+      LOG.error("Cleaning up backup data of " + backupContext.getBackupId() + " at "
+          + backupContext.getTargetRootDir() + " failed due to " + e1.getMessage() + ".");
+    }
+  }
+  
+
 }

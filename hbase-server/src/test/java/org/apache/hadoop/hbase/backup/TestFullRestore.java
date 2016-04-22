@@ -16,11 +16,13 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
+import org.apache.hadoop.util.ToolRunner;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -42,6 +44,8 @@ public class TestFullRestore extends TestBackupBase {
 
     List<TableName> tables = Lists.newArrayList(table1);
     String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));
+    
     LOG.info("backup complete");
 
     TableName[] tableset = new TableName[] { table1 };
@@ -54,6 +58,29 @@ public class TestFullRestore extends TestBackupBase {
     hba.close();
   }
 
+  
+  @Test
+  public void testFullRestoreSingleCommand() throws Exception {
+
+    LOG.info("test full restore on a single table empty table: command-line");
+
+    List<TableName> tables = Lists.newArrayList(table1);
+    String backupId = fullTableBackup(tables);
+    LOG.info("backup complete");
+    assertTrue(checkSucceeded(backupId));
+    //restore <backup_root_path> <backup_id> <tables> [tableMapping]
+    String[] args = new String[]{"restore",  BACKUP_ROOT_DIR, backupId, 
+        table1.getNameAsString(), table1_restore.getNameAsString() }; 
+    // Run backup
+    int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
+
+    assertTrue(ret==0);
+    HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
+    assertTrue(hba.tableExists(table1_restore));
+    TEST_UTIL.deleteTable(table1_restore);
+    hba.close();
+  }
+  
   /**
    * Verify that multiple tables are restored to new tables.
    * @throws Exception
@@ -63,6 +90,7 @@ public class TestFullRestore extends TestBackupBase {
     LOG.info("create full backup image on multiple tables");
     List<TableName> tables = Lists.newArrayList(table2, table3);
     String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));
 
     TableName[] restore_tableset = new TableName[] { table2, table3 };
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
@@ -78,6 +106,38 @@ public class TestFullRestore extends TestBackupBase {
   }
 
   /**
+   * Verify that multiple tables are restored to new tables.
+   * @throws Exception
+   */
+  @Test
+  public void testFullRestoreMultipleCommand() throws Exception {
+    LOG.info("create full backup image on multiple tables: command-line");
+    List<TableName> tables = Lists.newArrayList(table2, table3);
+    String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));
+
+    TableName[] restore_tableset = new TableName[] { table2, table3 };
+    TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
+    
+    
+    //restore <backup_root_path> <backup_id> <tables> [tableMapping]
+    String[] args = new String[]{"restore",  BACKUP_ROOT_DIR, backupId, 
+        StringUtils.join(restore_tableset, ","), 
+        StringUtils.join(tablemap, ",") }; 
+    // Run backup
+    int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
+
+    assertTrue(ret==0);    
+    HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
+    assertTrue(hba.tableExists(table2_restore));
+    assertTrue(hba.tableExists(table3_restore));
+    TEST_UTIL.deleteTable(table2_restore);
+    TEST_UTIL.deleteTable(table3_restore);
+    hba.close();
+  }
+  
+  
+  /**
    * Verify that a single table is restored using overwrite
    * @throws Exception
    */
@@ -87,6 +147,8 @@ public class TestFullRestore extends TestBackupBase {
     LOG.info("test full restore on a single table empty table");
     List<TableName> tables = Lists.newArrayList(table1);
     String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));
+    
     LOG.info("backup complete");
 
     TableName[] tableset = new TableName[] { table1 };
@@ -95,6 +157,32 @@ public class TestFullRestore extends TestBackupBase {
       true);
   }
 
+  /**
+   * Verify that a single table is restored using overwrite
+   * @throws Exception
+   */
+  @Test
+  public void testFullRestoreSingleOverwriteCommand() throws Exception {
+
+    LOG.info("test full restore on a single table empty table: command-line");
+    List<TableName> tables = Lists.newArrayList(table1);
+    String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));    
+    LOG.info("backup complete");
+    TableName[] tableset = new TableName[] { table1 };
+    //restore <backup_root_path> <backup_id> <tables> [tableMapping]
+    String[] args = new String[]{"restore",  BACKUP_ROOT_DIR, backupId, 
+        StringUtils.join(tableset, ","), "-overwrite" }; 
+    // Run restore
+    int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
+    assertTrue(ret==0);   
+    
+    HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
+    assertTrue(hba.tableExists(table1));
+    hba.close();
+
+  }  
+  
   /**
    * Verify that multiple tables are restored to new tables using overwrite.
    * @throws Exception
@@ -105,6 +193,7 @@ public class TestFullRestore extends TestBackupBase {
 
     List<TableName> tables = Lists.newArrayList(table2, table3);
     String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));    
 
     TableName[] restore_tableset = new TableName[] { table2, table3 };
     RestoreClient client = getRestoreClient();
@@ -112,6 +201,32 @@ public class TestFullRestore extends TestBackupBase {
       false, restore_tableset, null, true);
   }
 
+  /**
+   * Verify that multiple tables are restored to new tables using overwrite.
+   * @throws Exception
+   */
+  @Test
+  public void testFullRestoreMultipleOverwriteCommand() throws Exception {
+    LOG.info("create full backup image on multiple tables: command-line");
+
+    List<TableName> tables = Lists.newArrayList(table2, table3);
+    String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));    
+
+    TableName[] restore_tableset = new TableName[] { table2, table3 };
+    //restore <backup_root_path> <backup_id> <tables> [tableMapping]
+    String[] args = new String[]{"restore",  BACKUP_ROOT_DIR, backupId, 
+        StringUtils.join(restore_tableset, ","), "-overwrite" }; 
+    // Run backup
+    int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
+
+    assertTrue(ret==0);    
+    HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
+    assertTrue(hba.tableExists(table2));
+    assertTrue(hba.tableExists(table3));
+    hba.close();
+  }  
+  
   /**
    * Verify that restore fails on a single table that does not exist.
    * @throws Exception
@@ -122,6 +237,7 @@ public class TestFullRestore extends TestBackupBase {
     LOG.info("test restore fails on a single table that does not exist");
     List<TableName> tables = Lists.newArrayList(table1);
     String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));    
 
     LOG.info("backup complete");
 
@@ -132,6 +248,31 @@ public class TestFullRestore extends TestBackupBase {
       false);
   }
 
+  
+  /**
+   * Verify that restore fails on a single table that does not exist.
+   * @throws Exception
+   */
+  @Test
+  public void testFullRestoreSingleDNECommand() throws Exception {
+
+    LOG.info("test restore fails on a single table that does not exist: command-line");
+    List<TableName> tables = Lists.newArrayList(table1);
+    String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));    
+
+    LOG.info("backup complete");
+
+    TableName[] tableset = new TableName[] { TableName.valueOf("faketable") };
+    TableName[] tablemap = new TableName[] { table1_restore };
+    String[] args = new String[]{"restore",  BACKUP_ROOT_DIR, backupId, 
+        StringUtils.join(tableset, ","), 
+        StringUtils.join(tablemap, ",") }; 
+    // Run restore
+    int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
+    assertTrue(ret != 0);    
+    
+  }  
   /**
    * Verify that restore fails on multiple tables that do not exist.
    * @throws Exception
@@ -143,6 +284,7 @@ public class TestFullRestore extends TestBackupBase {
 
     List<TableName> tables = Lists.newArrayList(table2, table3);
     String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));    
 
     TableName[] restore_tableset
       = new TableName[] { TableName.valueOf("faketable1"), TableName.valueOf("faketable2") };
@@ -150,5 +292,29 @@ public class TestFullRestore extends TestBackupBase {
     RestoreClient client = getRestoreClient();
     client.restore(BACKUP_ROOT_DIR, backupId, false,
       false, restore_tableset, tablemap, false);
+  }
+  
+  /**
+   * Verify that restore fails on multiple tables that do not exist.
+   * @throws Exception
+   */
+  @Test
+  public void testFullRestoreMultipleDNECommand() throws Exception {
+
+    LOG.info("test restore fails on multiple tables that do not exist: command-line");
+
+    List<TableName> tables = Lists.newArrayList(table2, table3);
+    String backupId = fullTableBackup(tables);
+    assertTrue(checkSucceeded(backupId));    
+
+    TableName[] restore_tableset
+      = new TableName[] { TableName.valueOf("faketable1"), TableName.valueOf("faketable2") };
+    TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
+    String[] args = new String[]{"restore",  BACKUP_ROOT_DIR, backupId, 
+        StringUtils.join(restore_tableset, ","), 
+        StringUtils.join(tablemap, ",") }; 
+    // Run restore
+    int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
+    assertTrue(ret != 0); 
   }
 }

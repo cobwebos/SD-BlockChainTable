@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupClientUtil;
+import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -41,6 +42,7 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.wal.DefaultWALProvider;
+import org.apache.hadoop.hbase.backup.impl.BackupSystemTable.WALItem;
 
 /**
  * After a full backup was created, the incremental backup will only store the changes made
@@ -71,7 +73,7 @@ public class IncrementalBackupManager {
    * @return The new HashMap of RS log timestamps after the log roll for this incremental backup.
    * @throws IOException exception
    */
-  public HashMap<String, Long> getIncrBackupLogFileList(BackupContext backupContext)
+  public HashMap<String, Long> getIncrBackupLogFileList(BackupInfo backupContext)
       throws IOException {
     List<String> logList;
     HashMap<String, Long> newTimestamps;
@@ -84,7 +86,7 @@ public class IncrementalBackupManager {
     HashMap<TableName, HashMap<String, Long>> previousTimestampMap =
         backupManager.readLogTimestampMap();
 
-    previousTimestampMins = BackupUtil.getRSLogTimestampMins(previousTimestampMap);
+    previousTimestampMins = BackupUtil.getRSLogTimestampMins(previousTimestampMap);    
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("StartCode " + savedStartCode + "for backupID " + backupContext.getBackupId());
@@ -99,49 +101,88 @@ public class IncrementalBackupManager {
 
     try (Admin admin = conn.getAdmin()) {
       LOG.info("Execute roll log procedure for incremental backup ...");
+      HashMap<String, String> props = new HashMap<String, String>();
+      props.put("backupRoot", backupContext.getTargetRootDir());
       admin.execProcedure(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
-        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, new HashMap<String, String>());
+        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props);
     }
 
     newTimestamps = backupManager.readRegionServerLastLogRollResult();
 
     logList = getLogFilesForNewBackup(previousTimestampMins, newTimestamps, conf, savedStartCode);
-    logList.addAll(getLogFilesFromBackupSystem(previousTimestampMins, newTimestamps));
+    List<WALItem> logFromSystemTable = 
+        getLogFilesFromBackupSystem(previousTimestampMins, 
+      newTimestamps, backupManager.getBackupContext().getTargetRootDir());
+    addLogsFromBackupSystemToContext(logFromSystemTable);
+
+    logList = excludeAlreadyBackedUpWALs(logList, logFromSystemTable);
     backupContext.setIncrBackupFileList(logList);
 
     return newTimestamps;
   }
 
+
+  private List<String> excludeAlreadyBackedUpWALs(List<String> logList,
+      List<WALItem> logFromSystemTable) {
+    
+    List<String> backupedWALList = toWALList(logFromSystemTable);
+    logList.removeAll(backupedWALList);
+    return logList;
+  }
+
+  private List<String> toWALList(List<WALItem> logFromSystemTable) {
+    
+    List<String> list = new ArrayList<String>(logFromSystemTable.size());
+    for(WALItem item : logFromSystemTable){
+      list.add(item.getWalFile());
+    }
+    return list;
+  }
+
+  private void addLogsFromBackupSystemToContext(List<WALItem> logFromSystemTable) {
+    List<String> walFiles = new ArrayList<String>();
+    for(WALItem item : logFromSystemTable){
+      Path p = new Path(item.getWalFile());
+      String walFileName = p.getName();
+      String backupId = item.getBackupId();
+      String relWALPath = backupId + Path.SEPARATOR+walFileName;
+      walFiles.add(relWALPath);
+    }    
+  }
+
+
   /**
-   * For each region server: get all log files newer than the last timestamps but not newer than the
-   * newest timestamps. FROM hbase:backup table
+   * For each region server: get all log files newer than the last timestamps,
+   * but not newer than the newest timestamps. FROM hbase:backup table
    * @param olderTimestamps - the timestamp for each region server of the last backup.
    * @param newestTimestamps - the timestamp for each region server that the backup should lead to.
    * @return list of log files which needs to be added to this backup
    * @throws IOException
    */
-  private List<String> getLogFilesFromBackupSystem(HashMap<String, Long> olderTimestamps,
-    HashMap<String, Long> newestTimestamps) throws IOException {
-    List<String> logFiles = new ArrayList<String>();
-    Iterator<String> it = backupManager.getWALFilesFromBackupSystem();
-
+  private List<WALItem> getLogFilesFromBackupSystem(HashMap<String, Long> olderTimestamps,
+    HashMap<String, Long> newestTimestamps, String backupRoot) throws IOException {
+    List<WALItem> logFiles = new ArrayList<WALItem>();
+    Iterator<WALItem> it = backupManager.getWALFilesFromBackupSystem();
     while (it.hasNext()) {
-      String walFileName = it.next();
-      String server = BackupUtil.parseHostNameFromLogFile(new Path(walFileName));
-      //String server = getServer(walFileName);
-      Long tss = getTimestamp(walFileName);
-      Long oldTss = olderTimestamps.get(server);
-      if (oldTss == null){
-        logFiles.add(walFileName);
+      WALItem item = it.next();
+      String rootDir = item.getBackupRoot();
+      if(!rootDir.equals(backupRoot)) {
         continue;
       }
+      String walFileName = item.getWalFile();      
+      String server = BackupUtil.parseHostNameFromLogFile(new Path(walFileName));
+      Long tss = getTimestamp(walFileName);
+      Long oldTss = olderTimestamps.get(server);
       Long newTss = newestTimestamps.get(server);
+      if (oldTss == null){
+        logFiles.add(item);
+        continue;
+      }
       if (newTss == null) {
         newTss = Long.MAX_VALUE;
       }
-
       if (tss > oldTss && tss < newTss) {
-        logFiles.add(walFileName);
+        logFiles.add(item);
       }
     }
     return logFiles;

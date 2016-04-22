@@ -18,6 +18,7 @@
  */
 package org.apache.hadoop.hbase.backup;
 
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,18 +26,19 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.BackupContext.BackupState;
-import org.apache.hadoop.hbase.backup.impl.BackupContext;
+import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
-import org.apache.hadoop.hbase.backup.impl.BackupUtil;
-import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
-import org.apache.hadoop.hbase.backup.regionserver.LogRollRegionServerProcedureManager;
+import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -48,7 +50,6 @@ import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.google.common.collect.Lists;
 
 /**
  * This class is only a base for other integration-level backup tests. Do not add tests here.
@@ -64,17 +65,17 @@ public class TestBackupBase {
 
   protected static HBaseTestingUtility TEST_UTIL;
   protected static HBaseTestingUtility TEST_UTIL2;
-  protected static TableName table1;
-  protected static TableName table2;
-  protected static TableName table3;
-  protected static TableName table4;
+  protected static TableName table1 = TableName.valueOf("table1");
+  protected static TableName table2 = TableName.valueOf("table2");
+  protected static TableName table3 = TableName.valueOf("table3");
+  protected static TableName table4 = TableName.valueOf("table4");
 
   protected static TableName table1_restore = TableName.valueOf("table1_restore");
   protected static TableName table2_restore = TableName.valueOf("table2_restore");
   protected static TableName table3_restore = TableName.valueOf("table3_restore");
   protected static TableName table4_restore = TableName.valueOf("table4_restore");
 
-  protected static final int NB_ROWS_IN_BATCH = 100;
+  protected static final int NB_ROWS_IN_BATCH = 999;
   protected static final byte[] qualName = Bytes.toBytes("q1");
   protected static final byte[] famName = Bytes.toBytes("f");
 
@@ -91,15 +92,13 @@ public class TestBackupBase {
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
     TEST_UTIL = new HBaseTestingUtility();
-    TEST_UTIL.getConfiguration().set("hbase.procedure.regionserver.classes",
-      LogRollRegionServerProcedureManager.class.getName());
-    TEST_UTIL.getConfiguration().set("hbase.procedure.master.classes",
-      LogRollMasterProcedureManager.class.getName());
-    TEST_UTIL.getConfiguration().set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/1");
+    conf1 = TEST_UTIL.getConfiguration();
+    conf1.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/1");
+    // Set MultiWAL (with 2 default WAL files per RS)
+    //conf1.set(WAL_PROVIDER, "multiwal");
     TEST_UTIL.startMiniZKCluster();
     MiniZooKeeperCluster miniZK = TEST_UTIL.getZkCluster();
 
-    conf1 = TEST_UTIL.getConfiguration();
     conf2 = HBaseConfiguration.create(conf1);
     conf2.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/2");
     TEST_UTIL2 = new HBaseTestingUtility(conf2);
@@ -113,8 +112,20 @@ public class TestBackupBase {
     LOG.info("ROOTDIR " + BACKUP_ROOT_DIR);
     BACKUP_REMOTE_ROOT_DIR = TEST_UTIL2.getConfiguration().get("fs.defaultFS") + "/backupUT";
     LOG.info("REMOTE ROOTDIR " + BACKUP_REMOTE_ROOT_DIR);
-
+    waitForSystemTable();
     createTables();
+  }
+  
+  static void waitForSystemTable() throws Exception
+  {
+    try(Admin admin = TEST_UTIL.getAdmin();) {
+      while (!admin.tableExists(BackupSystemTable.getTableName()) 
+          || !admin.isTableAvailable(BackupSystemTable.getTableName())) {
+        Thread.sleep(1000);
+      }      
+    }
+    LOG.debug("backup table exists and available");
+
   }
 
   /**
@@ -155,6 +166,10 @@ public class TestBackupBase {
     return backupTables(BackupType.FULL, tables, BACKUP_ROOT_DIR);
   }
 
+  protected String incrementalTableBackup(List<TableName> tables) throws IOException {
+    return backupTables(BackupType.INCREMENTAL, tables, BACKUP_ROOT_DIR);
+  }
+  
   protected static void loadTable(HTable table) throws Exception {
 
     Put p; // 100 + 1 row to t1_syncup
@@ -169,7 +184,6 @@ public class TestBackupBase {
 
     long tid = System.currentTimeMillis();
     table1 = TableName.valueOf("test-" + tid);
-    BackupSystemTable backupTable = new BackupSystemTable(TEST_UTIL.getConnection());
     HBaseAdmin ha = TEST_UTIL.getHBaseAdmin();
     HTableDescriptor desc = new HTableDescriptor(table1);
     HColumnDescriptor fam = new HColumnDescriptor(famName);
@@ -197,26 +211,28 @@ public class TestBackupBase {
   }
 
   protected boolean checkSucceeded(String backupId) throws IOException {
-    BackupContext status = getBackupContext(backupId);
+    BackupInfo status = getBackupContext(backupId);
     if (status == null) return false;
     return status.getState() == BackupState.COMPLETE;
   }
 
   protected boolean checkFailed(String backupId) throws IOException {
-    BackupContext status = getBackupContext(backupId);
+    BackupInfo status = getBackupContext(backupId);
     if (status == null) return false;
     return status.getState() == BackupState.FAILED;
   }
 
-  private BackupContext getBackupContext(String backupId) throws IOException {
-    Configuration conf = conf1;//BackupClientImpl.getConf();
-    try (Connection connection = ConnectionFactory.createConnection(conf);
-        BackupSystemTable table = new BackupSystemTable(connection)) {
-      BackupContext status = table.readBackupStatus(backupId);
+  private BackupInfo getBackupContext(String backupId) throws IOException {
+    try (BackupSystemTable table = new BackupSystemTable(TEST_UTIL.getConnection())) {
+      BackupInfo status = table.readBackupInfo(backupId);
       return status;
     }
   }
 
+  protected BackupClient getBackupClient(){
+    return BackupRestoreFactory.getBackupClient(conf1);
+  }
+  
   protected RestoreClient getRestoreClient()
   {
     return BackupRestoreFactory.getRestoreClient(conf1);
@@ -231,5 +247,16 @@ public class TestBackupBase {
       ret.add(TableName.valueOf(args[i]));
     }
     return ret;
+  }
+    
+  protected void dumpBackupDir() throws IOException
+  {
+    // Dump Backup Dir
+    FileSystem fs = FileSystem.get(conf1);
+    RemoteIterator<LocatedFileStatus> it = fs.listFiles( new Path(BACKUP_ROOT_DIR), true);
+    while(it.hasNext()){
+      LOG.debug("DDEBUG: "+it.next().getPath());
+    }
+
   }
 }

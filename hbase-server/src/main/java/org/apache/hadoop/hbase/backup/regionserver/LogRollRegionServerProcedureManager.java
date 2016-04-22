@@ -106,7 +106,7 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
    * If in a running state, creates the specified subprocedure for handling a backup procedure.
    * @return Subprocedure to submit to the ProcedureMemeber.
    */
-  public Subprocedure buildSubprocedure() {
+  public Subprocedure buildSubprocedure(byte[] data) {
 
     // don't run a backup if the parent is stop(ping)
     if (rss.isStopping() || rss.isStopped()) {
@@ -124,7 +124,7 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
     LogRollBackupSubprocedurePool taskManager =
         new LogRollBackupSubprocedurePool(rss.getServerName().toString(), conf);
     return new LogRollBackupSubprocedure(rss, member, errorDispatcher, wakeMillis, timeoutMillis,
-      taskManager);
+      taskManager, data);
 
   }
 
@@ -135,7 +135,7 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
 
     @Override
     public Subprocedure buildSubprocedure(String name, byte[] data) {
-      return LogRollRegionServerProcedureManager.this.buildSubprocedure();
+      return LogRollRegionServerProcedureManager.this.buildSubprocedure(data);
     }
   }
 
