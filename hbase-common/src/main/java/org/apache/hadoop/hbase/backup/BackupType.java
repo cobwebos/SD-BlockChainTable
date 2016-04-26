@@ -17,7 +17,9 @@
  */
 
 package org.apache.hadoop.hbase.backup;
+import org.apache.hadoop.hbase.classification.InterfaceAudience;
 
+@InterfaceAudience.Private
 public enum BackupType {
   FULL, INCREMENTAL
 }
