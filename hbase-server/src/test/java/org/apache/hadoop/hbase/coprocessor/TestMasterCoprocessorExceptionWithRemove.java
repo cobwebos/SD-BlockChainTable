@@ -85,6 +85,7 @@ public class TestMasterCoprocessorExceptionWithRemove {
       // Cause a NullPointerException and don't catch it: this should cause the
       // master to throw an o.apache.hadoop.hbase.DoNotRetryIOException to the
       // client.
+      if (desc.getTableName().isSystemTable()) return;
       Integer i;
       i = null;
       i = i++;

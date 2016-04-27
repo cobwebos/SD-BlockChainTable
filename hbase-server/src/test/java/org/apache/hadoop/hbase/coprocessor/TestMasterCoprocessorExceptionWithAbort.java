@@ -107,6 +107,7 @@ public class TestMasterCoprocessorExceptionWithAbort {
         HTableDescriptor desc, HRegionInfo[] regions) throws IOException {
       // cause a NullPointerException and don't catch it: this will cause the
       // master to abort().
+      if (desc.getTableName().isSystemTable()) return;
       Integer i;
       i = null;
       i = i++;
