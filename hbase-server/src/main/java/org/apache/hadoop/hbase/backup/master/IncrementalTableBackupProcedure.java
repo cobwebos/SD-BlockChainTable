@@ -166,6 +166,7 @@ public class IncrementalTableBackupProcedure
 
             newTimestamps = incrBackupManager.getIncrBackupLogFileList(backupContext);
           } catch (Exception e) {
+            setFailure("Failure in incremental-backup: preparation phase " + backupId, e);
             // fail the overall backup and return
             FullTableBackupProcedure.failBackup(env, backupContext, backupManager, e,
               "Unexpected Exception : ", BackupType.INCREMENTAL, conf);
@@ -181,9 +182,11 @@ public class IncrementalTableBackupProcedure
             // Save list of WAL files copied
             backupManager.recordWALFiles(backupContext.getIncrBackupFileList());
           } catch (Exception e) {
+            String msg = "Unexpected exception in incremental-backup: incremental copy " + backupId;
+            setFailure(msg, e);
             // fail the overall backup and return
             FullTableBackupProcedure.failBackup(env, backupContext, backupManager, e,
-              "Unexpected exception doing incremental copy : ", BackupType.INCREMENTAL, conf);
+              msg, BackupType.INCREMENTAL, conf);
           }
           setNextState(IncrementalTableBackupState.INCR_BACKUP_COMPLETE);
           break;
