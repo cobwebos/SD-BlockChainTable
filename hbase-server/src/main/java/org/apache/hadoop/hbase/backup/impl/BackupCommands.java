@@ -231,13 +231,13 @@ public final class BackupCommands {
         System.exit(0);
       }
 
-      if (args.length != 1) {
+      if (args.length != 2) {
         System.out.println("Only support check help message of a single command type");
         System.out.println(USAGE);
         System.exit(0);
       }
 
-      String type = args[0];
+      String type = args[1];
 
       if (BackupCommand.CREATE.name().equalsIgnoreCase(type)) {
         System.out.println(CREATE_CMD_USAGE);
@@ -249,11 +249,9 @@ public final class BackupCommands {
         System.out.println(PROGRESS_CMD_USAGE);
       } else if (BackupCommand.DELETE.name().equalsIgnoreCase(type)) {
         System.out.println(DELETE_CMD_USAGE);
-      }
-      if (BackupCommand.CANCEL.name().equalsIgnoreCase(type)) {
+      } else if (BackupCommand.CANCEL.name().equalsIgnoreCase(type)) {
         System.out.println(CANCEL_CMD_USAGE);
-      }
-      if (BackupCommand.SET.name().equalsIgnoreCase(type)) {
+      } else if (BackupCommand.SET.name().equalsIgnoreCase(type)) {
         System.out.println(SET_CMD_USAGE);
       } else {
         System.out.println("Unknown command : " + type);
