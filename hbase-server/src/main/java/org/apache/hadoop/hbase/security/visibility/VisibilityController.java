@@ -50,6 +50,7 @@ import org.apache.hadoop.hbase.Tag;
 import org.apache.hadoop.hbase.TagRewriteCell;
 import org.apache.hadoop.hbase.TagType;
 import org.apache.hadoop.hbase.TagUtil;
+import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Append;
@@ -103,6 +104,7 @@ import org.apache.hadoop.hbase.security.AccessDeniedException;
 import org.apache.hadoop.hbase.security.Superusers;
 import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.security.access.AccessController;
+import org.apache.hadoop.hbase.security.access.Permission.Action;
 import org.apache.hadoop.hbase.util.ByteStringer;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
@@ -306,6 +308,18 @@ public class VisibilityController extends BaseMasterAndRegionObserver implements
       LOG.error("Error while initializing VisibilityLabelService..", ioe);
       throw new RuntimeException(ioe);
     }
+  }
+
+  @Override
+  public void preBackupTables(final ObserverContext<MasterCoprocessorEnvironment> ctx,
+      final BackupType type, final List<TableName> tablesList, final String targetRootDir,
+      final int workers, final long bandwidth) throws IOException {
+  }
+
+  @Override
+  public void postBackupTables(final ObserverContext<MasterCoprocessorEnvironment> ctx,
+      final BackupType type, final List<TableName> tablesList, final Pair<Long, String> pair)
+          throws IOException {
   }
 
   @Override

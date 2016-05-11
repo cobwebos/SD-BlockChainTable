@@ -31,6 +31,7 @@ import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.ProcedureInfo;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
@@ -39,6 +40,7 @@ import org.apache.hadoop.hbase.master.procedure.MasterProcedureEnv;
 import org.apache.hadoop.hbase.procedure2.ProcedureExecutor;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.SnapshotDescription;
 import org.apache.hadoop.hbase.protobuf.generated.QuotaProtos.Quotas;
+import org.apache.hadoop.hbase.util.Pair;
 
 /**
  * Defines coprocessor hooks for interacting with operations on the
@@ -796,6 +798,30 @@ public interface MasterObserver extends Coprocessor {
    */
   void postBalance(final ObserverContext<MasterCoprocessorEnvironment> ctx, List<RegionPlan> plans)
       throws IOException;
+
+  /**
+   * Called prior to backing up tables
+   * @param ctx the coprocessor instance's environment
+   * @param type the type of backup
+   * @param tablesList list of tables to backup
+   * @param targetRootDir root directory
+   * @param workers number of parallel workers
+   * @param bandwidth bandwidth per worker in MB per sec
+   */
+  void preBackupTables(final ObserverContext<MasterCoprocessorEnvironment> ctx,
+      final BackupType type, final List<TableName> tablesList, final String targetRootDir,
+      final int workers, final long bandwidth) throws IOException;
+
+  /**
+   * Called after backing up tables
+   * @param ctx the coprocessor instance's environment
+   * @param type the type of backup
+   * @param tablesList list of tables to backup
+   * @param pair the pair of procedure Id and backup Id
+   */
+  void postBackupTables(final ObserverContext<MasterCoprocessorEnvironment> ctx,
+      final BackupType type, final List<TableName> tablesList, final Pair<Long, String> pair)
+          throws IOException;
 
   /**
    * Called prior to setting split / merge switch
