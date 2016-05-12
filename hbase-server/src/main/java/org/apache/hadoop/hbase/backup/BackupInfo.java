@@ -438,6 +438,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
   public String getShortDescription() {
     StringBuilder sb = new StringBuilder();
     sb.append("ID             : " + backupId).append("\n");
+    sb.append("Type           : " + getType()).append("\n");
     sb.append("Tables         : " + getTableListAsString()).append("\n");
     sb.append("State          : " + getState()).append("\n");
     Date date = null;
