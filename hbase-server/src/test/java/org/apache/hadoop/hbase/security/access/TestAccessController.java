@@ -57,7 +57,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.Tag;
 import org.apache.hadoop.hbase.ArrayBackedTag;
-import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Append;
 import org.apache.hadoop.hbase.client.Connection;
@@ -714,22 +713,6 @@ public class TestAccessController extends SecureTestUtil {
       public Object run() throws Exception {
         ACCESS_CONTROLLER.preSetSplitOrMergeEnabled(ObserverContext.createAndPrepare(CP_ENV, null),
           true, Admin.MasterSwitchType.MERGE);
-        return null;
-      }
-    };
-
-    verifyAllowed(action, SUPERUSER, USER_ADMIN, USER_GROUP_ADMIN);
-    verifyDenied(action, USER_CREATE, USER_OWNER, USER_RW, USER_RO, USER_NONE, USER_GROUP_READ,
-      USER_GROUP_WRITE, USER_GROUP_CREATE);
-  }
-
-  @Test (timeout=180000)
-  public void testbackupTables() throws Exception {
-    AccessTestAction action = new AccessTestAction() {
-      @Override
-      public Object run() throws Exception {
-        ACCESS_CONTROLLER.preBackupTables(ObserverContext.createAndPrepare(CP_ENV, null),
-          BackupType.FULL, null, null, 0, 0);
         return null;
       }
     };

@@ -1062,23 +1062,9 @@ public class MasterRpcServices extends RSRpcServices
       for (HBaseProtos.TableName table : request.getTablesList()) {
         tablesList.add(ProtobufUtil.toTableName(table));
       }
-      BackupType type = BackupType.valueOf(request.getType().name());
-      boolean bypass = false;
-      if (master.cpHost != null) {
-        bypass = master.cpHost.preBackupTables(type, tablesList, request.getTargetRootDir(),
-            (int)request.getWorkers(), request.getBandwidth());
-      }
-      Pair<Long, String> pair;
-      if (!bypass) {
-        pair = master.backupTables(
-          type, tablesList, request.getTargetRootDir(),
-          (int)request.getWorkers(), request.getBandwidth());
-        if (master.cpHost != null) {
-          master.cpHost.postBackupTables(type, tablesList, pair);
-        }
-      } else {
-        pair = new Pair<>(-1L, "");
-      }
+      Pair<Long, String> pair = master.backupTables(
+        BackupType.valueOf(request.getType().name()), tablesList, request.getTargetRootDir(),
+        (int)request.getWorkers(), request.getBandwidth());
       return response.setProcId(pair.getFirst()).setBackupId(pair.getSecond()).build();
     } catch (IOException e) {
       throw new ServiceException(e);

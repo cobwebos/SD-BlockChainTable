@@ -186,7 +186,7 @@ public interface MasterServices extends Server {
    * @param type whether the backup is full or incremental
    * @param tableList list of tables to backup
    * @param targetRootDir root dir for saving the backup
-   * @param workers number of parallel workers. -1 - system defined
+   * @param workers number of paralle workers. -1 - system defined
    * @param bandwidth bandwidth per worker in MB per sec. -1 - unlimited
    * @return pair of procedure Id and backupId
    * @throws IOException

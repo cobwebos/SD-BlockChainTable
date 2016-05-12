@@ -34,7 +34,6 @@ import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.ProcedureInfo;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.coprocessor.CoprocessorHost;
@@ -46,7 +45,6 @@ import org.apache.hadoop.hbase.master.procedure.MasterProcedureEnv;
 import org.apache.hadoop.hbase.procedure2.ProcedureExecutor;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.SnapshotDescription;
 import org.apache.hadoop.hbase.protobuf.generated.QuotaProtos.Quotas;
-import org.apache.hadoop.hbase.util.Pair;
 
 /**
  * Provides the coprocessor framework and environment for master oriented
@@ -770,28 +768,6 @@ public class MasterCoprocessorHost
       public void call(MasterObserver oserver, ObserverContext<MasterCoprocessorEnvironment> ctx)
           throws IOException {
         oserver.postBalance(ctx, plans);
-      }
-    });
-  }
-
-  public boolean preBackupTables(final BackupType type, final List<TableName> tablesList,
-      final String targetRootDir, final int workers, final long bandwidth) throws IOException {
-    return execOperation(coprocessors.isEmpty() ? null : new CoprocessorOperation() {
-      @Override
-      public void call(MasterObserver oserver, ObserverContext<MasterCoprocessorEnvironment> ctx)
-          throws IOException {
-        oserver.preBackupTables(ctx, type, tablesList, targetRootDir, workers, bandwidth);
-      }
-    });
-  }
-
-  public void postBackupTables(final BackupType type, final List<TableName> tablesList,
-      final Pair<Long, String> pair) throws IOException {
-    execOperation(coprocessors.isEmpty() ? null : new CoprocessorOperation() {
-      @Override
-      public void call(MasterObserver oserver, ObserverContext<MasterCoprocessorEnvironment> ctx)
-          throws IOException {
-        oserver.postBackupTables(ctx, type, tablesList, pair);
       }
     });
   }

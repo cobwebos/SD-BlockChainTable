@@ -57,7 +57,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.Tag;
 import org.apache.hadoop.hbase.TagRewriteCell;
 import org.apache.hadoop.hbase.TagUtil;
-import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Append;
@@ -1257,19 +1256,6 @@ public class AccessController extends BaseMasterAndRegionObserver
   public void preRegionOffline(ObserverContext<MasterCoprocessorEnvironment> c,
       HRegionInfo regionInfo) throws IOException {
     requirePermission("regionOffline", regionInfo.getTable(), null, null, Action.ADMIN);
-  }
-
-  @Override
-  public void preBackupTables(final ObserverContext<MasterCoprocessorEnvironment> ctx,
-      final BackupType type, final List<TableName> tablesList, final String targetRootDir,
-      final int workers, final long bandwidth) throws IOException {
-    requirePermission("backupTables", Action.ADMIN);
-  }
-
-  @Override
-  public void postBackupTables(final ObserverContext<MasterCoprocessorEnvironment> ctx,
-      final BackupType type, final List<TableName> tablesList, final Pair<Long, String> pair)
-          throws IOException {
   }
 
   @Override
