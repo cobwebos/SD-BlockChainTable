@@ -68,10 +68,10 @@ public final class BackupCommands {
           + "                    the prefix can be hdfs, webhdfs or gpfs\n" + " Options:\n"
           + "  tables      If no tables (\"\") are specified, all tables are backed up. "
           + "Otherwise it is a\n" + "               comma separated list of tables.\n"
-          + " -s name     Use the specified snapshot for full backup\n"
           + " -convert    For an incremental backup, convert WAL files to HFiles\n"
           + " -w          number of parallel workers.\n" 
-          + " -b          bandwith per one worker (in MB sec)" ;
+          + " -b          bandwith per one worker (in MB sec)\n"
+          + " -set        name of backup set" ;
 
   private static final String PROGRESS_CMD_USAGE = "Usage: hbase backup progress <backupId>\n"
       + " backupId      backup image id;\n";
