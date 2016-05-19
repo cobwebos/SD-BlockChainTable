@@ -242,8 +242,8 @@ public class TestTablePermissions {
     // check full load
     Map<byte[], ListMultimap<String,TablePermission>> allPerms =
         AccessControlLists.loadAll(conf);
-    assertEquals("Full permission map should have entries for both test tables",
-        2, allPerms.size());
+    assertTrue("Full permission map should have entries for both test tables",
+        2 <= allPerms.size());
 
     userPerms = allPerms.get(TEST_TABLE.getName()).get("hubert");
     assertNotNull(userPerms);

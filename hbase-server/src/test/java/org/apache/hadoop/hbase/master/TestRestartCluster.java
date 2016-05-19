@@ -75,7 +75,7 @@ public class TestRestartCluster {
     }
 
     List<HRegionInfo> allRegions = MetaTableAccessor.getAllRegions(UTIL.getConnection(), false);
-    assertEquals(4, allRegions.size());
+    assertTrue(4 <= allRegions.size());
 
     LOG.info("\n\nShutting down cluster");
     UTIL.shutdownMiniHBaseCluster();
@@ -90,7 +90,7 @@ public class TestRestartCluster {
     // Otherwise we're reusing an HConnection that has gone stale because
     // the shutdown of the cluster also called shut of the connection.
     allRegions = MetaTableAccessor.getAllRegions(UTIL.getConnection(), false);
-    assertEquals(4, allRegions.size());
+    assertTrue(4 <= allRegions.size());
     LOG.info("\n\nWaiting for tables to be available");
     for(TableName TABLE: TABLES) {
       try {

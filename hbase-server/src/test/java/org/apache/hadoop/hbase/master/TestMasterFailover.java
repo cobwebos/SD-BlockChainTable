@@ -238,9 +238,9 @@ public class TestMasterFailover {
 
     log("Regions in hbase:meta and namespace have been created");
 
-    // at this point we only expect 3 regions to be assigned out
-    // (catalogs and namespace, + 1 online region)
-    assertEquals(3, cluster.countServedRegions());
+    // at this point we expect at least 3 regions to be assigned out
+    // (meta and namespace, + 1 online region)
+    assertTrue(3 <= cluster.countServedRegions());
     HRegionInfo hriOnline = null;
     try (RegionLocator locator =
         TEST_UTIL.getConnection().getRegionLocator(TableName.valueOf("onlineTable"))) {

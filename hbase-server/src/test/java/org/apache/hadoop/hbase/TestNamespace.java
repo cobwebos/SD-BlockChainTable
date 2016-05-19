@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -112,13 +113,16 @@ public class TestNamespace {
     //verify existence of system tables
     Set<TableName> systemTables = Sets.newHashSet(
         TableName.META_TABLE_NAME,
-        TableName.NAMESPACE_TABLE_NAME);
+        TableName.NAMESPACE_TABLE_NAME,
+        TableName.BACKUP_TABLE_NAME);
     HTableDescriptor[] descs =
         admin.listTableDescriptorsByNamespace(NamespaceDescriptor.SYSTEM_NAMESPACE.getName());
-    assertEquals(systemTables.size(), descs.length);
+    assertTrue(descs.length >= systemTables.size());
+    Set<TableName> tables = new HashSet<>();
     for (HTableDescriptor desc : descs) {
-      assertTrue(systemTables.contains(desc.getTableName()));
+      tables.add(desc.getTableName());
     }
+    assertTrue(tables.containsAll(systemTables));
     //verify system tables aren't listed
     assertEquals(0, admin.listTables().length);
 
