@@ -32,10 +32,10 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupCopyService;
 import org.apache.hadoop.hbase.backup.BackupInfo;
-import org.apache.hadoop.hbase.backup.impl.BackupCopyService;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
-import org.apache.hadoop.hbase.backup.impl.BackupUtil;
+import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -205,7 +205,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
         
         long totalSrcLgth = 0;
         for (Path aSrc : srcs) {
-          totalSrcLgth += BackupUtil.getFilesLength(aSrc.getFileSystem(getConf()), aSrc);
+          totalSrcLgth += BackupServerUtil.getFilesLength(aSrc.getFileSystem(getConf()), aSrc);
         }
 
         // submit the copy job

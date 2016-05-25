@@ -55,9 +55,9 @@ public class TestBackupStatusProgress extends TestBackupBase {
     assertTrue(checkSucceeded(backupId));
 
 
-    BackupInfo info = getBackupClient().getBackupInfo(backupId);    
+    BackupInfo info = getBackupAdmin().getBackupInfo(backupId);    
     assertTrue(info.getState() == BackupState.COMPLETE);
-    int p = getBackupClient().getProgress(backupId);
+    int p = getBackupAdmin().getProgress(backupId);
     LOG.debug(info.getShortDescription());
     assertTrue(p > 0);
 

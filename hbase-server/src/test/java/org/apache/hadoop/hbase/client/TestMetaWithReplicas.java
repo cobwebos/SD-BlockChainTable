@@ -83,6 +83,9 @@ public class TestMetaWithReplicas {
     TEST_UTIL.getConfiguration().setInt(
         StorefileRefresherChore.REGIONSERVER_STOREFILE_REFRESH_PERIOD, 1000);
     TEST_UTIL.startMiniCluster(3);
+    
+    TEST_UTIL.waitUntilAllSystemRegionsAssigned();
+
     // disable the balancer
     LoadBalancerTracker l = new LoadBalancerTracker(TEST_UTIL.getZooKeeperWatcher(),
         new Abortable() {

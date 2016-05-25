@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HTable;
@@ -97,9 +98,9 @@ public class TestIncrementalBackupNoDataLoss extends TestBackupBase {
       TEST_UTIL.deleteTable(table2_restore);
     }
 
-    RestoreClient client = getRestoreClient();
-    client.restore(BACKUP_ROOT_DIR, backupIdInc1, false, true, tablesRestoreInc1,
-      tablesMapInc1, false);
+    BackupAdmin client = getBackupAdmin();
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdInc1, false, true, tablesRestoreInc1,
+      tablesMapInc1, false));
 
     HTable hTable = (HTable) conn.getTable(table1_restore);
     Assert.assertThat(TEST_UTIL.countRows(hTable), CoreMatchers.equalTo(NB_ROWS_IN_BATCH * 2));
@@ -110,9 +111,8 @@ public class TestIncrementalBackupNoDataLoss extends TestBackupBase {
     TableName[] tablesRestoreInc2 = new TableName[] { table2 };
     TableName[] tablesMapInc2 = new TableName[] { table2_restore };
 
-    client = getRestoreClient();
-    client.restore(BACKUP_ROOT_DIR, backupIdInc2, false, true, tablesRestoreInc2,
-      tablesMapInc2, false);
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdInc2, false, true, tablesRestoreInc2,
+      tablesMapInc2, false));
 
     hTable = (HTable) conn.getTable(table2_restore);
     Assert.assertThat(TEST_UTIL.countRows(hTable), CoreMatchers.equalTo(NB_ROWS_IN_BATCH + 5));

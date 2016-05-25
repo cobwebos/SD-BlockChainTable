@@ -51,7 +51,7 @@ public class TestOfflineMetaRebuildBase extends OfflineMetaRebuildTestCore {
     wipeOutMeta();
 
     // is meta really messed up?
-    assertEquals(1, scanMeta());
+    assertEquals(2, scanMeta());
     assertErrors(doFsck(conf, false),
         new ERROR_CODE[] {
             ERROR_CODE.NOT_IN_META_OR_DEPLOYED,
@@ -81,7 +81,7 @@ public class TestOfflineMetaRebuildBase extends OfflineMetaRebuildTestCore {
       LOG.info("No more RIT in ZK, now doing final test verification");
 
       // everything is good again.
-      assertEquals(5, scanMeta()); // including table state rows
+      assertEquals(6, scanMeta()); // including table state rows
       TableName[] tableNames = TEST_UTIL.getHBaseAdmin().listTableNames();
       for (TableName tableName : tableNames) {
         HTableDescriptor tableDescriptor = TEST_UTIL.getHBaseAdmin().getTableDescriptor(tableName);

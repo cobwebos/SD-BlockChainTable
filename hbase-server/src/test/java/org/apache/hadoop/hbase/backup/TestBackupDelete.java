@@ -51,16 +51,10 @@ public class TestBackupDelete extends TestBackupBase {
     String backupId = fullTableBackup(tableList);
     assertTrue(checkSucceeded(backupId));
     LOG.info("backup complete");
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(baos));
-
     String[] backupIds = new String[] { backupId };
-    getBackupClient().deleteBackups(backupIds);
-
+    int deleted = getBackupAdmin().deleteBackups(backupIds);
+    assertTrue(1 == deleted);
     LOG.info("delete_backup");
-    String output = baos.toString();
-    LOG.info(baos.toString());
-    assertTrue(output.indexOf("Delete backup for backupID=" + backupId + " completed.") >= 0);
   }
 
   /**
@@ -90,7 +84,7 @@ public class TestBackupDelete extends TestBackupBase {
     LOG.info("delete_backup");
     String output = baos.toString();
     LOG.info(baos.toString());
-    assertTrue(output.indexOf("Delete backup for backupID=" + backupId + " completed.") >= 0);
+    assertTrue(output.indexOf("Deleted 1 backups") >= 0);
   }  
   
 }

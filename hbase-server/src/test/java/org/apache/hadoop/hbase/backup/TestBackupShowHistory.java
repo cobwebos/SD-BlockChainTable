@@ -54,7 +54,7 @@ public class TestBackupShowHistory extends TestBackupBase {
     assertTrue(checkSucceeded(backupId));
     LOG.info("backup complete");
 
-    List<BackupInfo> history = getBackupClient().getHistory(10);
+    List<BackupInfo> history = getBackupAdmin().getHistory(10);
     assertTrue(history.size() > 0);
     boolean success = false;
     for(BackupInfo info: history){

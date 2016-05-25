@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Delete;
@@ -185,7 +186,7 @@ public final class BackupSystemTableHelper {
     scan.setStartRow(startRow);
     scan.setStopRow(stopRow);
     scan.addFamily(BackupSystemTable.SESSIONS_FAMILY);
-
+    scan.setMaxVersions(1);
     return scan;
   }
 
@@ -266,6 +267,7 @@ public final class BackupSystemTableHelper {
     scan.setStartRow(startRow);
     scan.setStopRow(stopRow);
     scan.addFamily(BackupSystemTable.META_FAMILY);
+    scan.setMaxVersions(1);
 
     return scan;
   }
@@ -294,7 +296,7 @@ public final class BackupSystemTableHelper {
 
     List<Put> puts = new ArrayList<Put>();
     for (String file : files) {
-      Put put = new Put(rowkey(WALS_PREFIX, BackupUtil.getUniqueWALFileNamePart(file)));
+      Put put = new Put(rowkey(WALS_PREFIX, BackupClientUtil.getUniqueWALFileNamePart(file)));
       put.addColumn(BackupSystemTable.META_FAMILY, "backupId".getBytes(), backupId.getBytes());
       put.addColumn(BackupSystemTable.META_FAMILY, "file".getBytes(), file.getBytes());
       put.addColumn(BackupSystemTable.META_FAMILY, "root".getBytes(), backupRoot.getBytes());
@@ -327,7 +329,7 @@ public final class BackupSystemTableHelper {
    * @throws IOException exception
    */
   public static Get createGetForCheckWALFile(String file) throws IOException {
-    Get get = new Get(rowkey(WALS_PREFIX, BackupUtil.getUniqueWALFileNamePart(file)));
+    Get get = new Get(rowkey(WALS_PREFIX, BackupClientUtil.getUniqueWALFileNamePart(file)));
     // add backup root column
     get.addFamily(BackupSystemTable.META_FAMILY);
     return get;
@@ -361,6 +363,7 @@ public final class BackupSystemTableHelper {
  
  /**
   * Creates Delete operation to delete backup set content
+  * @param name - backup set's name
   * @return delete operation
   */
  static Delete createDeleteForBackupSet(String name) {    
@@ -372,6 +375,8 @@ public final class BackupSystemTableHelper {
  
  /**
   * Creates Put operation to update backup set content
+  * @param name - backup set's name
+  * @param tables - list of tables
   * @return put operation
   */
  static Put createPutForBackupSet(String name, String[] tables) {    

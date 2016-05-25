@@ -121,8 +121,8 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     admin = connection.getAdmin();
     admin.setBalancerRunning(false, true);
 
-    TEST_UTIL.waitUntilAllRegionsAssigned(TableName.META_TABLE_NAME);
-    TEST_UTIL.waitUntilAllRegionsAssigned(TableName.NAMESPACE_TABLE_NAME);
+    TEST_UTIL.waitUntilAllSystemRegionsAssigned();
+    
   }
 
   @AfterClass

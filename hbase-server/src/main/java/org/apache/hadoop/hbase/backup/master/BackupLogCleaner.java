@@ -71,7 +71,7 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
       
       for(FileStatus file: files){
         String wal = file.getPath().toString();
-        boolean logInSystemTable = table.checkWALFile(wal);
+        boolean logInSystemTable = table.isWALFileDeletable(wal);
         if(LOG.isDebugEnabled()) {
           if(logInSystemTable) {
             LOG.debug("Found log file in hbase:backup, deleting: " + wal);

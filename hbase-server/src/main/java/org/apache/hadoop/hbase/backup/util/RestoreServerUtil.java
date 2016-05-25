@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.backup.impl;
+package org.apache.hadoop.hbase.backup.util;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -34,8 +34,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupRestoreFactory;
+import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
+import org.apache.hadoop.hbase.backup.IncrementalRestoreService;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
@@ -59,9 +60,9 @@ import org.apache.hadoop.hbase.util.Bytes;
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class RestoreUtil {
+public class RestoreServerUtil {
 
-  public static final Log LOG = LogFactory.getLog(RestoreUtil.class);
+  public static final Log LOG = LogFactory.getLog(RestoreServerUtil.class);
 
   private final String[] ignoreDirs = { "recovered.edits" };
 
@@ -78,7 +79,7 @@ public class RestoreUtil {
   // store table name and snapshot dir mapping
   private final HashMap<TableName, Path> snapshotMap = new HashMap<>();
 
-  public RestoreUtil(Configuration conf, final Path backupRootPath, final String backupId)
+  public RestoreServerUtil(Configuration conf, final Path backupRootPath, final String backupId)
       throws IOException {
     this.conf = conf;
     this.backupRootPath = backupRootPath;
@@ -140,7 +141,7 @@ public class RestoreUtil {
    * @param newTableNames : target tableNames(table names to be restored to)
    * @throws IOException exception
    */
-  void incrementalRestoreTable(Path[] logDirs,
+  public void incrementalRestoreTable(Path[] logDirs,
       TableName[] tableNames, TableName[] newTableNames) throws IOException {
 
     if (tableNames.length != newTableNames.length) {
@@ -159,13 +160,13 @@ public class RestoreUtil {
         }
       }
       IncrementalRestoreService restoreService =
-          BackupRestoreFactory.getIncrementalRestoreService(conf);
+          BackupRestoreServerFactory.getIncrementalRestoreService(conf);
 
       restoreService.run(logDirs, tableNames, newTableNames);
     }
   }
 
-  void fullRestoreTable(Path tableBackupPath, TableName tableName, TableName newTableName,
+  public void fullRestoreTable(Path tableBackupPath, TableName tableName, TableName newTableName,
       boolean converted) throws IOException {
     restoreTableAndCreate(tableName, newTableName, tableBackupPath, converted);
   }

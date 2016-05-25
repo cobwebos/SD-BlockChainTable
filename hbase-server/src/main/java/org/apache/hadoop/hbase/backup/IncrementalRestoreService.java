@@ -16,41 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.backup.impl;
+package org.apache.hadoop.hbase.backup;
 
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public interface BackupCopyService extends Configurable {
-  static enum Type {
-    FULL, INCREMENTAL
-  }
+public interface IncrementalRestoreService extends Configurable{
 
   /**
-   * Copy backup data
-   * @param backupContext - context
-   * @param backupManager  - manager
-   * @param conf - configuration
-   * @param copyType - copy type
-   * @param options - list of options
-   * @return result (0 - success)
+   * Run restore operation
+   * @param logDirectoryPaths - path array of WAL log directories
+   * @param fromTables - from tables
+   * @param toTables - to tables
    * @throws IOException
    */
-  public int copy(BackupInfo backupContext, BackupManager backupManager, Configuration conf,
-      BackupCopyService.Type copyType, String[] options) throws IOException;
-  
-
-   /**
-    * Cancel copy job
-    * @param jobHandler - copy job handler
-    * @throws IOException
-    */
-   public void cancelCopyJob(String jobHandler) throws IOException;  
+  public void run(Path[] logDirectoryPaths, TableName[] fromTables, TableName[] toTables)
+    throws IOException;
 }

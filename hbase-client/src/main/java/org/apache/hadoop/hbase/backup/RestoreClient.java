@@ -21,7 +21,11 @@ import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.classification.InterfaceAudience;
+import org.apache.hadoop.hbase.classification.InterfaceStability;
 
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
 public interface RestoreClient {
 
   public void setConf(Configuration conf);
@@ -36,10 +40,9 @@ public interface RestoreClient {
    * @param tTableArray The array of mapping tables to restore to
    * @param isOverwrite True then do restore overwrite if target table exists, otherwise fail the
    *          request if target table exists
-   * @return True if only do dependency check
    * @throws IOException if any failure during restore
    */
-  public  boolean restore(
+  public  void restore(
       String backupRootDir,
       String backupId, boolean check, boolean autoRestore, TableName[] sTableArray,
       TableName[] tTableArray, boolean isOverwrite) throws IOException;

@@ -914,34 +914,6 @@ public interface Admin extends Abortable, Closeable {
   void splitRegion(final byte[] regionName, final byte[] splitPoint)
     throws IOException;
 
-  /**
-   * Backs up given list of tables fully. Asynchronous operation. This means that
-   * it may be a while before all your tables are backed up.
-   * You can use Future.get(long, TimeUnit) to wait on the operation to complete.
-   * 
-   * @param request BackupRequest instance which contains the following members:
-   *  type whether the backup is full or incremental
-   *  tableList list of tables to backup
-   *  targetRootDir root dir for saving the backup
-   *  workers number of paralle workers. -1 - system defined
-   *  bandwidth bandwidth per worker in MB per sec. -1 - unlimited
-   * @return the result of the async backup. You can use Future.get(long, TimeUnit) to wait on the
-   *     operation to complete
-   */
-  public Future<String> backupTablesAsync(final BackupRequest request) throws IOException;
-
-  /**
-   * Backs up given list of tables fully. Synchronous operation.
-   * 
-   * @param request BackupRequest instance which contains the following members:
-   *  type whether the backup is full or incremental
-   *  tableList list of tables to backup
-   *  targetRootDir root dir for saving the backup
-   *  workers number of paralle workers. -1 - system defined
-   *  bandwidth bandwidth per worker in MB per sec. -1 - unlimited
-   * @return the backup Id
-   */
-  public String backupTables(final BackupRequest request) throws IOException;
 
   /**
    * Modify an existing table, more IRB friendly version. Asynchronous operation.  This means that
@@ -1726,6 +1698,13 @@ public interface Admin extends Abortable, Closeable {
    */
   boolean isSplitOrMergeEnabled(final MasterSwitchType switchType) throws IOException;
 
+  /**
+   * Get Backup Admin interface 
+   * @return backup admin object
+   * @throws IOException exception
+   */
+  BackupAdmin getBackupAdmin() throws IOException;
+  
   /**
    * Currently, there are only two compact types:
    * {@code NORMAL} means do store files compaction;

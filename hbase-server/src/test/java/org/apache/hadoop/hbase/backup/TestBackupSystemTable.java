@@ -341,10 +341,10 @@ public class TestBackupSystemTable {
 
     table.addWALFiles(files, "backup", "root");
 
-    assertTrue(table.checkWALFile(files.get(0)));
-    assertTrue(table.checkWALFile(files.get(1)));
-    assertTrue(table.checkWALFile(files.get(2)));
-    assertFalse(table.checkWALFile(newFile));
+    assertTrue(table.isWALFileDeletable(files.get(0)));
+    assertTrue(table.isWALFileDeletable(files.get(1)));
+    assertTrue(table.isWALFileDeletable(files.get(2)));
+    assertFalse(table.isWALFileDeletable(newFile));
 
     cleanBackupTable();
   }

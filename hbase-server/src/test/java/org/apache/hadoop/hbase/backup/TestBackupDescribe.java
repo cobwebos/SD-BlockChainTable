@@ -58,7 +58,7 @@ public class TestBackupDescribe extends TestBackupBase {
     assertTrue(checkSucceeded(backupId));
 
 
-    BackupInfo info = getBackupClient().getBackupInfo(backupId);
+    BackupInfo info = getBackupAdmin().getBackupInfo(backupId);
     assertTrue(info.getState() == BackupState.COMPLETE);
 
   }

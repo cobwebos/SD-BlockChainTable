@@ -34,6 +34,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
@@ -51,7 +52,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
   private static final Log LOG = LogFactory.getLog(BackupInfo.class);
   // backup status flag
   public static enum BackupState {
-    WAITING, RUNNING, COMPLETE, FAILED, CANCELLED;
+    WAITING, RUNNING, COMPLETE, FAILED, CANCELLED, ANY;
   }
   // backup phase    
   public static enum BackupPhase {
@@ -125,7 +126,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
     this.addTables(tables);
 
     if (type == BackupType.INCREMENTAL) {
-      setHlogTargetDir(HBackupFileSystem.getLogBackupDir(targetRootDir, backupId));
+      setHlogTargetDir(BackupClientUtil.getLogBackupDir(targetRootDir, backupId));
     }
 
     this.startTs = 0;
@@ -407,7 +408,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
       context.setState(BackupInfo.BackupState.valueOf(proto.getState().name()));
     }
 
-    context.setHlogTargetDir(HBackupFileSystem.getLogBackupDir(proto.getTargetRootDir(),
+    context.setHlogTargetDir(BackupClientUtil.getLogBackupDir(proto.getTargetRootDir(),
       proto.getBackupId()));
 
     if (proto.hasPhase()) {

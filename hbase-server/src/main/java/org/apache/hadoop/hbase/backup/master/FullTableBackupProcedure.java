@@ -36,21 +36,21 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupClientUtil;
+import org.apache.hadoop.hbase.backup.BackupCopyService;
 import org.apache.hadoop.hbase.backup.BackupInfo;
-import org.apache.hadoop.hbase.backup.BackupRestoreFactory;
+import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
+import org.apache.hadoop.hbase.backup.BackupCopyService.Type;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupPhase;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
-import org.apache.hadoop.hbase.backup.impl.BackupCopyService;
 import org.apache.hadoop.hbase.backup.impl.BackupException;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
-import org.apache.hadoop.hbase.backup.impl.BackupUtil;
-import org.apache.hadoop.hbase.backup.impl.BackupCopyService.Type;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
+import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.master.procedure.MasterProcedureEnv;
 import org.apache.hadoop.hbase.master.procedure.MasterProcedureUtil;
@@ -297,7 +297,7 @@ public class FullTableBackupProcedure
 
     // call ExportSnapshot to copy files based on hbase snapshot for backup
     // ExportSnapshot only support single snapshot export, need loop for multiple tables case
-    BackupCopyService copyService = BackupRestoreFactory.getBackupCopyService(conf);
+    BackupCopyService copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
 
     // number of snapshots matches number of tables
     float numOfSnapshots = backupContext.getSnapshotNames().size();
@@ -548,7 +548,7 @@ public class FullTableBackupProcedure
               // We record ALL old WAL files as registered, because
               // this is a first full backup in the system and these
               // files are not needed for next incremental backup
-              List<String> logFiles = BackupUtil.getWALFilesOlderThan(conf, newTimestamps);
+              List<String> logFiles = BackupServerUtil.getWALFilesOlderThan(conf, newTimestamps);
               backupManager.recordWALFiles(logFiles);
             }
           } catch (BackupException e) {
@@ -582,7 +582,7 @@ public class FullTableBackupProcedure
             long waitTime = SnapshotDescriptionUtils.getMaxMasterTimeout(
                 env.getMasterConfiguration(),
                 backupSnapshot.getType(), SnapshotDescriptionUtils.DEFAULT_MAX_WAIT_TIME);
-            BackupUtil.waitForSnapshot(backupSnapshot, waitTime,
+            BackupServerUtil.waitForSnapshot(backupSnapshot, waitTime,
               env.getMasterServices().getSnapshotManager(), env.getMasterConfiguration());
             // set the snapshot name in BackupStatus of this table, only after snapshot success.
             backupContext.setSnapshotName(tableName, backupSnapshot.getName());
@@ -618,7 +618,7 @@ public class FullTableBackupProcedure
               backupManager.readLogTimestampMap();
 
           Long newStartCode =
-            BackupClientUtil.getMinValue(BackupUtil.getRSLogTimestampMins(newTableSetTimestampMap));
+            BackupClientUtil.getMinValue(BackupServerUtil.getRSLogTimestampMins(newTableSetTimestampMap));
           backupManager.writeBackupStartCode(newStartCode);
 
           // backup complete

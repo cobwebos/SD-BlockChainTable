@@ -21,6 +21,7 @@ package org.apache.hadoop.hbase.backup;
 import java.io.Serializable;
 
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
@@ -52,7 +53,7 @@ public class BackupStatus implements Serializable {
 
   public BackupStatus(TableName table, String targetRootDir, String backupId) {
     this.table = table;
-    this.targetDir = HBackupFileSystem.getTableBackupDir(targetRootDir, backupId, table);
+    this.targetDir = BackupClientUtil.getTableBackupDir(targetRootDir, backupId, table);
   }
 
   public String getSnapshotName() {

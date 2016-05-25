@@ -27,8 +27,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.BackupUtil;
-import org.apache.hadoop.hbase.backup.impl.IncrementalRestoreService;
+import org.apache.hadoop.hbase.backup.IncrementalRestoreService;
+import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles;
@@ -54,7 +54,7 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
     // log file
     String logDirs = StringUtils.join(logDirPaths, ",");
     LOG.info("Restore incremental backup from directory " + logDirs + " from hbase tables "
-        + BackupUtil.join(tableNames) + " to tables " + BackupUtil.join(newTableNames));
+        + BackupServerUtil.join(tableNames) + " to tables " + BackupServerUtil.join(newTableNames));
 
     for (int i = 0; i < tableNames.length; i++) {
       

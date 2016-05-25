@@ -34,10 +34,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
-import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.RestoreClient;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
@@ -62,6 +63,8 @@ public final class RestoreClientImpl implements RestoreClient {
     this.conf = conf;
   }
 
+  
+  
   /**
    * Restore operation. Stage 1: validate backupManifest, and check target tables
    * @param backupRootDir The root dir for backup image
@@ -72,11 +75,10 @@ public final class RestoreClientImpl implements RestoreClient {
    * @param tTableArray The array of mapping tables to restore to
    * @param isOverwrite True then do restore overwrite if target table exists, otherwise fail the
    *          request if target table exists
-   * @return True if only do dependency check
    * @throws IOException if any failure during restore
    */
   @Override
-  public boolean restore(String backupRootDir,
+  public void restore(String backupRootDir,
       String backupId, boolean check, boolean autoRestore, TableName[] sTableArray,
       TableName[] tTableArray, boolean isOverwrite) throws IOException {
 
@@ -98,11 +100,6 @@ public final class RestoreClientImpl implements RestoreClient {
         }
       }
 
-      // return true if only for check
-      if (check) {
-        return true;
-      }
-
       if (tTableArray == null) {
         tTableArray = sTableArray;
       }
@@ -121,8 +118,6 @@ public final class RestoreClientImpl implements RestoreClient {
       throw e;
     }
 
-    // not only for check, return false
-    return false;
   }
 
 
@@ -278,7 +273,7 @@ public final class RestoreClientImpl implements RestoreClient {
     String backupId = image.getBackupId();
 
     Path rootPath = new Path(rootDir);
-    RestoreUtil restoreTool = new RestoreUtil(conf, rootPath, backupId);
+    RestoreServerUtil restoreTool = new RestoreServerUtil(conf, rootPath, backupId);
     BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, rootPath, backupId);
 
     Path tableBackupPath = HBackupFileSystem.getTableBackupPath(sTable, rootPath,  backupId);
@@ -320,7 +315,7 @@ public final class RestoreClientImpl implements RestoreClient {
     Path backupRoot = new Path(rootDir);
     
     // We need hFS only for full restore (see the code)
-    RestoreUtil restoreTool = new RestoreUtil(conf, backupRoot, backupId);
+    RestoreServerUtil restoreTool = new RestoreServerUtil(conf, backupRoot, backupId);
     BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, backupRoot, backupId);
 
     Path tableBackupPath = HBackupFileSystem.getTableBackupPath(sTable, backupRoot, backupId);

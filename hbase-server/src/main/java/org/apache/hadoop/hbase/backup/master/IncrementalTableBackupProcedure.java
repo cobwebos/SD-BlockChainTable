@@ -33,17 +33,17 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupClientUtil;
+import org.apache.hadoop.hbase.backup.BackupCopyService;
 import org.apache.hadoop.hbase.backup.BackupInfo;
-import org.apache.hadoop.hbase.backup.BackupRestoreFactory;
+import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.BackupType;
+import org.apache.hadoop.hbase.backup.BackupCopyService.Type;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupPhase;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
-import org.apache.hadoop.hbase.backup.impl.BackupCopyService;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
-import org.apache.hadoop.hbase.backup.impl.BackupUtil;
 import org.apache.hadoop.hbase.backup.impl.IncrementalBackupManager;
-import org.apache.hadoop.hbase.backup.impl.BackupCopyService.Type;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
+import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.master.procedure.MasterProcedureEnv;
 import org.apache.hadoop.hbase.master.procedure.TableProcedureInterface;
@@ -125,7 +125,7 @@ public class IncrementalTableBackupProcedure
     String[] strArr = incrBackupFileList.toArray(new String[incrBackupFileList.size() + 1]);
     strArr[strArr.length - 1] = backupContext.getHLogTargetDir();
 
-    BackupCopyService copyService = BackupRestoreFactory.getBackupCopyService(conf);
+    BackupCopyService copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
     int res = copyService.copy(backupContext, backupManager, conf,
       BackupCopyService.Type.INCREMENTAL, strArr);
 
@@ -177,7 +177,7 @@ public class IncrementalTableBackupProcedure
         case INCREMENTAL_COPY:
           try {
             // copy out the table and region info files for each table
-            BackupUtil.copyTableRegionInfo(backupContext, conf);
+            BackupServerUtil.copyTableRegionInfo(backupContext, conf);
             incrementalCopy(backupContext);
             // Save list of WAL files copied
             backupManager.recordWALFiles(backupContext.getIncrBackupFileList());
@@ -207,7 +207,7 @@ public class IncrementalTableBackupProcedure
               backupManager.readLogTimestampMap();
 
           Long newStartCode = BackupClientUtil
-              .getMinValue(BackupUtil.getRSLogTimestampMins(newTableSetTimestampMap));
+              .getMinValue(BackupServerUtil.getRSLogTimestampMins(newTableSetTimestampMap));
           backupManager.writeBackupStartCode(newStartCode);
           // backup complete
           FullTableBackupProcedure.completeBackup(env, backupContext, backupManager,

@@ -39,13 +39,13 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupType;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.exceptions.DeserializationException;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
-import org.apache.hadoop.hbase.util.FSUtils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -322,7 +322,7 @@ public class BackupManifest {
     try {
 
       FileSystem fs = backupPath.getFileSystem(conf);
-      FileStatus[] subFiles = FSUtils.listStatus(fs, backupPath);
+      FileStatus[] subFiles = BackupClientUtil.listStatus(fs, backupPath, null);
       if (subFiles == null) {
         String errorMsg = backupPath.toString() + " does not exist";
         LOG.error(errorMsg);
@@ -364,7 +364,7 @@ public class BackupManifest {
           loadDependency(proto);
           //TODO: merge will be implemented by future jira
           LOG.debug("Loaded manifest instance from manifest file: "
-              + FSUtils.getPath(subFile.getPath()));
+              + BackupClientUtil.getPath(subFile.getPath()));
           return;
         }
       }

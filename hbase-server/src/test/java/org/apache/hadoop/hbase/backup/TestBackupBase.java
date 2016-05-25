@@ -39,6 +39,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -116,7 +117,7 @@ public class TestBackupBase {
     createTables();
   }
   
-  static void waitForSystemTable() throws Exception
+  public static void waitForSystemTable() throws Exception
   {
     try(Admin admin = TEST_UTIL.getAdmin();) {
       while (!admin.tableExists(BackupSystemTable.getTableName()) 
@@ -144,14 +145,19 @@ public class TestBackupBase {
       throws IOException {
     Connection conn = null;
     HBaseAdmin admin = null;
+    BackupAdmin badmin = null;
     String backupId;
     try {
       conn = ConnectionFactory.createConnection(conf1);
       admin = (HBaseAdmin) conn.getAdmin();
       BackupRequest request = new BackupRequest();
       request.setBackupType(type).setTableList(tables).setTargetRootDir(path);
-      backupId = admin.backupTables(request);
+      badmin = admin.getBackupAdmin();
+      backupId = badmin.backupTables(request);
     } finally {
+      if(badmin != null){
+        badmin.close();
+      }
       if (admin != null) {
         admin.close();
       }
@@ -229,15 +235,33 @@ public class TestBackupBase {
     }
   }
 
-  protected BackupClient getBackupClient(){
-    return BackupRestoreFactory.getBackupClient(conf1);
+//  protected BackupClient getBackupClient(){
+//    return BackupRestoreClientFactory.getBackupClient(conf1);
+//  }
+  
+//  protected RestoreClient getRestoreClient()
+//  {
+//    return BackupRestoreClientFactory.getRestoreClient(conf1);
+//  }
+
+  protected BackupAdmin getBackupAdmin() throws IOException {
+    return TEST_UTIL.getAdmin().getBackupAdmin();
   }
   
-  protected RestoreClient getRestoreClient()
-  {
-    return BackupRestoreFactory.getRestoreClient(conf1);
-  }
-
+  /**
+   * Get restore request.
+   *  
+   */
+  public  RestoreRequest createRestoreRequest(
+      String backupRootDir,
+      String backupId, boolean check, boolean autoRestore, TableName[] fromTables,
+      TableName[] toTables, boolean isOverwrite) {
+    RestoreRequest request = new RestoreRequest();
+    request.setBackupRootDir(backupRootDir).setBackupId(backupId).setCheck(check).setAutorestore(autoRestore).
+    setFromTables(fromTables).setToTables(toTables).setOverwrite(isOverwrite);
+    return request;
+}
+  
   /**
    * Helper method
    */

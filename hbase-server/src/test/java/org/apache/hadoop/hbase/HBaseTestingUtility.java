@@ -3167,6 +3167,16 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
   }
 
   /**
+   * Waith until all system table's regions get assigned
+   * @throws IOException
+   */
+  public void waitUntilAllSystemRegionsAssigned() throws IOException {
+    waitUntilAllRegionsAssigned(TableName.META_TABLE_NAME);
+    waitUntilAllRegionsAssigned(TableName.NAMESPACE_TABLE_NAME);
+    waitUntilAllRegionsAssigned(TableName.BACKUP_TABLE_NAME);
+  }
+  
+  /**
    * Wait until all regions for a table in hbase:meta have a non-empty
    * info:server, or until timeout.  This means all regions have been deployed,
    * master has been informed and updated hbase:meta with the regions deployed

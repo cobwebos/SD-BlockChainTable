@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.backup.impl;
+package org.apache.hadoop.hbase.backup.util;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -41,9 +41,10 @@ import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
+import org.apache.hadoop.hbase.backup.impl.BackupException;
+import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
@@ -65,11 +66,11 @@ import org.apache.hadoop.hbase.wal.DefaultWALProvider;
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public final class BackupUtil {
-  protected static final Log LOG = LogFactory.getLog(BackupUtil.class);
+public final class BackupServerUtil {
+  protected static final Log LOG = LogFactory.getLog(BackupServerUtil.class);
   public static final String LOGNAME_SEPARATOR = ".";
 
-  private BackupUtil(){
+  private BackupServerUtil(){
     throw new AssertionError("Instantiating utility class...");
   }
 
@@ -120,7 +121,7 @@ public final class BackupUtil {
       return null;
     }
 
-    HashMap<String, Long> rsLogTimestamptMins = new HashMap<String, Long>();
+    HashMap<String, Long> rsLogTimestampMins = new HashMap<String, Long>();
     HashMap<String, HashMap<TableName, Long>> rsLogTimestampMapByRS =
         new HashMap<String, HashMap<TableName, Long>>();
 
@@ -140,10 +141,10 @@ public final class BackupUtil {
     }
 
     for (String rs : rsLogTimestampMapByRS.keySet()) {
-      rsLogTimestamptMins.put(rs, BackupClientUtil.getMinValue(rsLogTimestampMapByRS.get(rs)));
+      rsLogTimestampMins.put(rs, BackupClientUtil.getMinValue(rsLogTimestampMapByRS.get(rs)));
     }
 
-    return rsLogTimestamptMins;
+    return rsLogTimestampMins;
   }
 
   /**
@@ -160,41 +161,39 @@ public final class BackupUtil {
     Path rootDir = FSUtils.getRootDir(conf);
     FileSystem fs = rootDir.getFileSystem(conf);
 
-    // for each table in the table set, copy out the table info and region info files in the correct
-    // directory structure
-    for (TableName table : backupContext.getTables()) {
+    // for each table in the table set, copy out the table info and region 
+    // info files in the correct directory structure
+    try (Connection conn = ConnectionFactory.createConnection(conf); 
+        Admin admin = conn.getAdmin()) {
 
-      LOG.debug("Attempting to copy table info for:" + table);
-      TableDescriptor orig = FSTableDescriptors.getTableDescriptorFromFs(fs, rootDir, table);
+      for (TableName table : backupContext.getTables()) {
 
-      // write a copy of descriptor to the target directory
-      Path target = new Path(backupContext.getBackupStatus(table).getTargetDir());
-      FileSystem targetFs = target.getFileSystem(conf);
-      FSTableDescriptors descriptors =
-          new FSTableDescriptors(conf, targetFs, FSUtils.getRootDir(conf));
-      descriptors.createTableDescriptorForTableDirectory(target, orig, false);
-      LOG.debug("Finished copying tableinfo.");
+        LOG.debug("Attempting to copy table info for:" + table);
+        TableDescriptor orig = FSTableDescriptors.getTableDescriptorFromFs(fs, rootDir, table);
 
-      // TODO: optimize
-      List<HRegionInfo> regions = null;
-      try(Connection conn = ConnectionFactory.createConnection(conf);
-          Admin admin = conn.getAdmin()) {
+        // write a copy of descriptor to the target directory
+        Path target = new Path(backupContext.getBackupStatus(table).getTargetDir());
+        FileSystem targetFs = target.getFileSystem(conf);
+        FSTableDescriptors descriptors =
+            new FSTableDescriptors(conf, targetFs, FSUtils.getRootDir(conf));
+        descriptors.createTableDescriptorForTableDirectory(target, orig, false);
+        LOG.debug("Finished copying tableinfo.");
+        List<HRegionInfo> regions = null;
         regions = admin.getTableRegions(table);
-      } catch (Exception e) {
-        throw new BackupException(e);
+        // For each region, write the region info to disk
+        LOG.debug("Starting to write region info for table " + table);
+        for (HRegionInfo regionInfo : regions) {
+          Path regionDir =
+              HRegion.getRegionDir(new Path(backupContext.getBackupStatus(table).getTargetDir()),
+                regionInfo);
+          regionDir =
+              new Path(backupContext.getBackupStatus(table).getTargetDir(), regionDir.getName());
+          writeRegioninfoOnFilesystem(conf, targetFs, regionDir, regionInfo);
+        }
+        LOG.debug("Finished writing region info for table " + table);
       }
-
-      // For each region, write the region info to disk
-      LOG.debug("Starting to write region info for table " + table);
-      for (HRegionInfo regionInfo : regions) {
-        Path regionDir =
-            HRegion.getRegionDir(new Path(backupContext.getBackupStatus(table).getTargetDir()),
-              regionInfo);
-        regionDir =
-            new Path(backupContext.getBackupStatus(table).getTargetDir(), regionDir.getName());
-        writeRegioninfoOnFilesystem(conf, targetFs, regionDir, regionInfo);
-      }
-      LOG.debug("Finished writing region info for table " + table);
+    } catch (IOException e) {
+      throw new BackupException(e);
     }
   }
 
@@ -340,6 +339,7 @@ public final class BackupUtil {
   /**
    * Get list of all old WAL files (WALs and archive)
    * @param c - configuration
+   * @param hostTimestampMap - host timestamp map
    * @return list of WAL files
    * @throws IOException exception
    */
@@ -424,7 +424,9 @@ public final class BackupUtil {
     }
     for (FileStatus file : files) {
       LOG.debug("Delete log files: " + file.getPath().getName());
-      FSUtils.delete(fs, file.getPath(), true);
+      if(!FSUtils.delete(fs, file.getPath(), true)) {
+        LOG.warn("Could not delete files in "+ file.getPath());
+      };
     }
   }
 
@@ -457,8 +459,11 @@ public final class BackupUtil {
         Path tableDir = targetDirPath.getParent();
         FileStatus[] backups = FSUtils.listStatus(outputFs, tableDir);
         if (backups == null || backups.length == 0) {
-          outputFs.delete(tableDir, true);
-          LOG.debug(tableDir.toString() + " is empty, remove it.");
+          if(outputFs.delete(tableDir, true)){
+            LOG.debug(tableDir.toString() + " is empty, remove it.");
+          } else {
+            LOG.warn("Could not delete "+ tableDir);
+          }
         }
       }
 

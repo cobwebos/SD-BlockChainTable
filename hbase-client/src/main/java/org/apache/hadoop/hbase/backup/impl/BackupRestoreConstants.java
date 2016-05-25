@@ -22,7 +22,7 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
 /**
- * HConstants holds a bunch of HBase Backup and Restore constants
+ * BackupRestoreConstants holds a bunch of HBase Backup and Restore constants
  */
 @InterfaceAudience.Private
 @InterfaceStability.Stable
