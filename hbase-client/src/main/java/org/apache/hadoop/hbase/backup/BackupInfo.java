@@ -469,7 +469,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
   }
   
   public String getTableListAsString() {
-    return StringUtils.join(backupStatusMap.keySet(), ";");
+    return StringUtils.join(backupStatusMap.keySet(), ",");
   }
 
   @Override
