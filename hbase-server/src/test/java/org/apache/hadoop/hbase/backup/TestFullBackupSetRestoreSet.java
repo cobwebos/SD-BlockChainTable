@@ -34,21 +34,16 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(LargeTests.class)
-public class TestFullBackupSet extends TestBackupBase {
+public class TestFullBackupSetRestoreSet extends TestBackupBase {
 
-  private static final Log LOG = LogFactory.getLog(TestFullBackupSet.class);
+  private static final Log LOG = LogFactory.getLog(TestFullBackupSetRestoreSet.class);
 
-
-  /**
-   * Verify that full backup is created on a single table with data correctly.
-   * @throws Exception
-   */
   @Test
-  public void testFullBackupSetExist() throws Exception {
+  public void testFullRestoreSetToOtherTable() throws Exception {
 
-    LOG.info("Test full backup, backup set exists");
-    
-    //Create set
+    LOG.info("Test full restore set");
+
+    // Create set
     try (BackupSystemTable table = new BackupSystemTable(TEST_UTIL.getConnection())) {
       String name = "name";
       table.addToBackupSet(name, new String[] { table1.getNameAsString() });
@@ -66,37 +61,66 @@ public class TestFullBackupSet extends TestBackupBase {
       assertTrue(backups.size() == 1);
       String backupId = backups.get(0).getBackupId();
       assertTrue(checkSucceeded(backupId));
-      
+
       LOG.info("backup complete");
-      
+
       // Restore from set into other table
-      args = new String[]{BACKUP_ROOT_DIR, backupId, 
-          "-set", name, table1_restore.getNameAsString(), "-overwrite" }; 
+      args =
+          new String[] { BACKUP_ROOT_DIR, backupId, "-set", name, table1_restore.getNameAsString(),
+              "-overwrite" };
       // Run backup
       ret = ToolRunner.run(conf1, new RestoreDriver(), args);
       assertTrue(ret == 0);
       HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
       assertTrue(hba.tableExists(table1_restore));
-      // Verify number of rows in both tables      
-      assertEquals(TEST_UTIL.countRows(table1), TEST_UTIL.countRows(table1_restore));      
+      // Verify number of rows in both tables
+      assertEquals(TEST_UTIL.countRows(table1), TEST_UTIL.countRows(table1_restore));
       TEST_UTIL.deleteTable(table1_restore);
       LOG.info("restore into other table is complete");
       hba.close();
-      
-      
     }
-
   }
 
   @Test
-  public void testFullBackupSetDoesNotExist() throws Exception {
+  public void testFullRestoreSetToSameTable() throws Exception {
 
-    LOG.info("TFBSE test full backup, backup set does not exist");    
-    String name = "name1";    
-    String[] args = new String[]{"create", "full", BACKUP_ROOT_DIR, "-set", name }; 
-    // Run backup
-    int ret = ToolRunner.run(conf1, new BackupDriver(), args);
-    assertTrue(ret != 0);
+    LOG.info("Test full restore set to same table");
+
+    // Create set
+    try (BackupSystemTable table = new BackupSystemTable(TEST_UTIL.getConnection())) {
+      String name = "name1";
+      table.addToBackupSet(name, new String[] { table1.getNameAsString() });
+      List<TableName> names = table.describeBackupSet(name);
+
+      assertNotNull(names);
+      assertTrue(names.size() == 1);
+      assertTrue(names.get(0).equals(table1));
+
+      String[] args = new String[] { "create", "full", BACKUP_ROOT_DIR, "-set", name };
+      // Run backup
+      int ret = ToolRunner.run(conf1, new BackupDriver(), args);
+      assertTrue(ret == 0);
+      ArrayList<BackupInfo> backups = table.getBackupHistory();
+      String backupId = backups.get(0).getBackupId();
+      assertTrue(checkSucceeded(backupId));
+
+      LOG.info("backup complete");
+      int count = TEST_UTIL.countRows(table1);
+      TEST_UTIL.deleteTable(table1);
+
+      // Restore from set into other table
+      args = new String[] { BACKUP_ROOT_DIR, backupId, "-set", name, "-overwrite" };
+      // Run backup
+      ret = ToolRunner.run(conf1, new RestoreDriver(), args);
+      assertTrue(ret == 0);
+      HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
+      assertTrue(hba.tableExists(table1));
+      // Verify number of rows in both tables
+      assertEquals(count, TEST_UTIL.countRows(table1));
+      LOG.info("restore into same table is complete");
+      hba.close();
+
+    }
 
   }
 

@@ -18,14 +18,20 @@
 package org.apache.hadoop.hbase.backup;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
+import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.util.AbstractHBaseTool;
 import org.apache.hadoop.hbase.util.LogUtils;
 import org.apache.hadoop.util.ToolRunner;
@@ -40,9 +46,12 @@ public class RestoreDriver extends AbstractHBaseTool {
   private static final String OPTION_OVERWRITE = "overwrite";
   private static final String OPTION_CHECK = "check";
   private static final String OPTION_AUTOMATIC = "automatic";
+  private static final String OPTION_SET = "set";
+  private static final String OPTION_DEBUG = "debug";
+
 
   private static final String USAGE =
-      "Usage: hbase restore <backup_root_path> <backup_id> <tables> [tableMapping] \n"
+      "Usage: hbase restore [-set set_name] <backup_root_path> <backup_id> <tables> [tableMapping] \n"
           + "       [-overwrite] [-check] [-automatic]\n"
           + " backup_root_path  The parent location where the backup images are stored\n"
           + " backup_id         The id identifying the backup image\n"
@@ -61,7 +70,8 @@ public class RestoreDriver extends AbstractHBaseTool {
           + "                   The restore dependencies can be checked by using \"-check\" "
           + "option,\n"
           + "                   or using \"hbase backup describe\" command. Without this option, "
-          + "only\n" + "                   this backup image is restored\n";
+          + "only\n" + "                   this backup image is restored\n"
+          + "   -set set_name   Backup set to restore, mutually exclusive with table list <tables>.";
 
     
   protected RestoreDriver() throws IOException
@@ -75,7 +85,8 @@ public class RestoreDriver extends AbstractHBaseTool {
         "Overwrite the data if any of the restore target tables exists");
     addOptNoArg(OPTION_CHECK, "Check restore sequence and dependencies");
     addOptNoArg(OPTION_AUTOMATIC, "Restore all dependencies");
-    addOptNoArg("debug",  "Enable debug logging");
+    addOptNoArg(OPTION_DEBUG,  "Enable debug logging");
+    addOptWithArg(OPTION_SET, "Backup set name");
 
     // disable irrelevant loggers to avoid it mess up command output
     LogUtils.disableUselessLoggers(LOG);
@@ -85,7 +96,7 @@ public class RestoreDriver extends AbstractHBaseTool {
 
     // enable debug logging
     Logger backupClientLogger = Logger.getLogger("org.apache.hadoop.hbase.backup");
-    if (cmd.hasOption("debug")) {
+    if (cmd.hasOption(OPTION_DEBUG)) {
       backupClientLogger.setLevel(Level.DEBUG);
     }
 
@@ -112,16 +123,36 @@ public class RestoreDriver extends AbstractHBaseTool {
 
     // parse main restore command options
     String[] remainArgs = cmd.getArgs();
-    if (remainArgs.length < 3) {
+    if (remainArgs.length < 3 && !cmd.hasOption(OPTION_SET) ||
+        (cmd.hasOption(OPTION_SET) && remainArgs.length < 2)) {
+      System.out.println("ERROR: remain args length="+ remainArgs.length);
       System.out.println(USAGE);
       return -1;
-    }
+    } 
 
     String backupRootDir = remainArgs[0];
     String backupId = remainArgs[1];
-    String tables = remainArgs[2];
-    
-    String tableMapping = (remainArgs.length > 3) ? remainArgs[3] : null;
+    String tables = null;
+    String tableMapping = null;
+    // Check backup set
+    if (cmd.hasOption(OPTION_SET)) {
+      String setName = cmd.getOptionValue(OPTION_SET);
+      try{
+        tables = getTablesForSet(setName, conf);       
+      } catch(IOException e){
+        System.out.println("ERROR: "+ e.getMessage()+" for setName="+setName);
+        return -2;
+      }
+      if (tables == null) {
+        System.out.println("ERROR: Backup set '" + setName
+        + "' is either empty or does not exist");
+        return -3;
+      }
+      tableMapping = (remainArgs.length > 2) ? remainArgs[2] : null;
+    } else {
+      tables = remainArgs[2];    
+      tableMapping = (remainArgs.length > 3) ? remainArgs[3] : null;
+    }    
 
     TableName[] sTableArray = BackupServerUtil.parseTableNames(tables);
     TableName[] tTableArray = BackupServerUtil.parseTableNames(tableMapping);
@@ -129,7 +160,7 @@ public class RestoreDriver extends AbstractHBaseTool {
     if (sTableArray != null && tTableArray != null && (sTableArray.length != tTableArray.length)) {
       System.out.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
       System.out.println(USAGE);
-      return -2;
+      return -4;
     }
 
     
@@ -139,11 +170,20 @@ public class RestoreDriver extends AbstractHBaseTool {
         tTableArray, isOverwrite);
     } catch (Exception e){
       e.printStackTrace();
-      return -3;
+      return -5;
     }
     return 0;
   }
 
+  private String getTablesForSet(String name, Configuration conf) throws IOException {
+    try (final Connection conn = ConnectionFactory.createConnection(conf);
+        final BackupSystemTable table = new BackupSystemTable(conn)) {
+      List<TableName> tables = table.describeBackupSet(name);
+      if (tables == null) return null;
+      return StringUtils.join(tables, BackupRestoreConstants.TABLENAME_DELIMITER_IN_COMMAND);
+    }
+  }
+  
   @Override
   protected void addOptions() {
   }
