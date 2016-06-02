@@ -60,7 +60,7 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
       
       LOG.info("Restore "+ tableNames[i] + " into "+ newTableNames[i]);
       
-      Path bulkOutputPath = getBulkOutputDir(newTableNames[i].getNameAsString());
+      Path bulkOutputPath = getBulkOutputDir(getFileNameCompatibleString(newTableNames[i]));
       String[] playerArgs =
           { logDirs, tableNames[i].getNameAsString(), newTableNames[i].getNameAsString()};
 
@@ -96,7 +96,11 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
     }
   }
 
-
+  private String getFileNameCompatibleString(TableName table)
+  {
+    return table.getNamespaceAsString() +"-"+ table.getQualifierAsString();
+  }
+  
   private boolean failed(int result) {
     return result != 0;
   }
