@@ -91,6 +91,7 @@ public class TestVisibilityLabelsWithACL {
     TEST_UTIL.waitTableEnabled(AccessControlLists.ACL_TABLE_NAME.getName(), 50000);
     // Wait for the labels table to become available
     TEST_UTIL.waitTableEnabled(LABELS_TABLE_NAME.getName(), 50000);
+    TEST_UTIL.waitUntilAllSystemRegionsAssigned();
     addLabels();
 
     // Create users for testing
