@@ -249,15 +249,6 @@ public class TestBackupBase {
     }
   }
 
-//  protected BackupClient getBackupClient(){
-//    return BackupRestoreClientFactory.getBackupClient(conf1);
-//  }
-  
-//  protected RestoreClient getRestoreClient()
-//  {
-//    return BackupRestoreClientFactory.getRestoreClient(conf1);
-//  }
-
   protected BackupAdmin getBackupAdmin() throws IOException {
     return TEST_UTIL.getAdmin().getBackupAdmin();
   }

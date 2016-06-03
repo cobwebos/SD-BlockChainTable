@@ -466,7 +466,10 @@ public final class BackupCommands {
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
           final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
-        admin.listBackupSets();
+        List<BackupSet> list = admin.listBackupSets();
+        for(BackupSet bs: list){
+          System.out.println(bs);
+        }
       }
     }
 
