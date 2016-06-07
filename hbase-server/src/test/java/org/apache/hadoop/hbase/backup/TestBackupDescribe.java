@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.hbase.backup;
 
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -61,6 +62,14 @@ public class TestBackupDescribe extends TestBackupBase {
     BackupInfo info = getBackupAdmin().getBackupInfo(backupId);
     assertTrue(info.getState() == BackupState.COMPLETE);
 
+  }
+
+  @Test
+  public void testBackupSetCommandWithNonExistentTable() throws Exception {
+    String[] args = new String[]{"set", "add", "some_set", "table" }; 
+    // Run backup
+    int ret = ToolRunner.run(conf1, new BackupDriver(), args);
+    assertNotEquals(ret, 0);
   }
 
   @Test
