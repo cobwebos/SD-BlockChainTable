@@ -175,6 +175,9 @@ public class HBaseBackupAdmin implements BackupAdmin {
     String[] tableNames = new String[tables.length];
     for(int i = 0; i < tables.length; i++){
       tableNames[i] = tables[i].getNameAsString();
+      if (!admin.tableExists(TableName.valueOf(tableNames[i]))) {
+        throw new IOException("Cannot add " + tableNames[i] + " because it doesn't exist");
+      }
     }
     try (final BackupSystemTable table = new BackupSystemTable(conn)) {
       table.addToBackupSet(name, tableNames);      
