@@ -221,12 +221,17 @@ public final class BackupServerUtil {
    * @return host name: port
    * @throws IOException
    */
-  public static String parseHostNameFromLogFile(Path p) throws IOException {
-    if (isArchivedLogFile(p)) {
-      return BackupClientUtil.parseHostFromOldLog(p);
-    } else {
-      ServerName sname = DefaultWALProvider.getServerNameFromWALDirectoryName(p);
-      return sname.getHostname() + ":" + sname.getPort();
+  public static String parseHostNameFromLogFile(Path p) {
+    try {
+      if (isArchivedLogFile(p)) {
+        return BackupClientUtil.parseHostFromOldLog(p);
+      } else {
+        ServerName sname = DefaultWALProvider.getServerNameFromWALDirectoryName(p);
+        return sname.getHostname() + ":" + sname.getPort();
+      }
+    } catch (Exception e) {
+      LOG.warn("Skip log file (can't parse): " + p);
+      return null;
     }
   }
 
@@ -359,11 +364,14 @@ public final class BackupServerUtil {
             return false;
           }
           String host = parseHostNameFromLogFile(p);
+          if(host == null) {
+            return false;
+          }
           Long oldTimestamp = hostTimestampMap.get(host);
           Long currentLogTS = BackupClientUtil.getCreationTime(p);
           return currentLogTS <= oldTimestamp;
-        } catch (IOException e) {
-          LOG.error(e);
+        } catch (Exception e) {
+          LOG.warn("Can not parse"+ p, e);
           return false;
         }
       }

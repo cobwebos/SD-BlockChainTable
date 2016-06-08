@@ -128,11 +128,16 @@ public final class BackupClientUtil {
    * @return host name
    * @throws IOException exception
    */
-  public static String parseHostFromOldLog(Path p) throws IOException {
-    String n = p.getName();
-    int idx = n.lastIndexOf(LOGNAME_SEPARATOR);
-    String s = URLDecoder.decode(n.substring(0, idx), "UTF8");
-    return ServerName.parseHostname(s) + ":" + ServerName.parsePort(s);
+  public static String parseHostFromOldLog(Path p) {
+    try {
+      String n = p.getName();
+      int idx = n.lastIndexOf(LOGNAME_SEPARATOR);
+      String s = URLDecoder.decode(n.substring(0, idx), "UTF8");
+      return ServerName.parseHostname(s) + ":" + ServerName.parsePort(s);
+    } catch (Exception e) {
+      LOG.warn("Skip log file (can't parse): " + p);
+      return null;
+    }
   }
 
   /**

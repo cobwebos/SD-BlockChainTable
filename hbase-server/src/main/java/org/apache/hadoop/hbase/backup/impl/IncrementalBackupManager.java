@@ -161,21 +161,24 @@ public class IncrementalBackupManager {
    * @throws IOException
    */
   private List<WALItem> getLogFilesFromBackupSystem(HashMap<String, Long> olderTimestamps,
-    HashMap<String, Long> newestTimestamps, String backupRoot) throws IOException {
+      HashMap<String, Long> newestTimestamps, String backupRoot) throws IOException {
     List<WALItem> logFiles = new ArrayList<WALItem>();
     Iterator<WALItem> it = backupManager.getWALFilesFromBackupSystem();
     while (it.hasNext()) {
       WALItem item = it.next();
       String rootDir = item.getBackupRoot();
-      if(!rootDir.equals(backupRoot)) {
+      if (!rootDir.equals(backupRoot)) {
         continue;
       }
-      String walFileName = item.getWalFile();      
+      String walFileName = item.getWalFile();
       String server = BackupServerUtil.parseHostNameFromLogFile(new Path(walFileName));
+      if (server == null) {
+        continue;
+      }
       Long tss = getTimestamp(walFileName);
       Long oldTss = olderTimestamps.get(server);
       Long newTss = newestTimestamps.get(server);
-      if (oldTss == null){
+      if (oldTss == null) {
         logFiles.add(item);
         continue;
       }
@@ -205,10 +208,10 @@ public class IncrementalBackupManager {
    * @throws IOException exception
    */
   private List<String> getLogFilesForNewBackup(HashMap<String, Long> olderTimestamps,
-    HashMap<String, Long> newestTimestamps, Configuration conf, String savedStartCode)
-        throws IOException {
+      HashMap<String, Long> newestTimestamps, Configuration conf, String savedStartCode)
+      throws IOException {
     LOG.debug("In getLogFilesForNewBackup()\n" + "olderTimestamps: " + olderTimestamps
-      + "\n newestTimestamps: " + newestTimestamps);
+        + "\n newestTimestamps: " + newestTimestamps);
     Path rootdir = FSUtils.getRootDir(conf);
     Path logDir = new Path(rootdir, HConstants.HREGION_LOGDIR_NAME);
     Path oldLogDir = new Path(rootdir, HConstants.HREGION_OLDLOGDIR_NAME);
@@ -239,6 +242,9 @@ public class IncrementalBackupManager {
     for (FileStatus rs : rss) {
       p = rs.getPath();
       host = BackupServerUtil.parseHostNameFromLogFile(p);
+      if (host == null) {
+        continue;
+      }
       FileStatus[] logs;
       oldTimeStamp = olderTimestamps.get(host);
       // It is possible that there is no old timestamp in hbase:backup for this host if
@@ -252,7 +258,7 @@ public class IncrementalBackupManager {
       for (FileStatus log : logs) {
         LOG.debug("currentLogFile: " + log.getPath().toString());
         if (DefaultWALProvider.isMetaFile(log.getPath())) {
-          if(LOG.isDebugEnabled()) {
+          if (LOG.isDebugEnabled()) {
             LOG.debug("Skip hbase:meta log file: " + log.getPath().getName());
           }
           continue;
@@ -274,12 +280,15 @@ public class IncrementalBackupManager {
       p = oldlog.getPath();
       currentLogFile = p.toString();
       if (DefaultWALProvider.isMetaFile(p)) {
-        if(LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
           LOG.debug("Skip .meta log file: " + currentLogFile);
         }
         continue;
       }
       host = BackupClientUtil.parseHostFromOldLog(p);
+      if (host == null) {
+        continue;
+      }
       currentLogTS = BackupClientUtil.getCreationTime(p);
       oldTimeStamp = olderTimestamps.get(host);
       /*
@@ -327,7 +336,7 @@ public class IncrementalBackupManager {
     public boolean accept(Path path) {
       // skip meta table log -- ts.meta file
       if (DefaultWALProvider.isMetaFile(path)) {
-        if(LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
           LOG.debug("Skip .meta log file: " + path.getName());
         }
         return false;
@@ -336,7 +345,7 @@ public class IncrementalBackupManager {
       try {
         timestamp = BackupClientUtil.getCreationTime(path);
         return timestamp > Long.valueOf(lastBackupTS);
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.warn("Cannot read timestamp of log file " + path);
         return false;
       }
