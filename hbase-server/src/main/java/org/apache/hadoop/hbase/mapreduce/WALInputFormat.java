@@ -239,10 +239,9 @@ public class WALInputFormat extends InputFormat<WALKey, WALEdit> {
     long startTime = conf.getLong(startKey, Long.MIN_VALUE);
     long endTime = conf.getLong(endKey, Long.MAX_VALUE);
 
-    FileSystem fs = FileSystem.get(conf);
-    
     List<FileStatus> allFiles = new ArrayList<FileStatus>();
     for(Path inputPath: inputPaths){
+      FileSystem fs = inputPath.getFileSystem(conf);
       List<FileStatus> files = getFiles(fs, inputPath, startTime, endTime);
       allFiles.addAll(files);
     }
