@@ -52,7 +52,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
   private static final Log LOG = LogFactory.getLog(BackupInfo.class);
   // backup status flag
   public static enum BackupState {
-    WAITING, RUNNING, COMPLETE, FAILED, CANCELLED, ANY;
+    WAITING, RUNNING, COMPLETE, FAILED, ANY;
   }
   // backup phase    
   public static enum BackupPhase {
@@ -185,10 +185,6 @@ public class BackupInfo implements Comparable<BackupInfo> {
     this.totalBytesCopied = totalBytesCopied;
   }
 
-  public void setCancelled(boolean cancelled) {
-    this.state = BackupState.CANCELLED;;
-  }
-  
   /**
    * Set progress (0-100%)
    * @param msg progress value
@@ -203,15 +199,6 @@ public class BackupInfo implements Comparable<BackupInfo> {
    */
   public int getProgress() {
     return progress;
-  }
-
-
-  /**
-   * Has been marked as cancelled or not.
-   * @return True if marked as cancelled
-   */
-  public boolean isCancelled() {
-    return this.state == BackupState.CANCELLED;
   }
 
   public String getBackupId() {

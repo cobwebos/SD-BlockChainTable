@@ -89,8 +89,6 @@ public class BackupManager implements Closeable {
     this.conn = ConnectionFactory.createConnection(conf);
     this.systemTable = new BackupSystemTable(conn);
      
-    Runtime.getRuntime().addShutdownHook(new ExitHandler());
-
   }
 
   /**
@@ -167,52 +165,12 @@ public class BackupManager implements Closeable {
     return conf.getBoolean(HConstants.BACKUP_ENABLE_KEY, HConstants.BACKUP_ENABLE_DEFAULT);
   }
 
-  // TODO: remove this on the server side
-  private class ExitHandler extends Thread {
-    public ExitHandler() {
-      super("Backup Manager Exit Handler");
-    }
-
-    @Override
-    public void run() {
-      if (backupContext != null && !backupComplete) {
-
-        // program exit and backup is not complete, then mark as cancelled to avoid submitted backup
-        // handler's taking further action
-        backupContext.setCancelled(true);
-
-        LOG.debug("Backup is cancelled due to force program exiting.");
-        try {
-          cancelBackup(backupContext.getBackupId());
-        } catch (Exception e) {
-          String msg = e.getMessage();
-          if (msg == null || msg.equals("")) {
-            msg = e.getClass().getName();
-          }
-          LOG.error("Failed to cancel backup " + backupContext.getBackupId() + " due to " + msg);
-        }
-      }
-      close();
-    }
-  }
-
   /**
    * Get configuration
    * @return configuration
    */
   Configuration getConf() {
     return conf;
-  }
-
-  /**
-   * Cancel the ongoing backup via backup id.
-   * @param backupId The id of the ongoing backup to be cancelled
-   * @throws Exception exception
-   */
-  private void cancelBackup(String backupId) throws Exception {
-    // TODO: will be implemented in Phase 2: HBASE-14125
-    LOG.debug("Try to cancel the backup " + backupId + ". the feature is NOT implemented yet");
-
   }
 
   /**

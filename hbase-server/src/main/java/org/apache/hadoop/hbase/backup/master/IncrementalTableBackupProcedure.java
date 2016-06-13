@@ -113,11 +113,6 @@ public class IncrementalTableBackupProcedure
     // set overall backup phase: incremental_copy
     backupContext.setPhase(BackupPhase.INCREMENTAL_COPY);
 
-    // avoid action if has been cancelled
-    if (backupContext.isCancelled()) {
-      return;
-    }
-
     // get incremental backup file list and prepare parms for DistCp
     List<String> incrBackupFileList = backupContext.getIncrBackupFileList();
     // filter missing files out (they have been copied by previous backups)
@@ -267,6 +262,13 @@ public class IncrementalTableBackupProcedure
     sb.append(getClass().getSimpleName());
     sb.append(" (targetRootDir=");
     sb.append(targetRootDir);
+    sb.append("; backupId=").append(backupId);
+    sb.append("; tables=");
+    int len = tableList.size();
+    for (int i = 0; i < len-1; i++) {
+      sb.append(tableList.get(i)).append(",");
+    }
+    sb.append(tableList.get(len-1));
     sb.append(")");
   }
 
