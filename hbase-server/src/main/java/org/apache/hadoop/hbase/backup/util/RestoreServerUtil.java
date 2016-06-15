@@ -167,8 +167,8 @@ public class RestoreServerUtil {
   }
 
   public void fullRestoreTable(Path tableBackupPath, TableName tableName, TableName newTableName,
-      boolean converted) throws IOException {
-    restoreTableAndCreate(tableName, newTableName, tableBackupPath, converted);
+      boolean converted, boolean truncateIfExists) throws IOException {
+    restoreTableAndCreate(tableName, newTableName, tableBackupPath, converted, truncateIfExists);
   }
 
   /**
@@ -275,7 +275,7 @@ public class RestoreServerUtil {
   }
 
   private void restoreTableAndCreate(TableName tableName, TableName newTableName,
-      Path tableBackupPath, boolean converted) throws IOException {
+      Path tableBackupPath, boolean converted, boolean truncateIfExists) throws IOException {
     if (newTableName == null || newTableName.equals("")) {
       newTableName = tableName;
     }
@@ -316,7 +316,8 @@ public class RestoreServerUtil {
             + ", will only create table");
         }
         tableDescriptor.setName(newTableName);
-        checkAndCreateTable(tableBackupPath, tableName, newTableName, null, tableDescriptor);
+        checkAndCreateTable(tableBackupPath, tableName, newTableName, null, 
+          tableDescriptor, truncateIfExists);
         return;
       } else {
         throw new IllegalStateException("Cannot restore hbase table because directory '"
@@ -339,7 +340,7 @@ public class RestoreServerUtil {
         // should only try to create the table with all region informations, so we could pre-split
         // the regions in fine grain
         checkAndCreateTable(tableBackupPath, tableName, newTableName, regionPathList,
-          tableDescriptor);
+          tableDescriptor, truncateIfExists);
         if (tableArchivePath != null) {
           // start real restore through bulkload
           // if the backup target is on local cluster, special action needed
@@ -570,28 +571,36 @@ public class RestoreServerUtil {
    * @throws IOException exception
    */
   private void checkAndCreateTable(Path tableBackupPath, TableName tableName,
-      TableName targetTableName, ArrayList<Path> regionDirList, HTableDescriptor htd)
+      TableName targetTableName, ArrayList<Path> regionDirList, 
+      HTableDescriptor htd, boolean truncateIfExists)
           throws IOException {
     HBaseAdmin hbadmin = null;
     Connection conn = null;
     try {
       conn = ConnectionFactory.createConnection(conf);
       hbadmin = (HBaseAdmin) conn.getAdmin();
+      boolean createNew = false;
       if (hbadmin.tableExists(targetTableName)) {
-        LOG.info("Using exising target table '" + targetTableName + "'");
+        if(truncateIfExists) {
+          LOG.info("Truncating exising target table '" + targetTableName +
+            "', preserving region splits");
+          hbadmin.disableTable(targetTableName);
+          hbadmin.truncateTable(targetTableName, true);
+        } else{
+          LOG.info("Using exising target table '" + targetTableName + "'");
+        }
       } else {
+        createNew = true;
+      }      
+      if(createNew){
         LOG.info("Creating target table '" + targetTableName + "'");
-
-        // if no region dir given, create the table and return
+        // if no region directory given, create the table and return
         if (regionDirList == null || regionDirList.size() == 0) {
-
           hbadmin.createTable(htd);
           return;
         }
-
         byte[][] keys = generateBoundaryKeys(regionDirList);
-
-        // create table using table decriptor and region boundaries
+        // create table using table descriptor and region boundaries
         hbadmin.createTable(htd, keys);
       }
     } catch (Exception e) {

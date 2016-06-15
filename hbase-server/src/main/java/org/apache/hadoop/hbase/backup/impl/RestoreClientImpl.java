@@ -109,7 +109,7 @@ public final class RestoreClientImpl implements RestoreClient {
 
       // start restore process
       
-      restoreStage(backupManifestMap, sTableArray, tTableArray, autoRestore);
+      restoreStage(backupManifestMap, sTableArray, tTableArray, autoRestore, isOverwrite);
 
       LOG.info("Restore for " + Arrays.asList(sTableArray) + " are successful!");
 
@@ -209,8 +209,9 @@ public final class RestoreClientImpl implements RestoreClient {
    */
   private void restoreStage(
     HashMap<TableName, BackupManifest> backupManifestMap, TableName[] sTableArray,
-    TableName[] tTableArray, boolean autoRestore) throws IOException {
+    TableName[] tTableArray, boolean autoRestore, boolean isOverwrite) throws IOException {
     TreeSet<BackupImage> restoreImageSet = new TreeSet<BackupImage>();
+    boolean truncateIfExists = autoRestore && isOverwrite;
     try {
       for (int i = 0; i < sTableArray.length; i++) {
         TableName table = sTableArray[i];
@@ -224,7 +225,7 @@ public final class RestoreClientImpl implements RestoreClient {
           list.addAll(depList);
           TreeSet<BackupImage> restoreList = new TreeSet<BackupImage>(list);
           LOG.debug("need to clear merged Image. to be implemented in future jira");
-          restoreImages(restoreList.iterator(), table, tTableArray[i]);
+          restoreImages(restoreList.iterator(), table, tTableArray[i], truncateIfExists);
           restoreImageSet.addAll(restoreList);
         } else {
           BackupImage image = manifest.getBackupImage();
@@ -284,7 +285,7 @@ public final class RestoreClientImpl implements RestoreClient {
     if (manifest.getType() == BackupType.FULL || converted) {
       LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from "
           + (converted ? "converted" : "full") + " backup image " + tableBackupPath.toString());
-      restoreTool.fullRestoreTable(tableBackupPath, sTable, tTable, converted);
+      restoreTool.fullRestoreTable(tableBackupPath, sTable, tTable, converted, false);
     } else { // incremental Backup
       String logBackupDir =
           HBackupFileSystem.getLogBackupDir(image.getRootDir(), image.getBackupId());
@@ -304,7 +305,8 @@ public final class RestoreClientImpl implements RestoreClient {
    * @param tTable: table to be restored to
    * @throws IOException exception
    */
-  private void restoreImages(Iterator<BackupImage> it, TableName sTable, TableName tTable)
+  private void restoreImages(Iterator<BackupImage> it, TableName sTable, 
+      TableName tTable, boolean truncateIfExists)
       throws IOException {
 
     // First image MUST be image of a FULL backup
@@ -326,7 +328,8 @@ public final class RestoreClientImpl implements RestoreClient {
     if (manifest.getType() == BackupType.FULL || converted) {
       LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from "
           + (converted ? "converted" : "full") + " backup image " + tableBackupPath.toString());
-      restoreTool.fullRestoreTable(tableBackupPath, sTable, tTable, converted);
+      restoreTool.fullRestoreTable(tableBackupPath, sTable, tTable, 
+        converted, truncateIfExists);
       
     } else { // incremental Backup
       throw new IOException("Unexpected backup type " + image.getType());
