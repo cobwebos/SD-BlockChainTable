@@ -168,6 +168,10 @@ public final class BackupServerUtil {
 
       for (TableName table : backupContext.getTables()) {
 
+        if(!admin.tableExists(table)) {
+          LOG.warn("Table "+ table+" does not exists, skipping it.");
+          continue;
+        }
         LOG.debug("Attempting to copy table info for:" + table);
         TableDescriptor orig = FSTableDescriptors.getTableDescriptorFromFs(fs, rootDir, table);
 

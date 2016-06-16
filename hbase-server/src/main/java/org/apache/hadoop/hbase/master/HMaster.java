@@ -2659,6 +2659,8 @@ public class HMaster extends HRegionServer implements MasterServices {
         if (type == BackupType.INCREMENTAL ) {
           LOG.warn("Incremental backup table set contains non-exising table: "
               + nonExistingTableList);
+          // Update incremental backup set 
+          tableList = excludeNonExistingTables(tableList, nonExistingTableList);
         } else {
           // Throw exception only in full mode - we try to backup non-existing table
           throw new DoNotRetryIOException("Non-existing tables found in the table list: "
@@ -2676,6 +2678,15 @@ public class HMaster extends HRegionServer implements MasterServices {
           tableList, targetRootDir, workers, bandwidth));
     }
     return new Pair<>(procId, backupId);
+  }
+
+  private List<TableName> excludeNonExistingTables(List<TableName> tableList,
+      List<TableName> nonExistingTableList) {
+    
+    for(TableName table: nonExistingTableList) {
+      tableList.remove(table);
+    }
+    return tableList;
   }
 
   /**
