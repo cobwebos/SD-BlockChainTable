@@ -237,7 +237,7 @@ public final class BackupClientUtil {
           LOG.debug(tableDir.toString() + " is empty, remove it.");
         }
       }
-      outputFs.delete(new Path(targetDir), true);
+      outputFs.delete(new Path(targetDir, backupContext.getBackupId()), true);
     } catch (IOException e1) {
       LOG.error("Cleaning up backup data of " + backupContext.getBackupId() + " at "
           + backupContext.getTargetRootDir() + " failed due to " + e1.getMessage() + ".");
