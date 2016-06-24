@@ -145,7 +145,9 @@ public class HBaseBackupAdmin implements BackupAdmin {
       List<BackupSet> bslist = new ArrayList<BackupSet>();
       for (String s : list) {
         List<TableName> tables = table.describeBackupSet(s);
-        bslist.add( new BackupSet(s, tables));
+        if(tables != null){
+          bslist.add( new BackupSet(s, tables));
+        }
       }
       return bslist;
     }
@@ -155,6 +157,7 @@ public class HBaseBackupAdmin implements BackupAdmin {
   public BackupSet getBackupSet(String name) throws IOException {
     try (final BackupSystemTable table = new BackupSystemTable(conn)) {
       List<TableName> list = table.describeBackupSet(name);
+      if(list == null) return null;
       return new BackupSet(name, list);
     }  
   }

@@ -482,7 +482,11 @@ public final class BackupCommands {
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
           final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
         BackupSet set = admin.getBackupSet(setName);
-        System.out.println(set);
+        if(set == null) {
+          System.out.println("Set '"+setName+"' does not exist.");
+        } else{
+          System.out.println(set);
+        }
       }
     }
 

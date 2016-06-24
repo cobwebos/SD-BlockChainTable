@@ -630,7 +630,7 @@ public final class BackupSystemTable implements Closeable {
      table = connection.getTable(tableName);
      Get get = BackupSystemTableHelper.createGetForBackupSet(name);
      Result res = table.get(get);
-     if(res.isEmpty()) return new ArrayList<TableName>();
+     if(res.isEmpty()) return null;
      res.advance();
      String[] tables = 
          BackupSystemTableHelper.cellValueToBackupSet(res.current());

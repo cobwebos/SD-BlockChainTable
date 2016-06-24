@@ -462,7 +462,7 @@ public class TestBackupSystemTable {
       table.deleteBackupSet(setName);
 
       List<TableName> tnames = table.describeBackupSet(setName);
-      assertTrue(tnames.size() == 0);
+      assertTrue(tnames == null);
       cleanBackupTable();
     }
   }
