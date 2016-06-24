@@ -39,7 +39,7 @@ public class TestRemoteRestore extends TestBackupBase {
     LOG.info("backup complete");
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = new TableName[] { table1_restore };
-    getBackupAdmin().restore(createRestoreRequest(BACKUP_REMOTE_ROOT_DIR, backupId, false, false, tableset,
+    getBackupAdmin().restore(createRestoreRequest(BACKUP_REMOTE_ROOT_DIR, backupId, false, tableset,
       tablemap, false));
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
     assertTrue(hba.tableExists(table1_restore));

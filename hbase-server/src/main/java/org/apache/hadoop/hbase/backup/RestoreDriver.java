@@ -65,12 +65,6 @@ public class RestoreDriver extends AbstractHBaseTool {
           + "                   restore target. The existing table must be online before restore.\n"
           + "   -check          With this option, restore sequence and dependencies are checked\n"
           + "                   and verified without executing the restore\n"
-          + "   -automatic      With this option, all the dependencies are automatically restored\n"
-          + "                   together with this backup image following the correct order.\n"
-          + "                   The restore dependencies can be checked by using \"-check\" "
-          + "option,\n"
-          + "                   or using \"hbase backup describe\" command. Without this option, "
-          + "only\n" + "                   this backup image is restored\n"
           + "   -set set_name   Backup set to restore, mutually exclusive with table list <tables>.";
 
     
@@ -114,12 +108,7 @@ public class RestoreDriver extends AbstractHBaseTool {
           + "will check and verify the dependencies");
     }
 
-    // whether to restore all dependencies, false by default
-    boolean autoRestore = cmd.hasOption(OPTION_AUTOMATIC);
-    if (autoRestore) {
-      LOG.debug("Found -automatic option in restore command, "
-          + "will automatically retore all the dependencies");
-    }
+    LOG.debug("Will automatically restore all the dependencies");
 
     // parse main restore command options
     String[] remainArgs = cmd.getArgs();
@@ -166,7 +155,7 @@ public class RestoreDriver extends AbstractHBaseTool {
     
     RestoreClient client = BackupRestoreClientFactory.getRestoreClient(getConf());
     try{
-      client.restore(backupRootDir, backupId, check, autoRestore, sTableArray,
+      client.restore(backupRootDir, backupId, check, sTableArray,
         tTableArray, isOverwrite);
     } catch (Exception e){
       e.printStackTrace();

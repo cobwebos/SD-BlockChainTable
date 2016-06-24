@@ -35,7 +35,6 @@ public interface RestoreClient {
    * @param backupRootDir The root dir for backup image
    * @param backupId The backup id for image to be restored
    * @param check True if only do dependency check
-   * @param autoRestore True if automatically restore following the dependency
    * @param sTableArray The array of tables to be restored
    * @param tTableArray The array of mapping tables to restore to
    * @param isOverwrite True then do restore overwrite if target table exists, otherwise fail the
@@ -44,6 +43,6 @@ public interface RestoreClient {
    */
   public  void restore(
       String backupRootDir,
-      String backupId, boolean check, boolean autoRestore, TableName[] sTableArray,
+      String backupId, boolean check, TableName[] sTableArray,
       TableName[] tTableArray, boolean isOverwrite) throws IOException;
 }

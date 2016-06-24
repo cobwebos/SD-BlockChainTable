@@ -101,7 +101,7 @@ public class TestIncrementalBackupDeleteTable extends TestBackupBase {
         new TableName[] { table1_restore, table2_restore };
 
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false, false,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
       tablesRestoreFull,
       tablesMapFull, false));
 
@@ -126,7 +126,7 @@ public class TestIncrementalBackupDeleteTable extends TestBackupBase {
         new TableName[] { table1 };
     TableName[] tablesMapIncMultiple =
         new TableName[] { table1_restore };
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple, false, false,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple, false,
       tablesRestoreIncMultiple, tablesMapIncMultiple, true));
 
     hTable = (HTable) conn.getTable(table1_restore);

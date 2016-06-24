@@ -203,7 +203,6 @@ public class HBaseBackupAdmin implements BackupAdmin {
     client.restore(request.getBackupRootDir(), 
                    request.getBackupId(), 
                    request.isCheck(), 
-                   request.isAutorestore(), 
                    request.getFromTables(), 
                    request.getToTables(), 
                    request.isOverwrite());

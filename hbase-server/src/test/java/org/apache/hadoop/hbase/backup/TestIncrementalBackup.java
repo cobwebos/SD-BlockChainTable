@@ -99,7 +99,7 @@ public class TestIncrementalBackup extends TestBackupBase {
         new TableName[] { table1_restore, table2_restore, table3_restore, table4_restore };
 
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false, false,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
       tablesRestoreFull,
       tablesMapFull, false));
 
@@ -134,7 +134,7 @@ public class TestIncrementalBackup extends TestBackupBase {
         new TableName[] { table1, table2, table3 };
     TableName[] tablesMapIncMultiple =
         new TableName[] { table1_restore, table2_restore, table3_restore };
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple, false, false,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple, false,
       tablesRestoreIncMultiple, tablesMapIncMultiple, true));
 
     hTable = (HTable) conn.getTable(table1_restore);
@@ -162,7 +162,7 @@ public class TestIncrementalBackup extends TestBackupBase {
     TableName[] tablesRestoreIncEmpty = new TableName[] { table4 };
     TableName[] tablesMapIncEmpty = new TableName[] { table4_restore };
 
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncEmpty, false, false,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncEmpty, false,
       tablesRestoreIncEmpty,
       tablesMapIncEmpty, true));
 

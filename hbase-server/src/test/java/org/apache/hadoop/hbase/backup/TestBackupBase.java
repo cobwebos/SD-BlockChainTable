@@ -259,10 +259,10 @@ public class TestBackupBase {
    */
   public  RestoreRequest createRestoreRequest(
       String backupRootDir,
-      String backupId, boolean check, boolean autoRestore, TableName[] fromTables,
+      String backupId, boolean check, TableName[] fromTables,
       TableName[] toTables, boolean isOverwrite) {
     RestoreRequest request = new RestoreRequest();
-    request.setBackupRootDir(backupRootDir).setBackupId(backupId).setCheck(check).setAutorestore(autoRestore).
+    request.setBackupRootDir(backupRootDir).setBackupId(backupId).setCheck(check).
     setFromTables(fromTables).setToTables(toTables).setOverwrite(isOverwrite);
     return request;
 }

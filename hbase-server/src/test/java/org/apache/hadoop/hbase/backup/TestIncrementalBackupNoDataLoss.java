@@ -99,7 +99,7 @@ public class TestIncrementalBackupNoDataLoss extends TestBackupBase {
     }
 
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdInc1, false, true, tablesRestoreInc1,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdInc1, false, tablesRestoreInc1,
       tablesMapInc1, false));
 
     HTable hTable = (HTable) conn.getTable(table1_restore);
@@ -111,7 +111,7 @@ public class TestIncrementalBackupNoDataLoss extends TestBackupBase {
     TableName[] tablesRestoreInc2 = new TableName[] { table2 };
     TableName[] tablesMapInc2 = new TableName[] { table2_restore };
 
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdInc2, false, true, tablesRestoreInc2,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdInc2, false, tablesRestoreInc2,
       tablesMapInc2, false));
 
     hTable = (HTable) conn.getTable(table2_restore);

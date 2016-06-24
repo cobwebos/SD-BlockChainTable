@@ -32,7 +32,6 @@ public class RestoreRequest {
   private String backupRootDir;  
   private String backupId;  
   private boolean check = false;
-  private boolean autorestore = true;
   private TableName[] fromTables;
   private TableName[] toTables;
   private boolean overwrite = false;
@@ -64,15 +63,6 @@ public class RestoreRequest {
 
   public RestoreRequest setCheck(boolean check) {
     this.check = check;
-    return this;
-  }
-
-  public boolean isAutorestore() {
-    return autorestore;
-  }
-
-  public RestoreRequest setAutorestore(boolean autorestore) {
-    this.autorestore = autorestore;
     return this;
   }
 

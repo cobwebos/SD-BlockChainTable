@@ -46,7 +46,7 @@ public class TestRestoreBoundaryTests extends TestBackupBase {
     LOG.info("backup complete");
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = new TableName[] { table1_restore };
-    getBackupAdmin().restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, false, tableset, tablemap,
+    getBackupAdmin().restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, tableset, tablemap,
       false));
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
     assertTrue(hba.tableExists(table1_restore));
@@ -65,7 +65,7 @@ public class TestRestoreBoundaryTests extends TestBackupBase {
     String backupId = fullTableBackup(tables);
     TableName[] restore_tableset = new TableName[] { table2, table3};
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
-    getBackupAdmin().restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, false, restore_tableset,
+    getBackupAdmin().restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, restore_tableset,
       tablemap,
       false));
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();

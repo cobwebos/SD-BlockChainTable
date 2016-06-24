@@ -70,7 +70,6 @@ public final class RestoreClientImpl implements RestoreClient {
    * @param backupRootDir The root dir for backup image
    * @param backupId The backup id for image to be restored
    * @param check True if only do dependency check
-   * @param autoRestore True if automatically restore following the dependency
    * @param sTableArray The array of tables to be restored
    * @param tTableArray The array of mapping tables to restore to
    * @param isOverwrite True then do restore overwrite if target table exists, otherwise fail the
@@ -79,7 +78,7 @@ public final class RestoreClientImpl implements RestoreClient {
    */
   @Override
   public void restore(String backupRootDir,
-      String backupId, boolean check, boolean autoRestore, TableName[] sTableArray,
+      String backupId, boolean check, TableName[] sTableArray,
       TableName[] tTableArray, boolean isOverwrite) throws IOException {
 
     HashMap<TableName, BackupManifest> backupManifestMap = new HashMap<>();
@@ -87,10 +86,9 @@ public final class RestoreClientImpl implements RestoreClient {
     Path rootPath = new Path(backupRootDir);
     HBackupFileSystem.checkImageManifestExist(backupManifestMap, sTableArray, conf, rootPath,
       backupId);
-
     try {
       // Check and validate the backup image and its dependencies
-      if (check || autoRestore) {
+      if (check) {
         if (validate(backupManifestMap)) {
           LOG.info("Checking backup images: ok");
         } else {
@@ -103,23 +101,17 @@ public final class RestoreClientImpl implements RestoreClient {
       if (tTableArray == null) {
         tTableArray = sTableArray;
       }
-
       // check the target tables
       checkTargetTables(tTableArray, isOverwrite);
-
-      // start restore process
-      
-      restoreStage(backupManifestMap, sTableArray, tTableArray, autoRestore, isOverwrite);
-
+      // start restore process      
+      restoreStage(backupManifestMap, sTableArray, tTableArray, isOverwrite);
       LOG.info("Restore for " + Arrays.asList(sTableArray) + " are successful!");
-
     } catch (IOException e) {
       LOG.error("ERROR: restore failed with error: " + e.getMessage());
       throw e;
     }
 
   }
-
 
   private  boolean validate(HashMap<TableName, BackupManifest> backupManifestMap)
       throws IOException {
@@ -195,7 +187,6 @@ public final class RestoreClientImpl implements RestoreClient {
         }
       }
     }
-
   }
 
   /**
@@ -203,53 +194,36 @@ public final class RestoreClientImpl implements RestoreClient {
    * @param backupManifestMap : tableName,  Manifest
    * @param sTableArray The array of tables to be restored
    * @param tTableArray The array of mapping tables to restore to
-   * @param autoRestore : yes, restore all the backup images on the dependency list
    * @return set of BackupImages restored
    * @throws IOException exception
    */
-  private void restoreStage(
-    HashMap<TableName, BackupManifest> backupManifestMap, TableName[] sTableArray,
-    TableName[] tTableArray, boolean autoRestore, boolean isOverwrite) throws IOException {
+  private void restoreStage(HashMap<TableName, BackupManifest> backupManifestMap,
+      TableName[] sTableArray, TableName[] tTableArray, boolean isOverwrite) throws IOException {
     TreeSet<BackupImage> restoreImageSet = new TreeSet<BackupImage>();
-    boolean truncateIfExists = autoRestore && isOverwrite;
+    boolean truncateIfExists = isOverwrite;
     try {
       for (int i = 0; i < sTableArray.length; i++) {
         TableName table = sTableArray[i];
         BackupManifest manifest = backupManifestMap.get(table);
-        if (autoRestore) {
-          // Get the image list of this backup for restore in time order from old
-          // to new.
-          List<BackupImage> list = new ArrayList<BackupImage>();
-          list.add(manifest.getBackupImage());
-          List<BackupImage> depList = manifest.getDependentListByTable(table);
-          list.addAll(depList);
-          TreeSet<BackupImage> restoreList = new TreeSet<BackupImage>(list);
-          LOG.debug("need to clear merged Image. to be implemented in future jira");
-          restoreImages(restoreList.iterator(), table, tTableArray[i], truncateIfExists);
-          restoreImageSet.addAll(restoreList);
-        } else {
-          BackupImage image = manifest.getBackupImage();
-          List<BackupImage> depList = manifest.getDependentListByTable(table);
-          // The dependency list always contains self.
-          if (depList != null && depList.size() > 1) {
-            LOG.warn("Backup image " + image.getBackupId() + " depends on other images.\n"
-                + "this operation will only restore the delta contained within backupImage "
-                + image.getBackupId());
-          }
-          restoreImage(image, table, tTableArray[i]);
-          restoreImageSet.add(image);
-        }
+        // Get the image list of this backup for restore in time order from old
+        // to new.
+        List<BackupImage> list = new ArrayList<BackupImage>();
+        list.add(manifest.getBackupImage());
+        List<BackupImage> depList = manifest.getDependentListByTable(table);
+        list.addAll(depList);
+        TreeSet<BackupImage> restoreList = new TreeSet<BackupImage>(list);
+        LOG.debug("need to clear merged Image. to be implemented in future jira");
+        restoreImages(restoreList.iterator(), table, tTableArray[i], truncateIfExists);
+        restoreImageSet.addAll(restoreList);
 
-        if (autoRestore) {
-          if (restoreImageSet != null && !restoreImageSet.isEmpty()) {
-            LOG.info("Restore includes the following image(s):");
-            for (BackupImage image : restoreImageSet) {
-              LOG.info("Backup: "
-                  + image.getBackupId()
-                  + " "
-                  + HBackupFileSystem.getTableBackupDir(image.getRootDir(), image.getBackupId(),
-                    table));
-            }
+        if (restoreImageSet != null && !restoreImageSet.isEmpty()) {
+          LOG.info("Restore includes the following image(s):");
+          for (BackupImage image : restoreImageSet) {
+            LOG.info("Backup: "
+                + image.getBackupId()
+                + " "
+                + HBackupFileSystem.getTableBackupDir(image.getRootDir(), image.getBackupId(),
+                  table));
           }
         }
       }
@@ -261,43 +235,6 @@ public final class RestoreClientImpl implements RestoreClient {
 
   }
 
-  /**
-   * Restore operation handle each backupImage
-   * @param image: backupImage
-   * @param sTable: table to be restored
-   * @param tTable: table to be restored to
-   * @throws IOException exception
-   */
-  private  void restoreImage(BackupImage image, TableName sTable, TableName tTable)
-      throws IOException {
-    String rootDir = image.getRootDir();
-    String backupId = image.getBackupId();
-
-    Path rootPath = new Path(rootDir);
-    RestoreServerUtil restoreTool = new RestoreServerUtil(conf, rootPath, backupId);
-    BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, rootPath, backupId);
-
-    Path tableBackupPath = HBackupFileSystem.getTableBackupPath(sTable, rootPath,  backupId);
-
-    // TODO: convert feature will be provided in a future JIRA
-    boolean converted = false;
-
-    if (manifest.getType() == BackupType.FULL || converted) {
-      LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from "
-          + (converted ? "converted" : "full") + " backup image " + tableBackupPath.toString());
-      restoreTool.fullRestoreTable(tableBackupPath, sTable, tTable, converted, false);
-    } else { // incremental Backup
-      String logBackupDir =
-          HBackupFileSystem.getLogBackupDir(image.getRootDir(), image.getBackupId());
-      LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from incremental backup image "
-          + logBackupDir);
-      restoreTool.incrementalRestoreTable(new Path[]{ new Path(logBackupDir)}, new TableName[] { sTable },
-        new TableName[] { tTable });
-    }
-
-    LOG.info(sTable + " has been successfully restored to " + tTable);
-  }
-  
   /**
    * Restore operation handle each backupImage in iterator
    * @param it: backupImage iterator - ascending

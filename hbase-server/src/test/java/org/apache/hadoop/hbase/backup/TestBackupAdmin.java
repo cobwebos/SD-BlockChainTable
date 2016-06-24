@@ -101,7 +101,7 @@ public class TestBackupAdmin extends TestBackupBase {
 
     RestoreRequest restoreRequest = new RestoreRequest();
     restoreRequest.setBackupRootDir(BACKUP_ROOT_DIR).setBackupId(backupIdFull).
-      setCheck(false).setAutorestore(false).setOverwrite(false).
+      setCheck(false).setOverwrite(false).
       setFromTables(tablesRestoreFull).setToTables(tablesMapFull);
     
     backupAdmin.restore(restoreRequest);
@@ -139,7 +139,7 @@ public class TestBackupAdmin extends TestBackupBase {
     
     restoreRequest = new RestoreRequest();
     restoreRequest.setBackupRootDir(BACKUP_ROOT_DIR).setBackupId(backupIdIncMultiple).
-      setCheck(false).setAutorestore(false).setOverwrite(true).
+      setCheck(false).setOverwrite(true).
       setFromTables(tablesRestoreIncMultiple).setToTables(tablesMapIncMultiple);
     
     backupAdmin.restore(restoreRequest);
@@ -171,7 +171,7 @@ public class TestBackupAdmin extends TestBackupBase {
     
     restoreRequest = new RestoreRequest();
     restoreRequest.setBackupRootDir(BACKUP_ROOT_DIR).setBackupId(backupIdIncEmpty).
-      setCheck(false).setAutorestore(false).setOverwrite(true).
+      setCheck(false).setOverwrite(true).
       setFromTables(tablesRestoreIncEmpty).setToTables(tablesMapIncEmpty);
     
     backupAdmin.restore(restoreRequest);   

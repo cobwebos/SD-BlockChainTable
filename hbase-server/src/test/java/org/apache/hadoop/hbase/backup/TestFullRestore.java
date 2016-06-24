@@ -52,7 +52,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = new TableName[] { table1_restore };
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, false, tableset, tablemap, false));
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false,  tableset, tablemap, false));
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
     assertTrue(hba.tableExists(table1_restore));
     TEST_UTIL.deleteTable(table1_restore);
@@ -96,7 +96,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] restore_tableset = new TableName[] { table2, table3 };
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, false,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false,
       restore_tableset, tablemap, false));
     HBaseAdmin hba = TEST_UTIL.getHBaseAdmin();
     assertTrue(hba.tableExists(table2_restore));
@@ -154,7 +154,7 @@ public class TestFullRestore extends TestBackupBase {
 
     TableName[] tableset = new TableName[] { table1 };
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, false, tableset, null,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, tableset, null,
       true));
   }
 
@@ -198,7 +198,7 @@ public class TestFullRestore extends TestBackupBase {
 
     TableName[] restore_tableset = new TableName[] { table2, table3 };
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId,
       false, restore_tableset, null, true));
   }
 
@@ -245,7 +245,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] tableset = new TableName[] { TableName.valueOf("faketable") };
     TableName[] tablemap = new TableName[] { table1_restore };
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, false, tableset, tablemap,
+    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, tableset, tablemap,
       false));
   }
 
@@ -292,7 +292,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
     BackupAdmin client = getBackupAdmin();
     client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false,
-      false, restore_tableset, tablemap, false));
+      restore_tableset, tablemap, false));
   }
   
   /**
