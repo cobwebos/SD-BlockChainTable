@@ -169,14 +169,13 @@ import org.apache.hadoop.hbase.zookeeper.SplitOrMergeTracker;
 import org.apache.hadoop.hbase.zookeeper.ZKClusterId;
 import org.apache.hadoop.hbase.zookeeper.ZKUtil;
 import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.zookeeper.KeeperException;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.Descriptors;
@@ -2632,6 +2631,13 @@ public class HMaster extends HRegionServer implements MasterServices {
         throw new DoNotRetryIOException("No table covered by incremental backup.");
       }
 
+      tableList.removeAll(incrTableSet);
+      if (!tableList.isEmpty()) {
+        String extraTables = StringUtils.join(",", tableList);
+        LOG.error("Some tables (" + extraTables + ") haven't gone through full backup");
+        throw new DoNotRetryIOException("Perform full backup on " + extraTables + " first, "
+            + "then retry the command");
+      }
       LOG.info("Incremental backup for the following table set: " + incrTableSet);
       tableList = Lists.newArrayList(incrTableSet);
     }
