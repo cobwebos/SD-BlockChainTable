@@ -28,9 +28,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupCopyService;
 import org.apache.hadoop.hbase.backup.BackupInfo;
@@ -38,16 +36,13 @@ import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.snapshot.ExportSnapshot;
 import org.apache.hadoop.mapreduce.Cluster;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobID;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.tools.DistCp;
 import org.apache.hadoop.tools.DistCpConstants;
 import org.apache.hadoop.tools.DistCpOptions;
-import org.apache.hadoop.util.ClassUtil;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 /**
  * Copier for backup operation. Basically, there are 2 types of copy. One is copying from snapshot,
@@ -123,7 +118,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
   }
 
   /**
-   * Update the ongoing back token znode with new progress.
+   * Update the ongoing backup with new progress.
    * @param backupContext backup context
    * 
    * @param newProgress progress
