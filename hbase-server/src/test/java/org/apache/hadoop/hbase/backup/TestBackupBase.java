@@ -84,10 +84,6 @@ public class TestBackupBase {
   protected static String BACKUP_ROOT_DIR = "/backupUT";
   protected static String BACKUP_REMOTE_ROOT_DIR = "/backupUT";
 
-  protected static final String BACKUP_ZNODE = "/backup/hbase";
-  protected static final String BACKUP_SUCCEED_NODE = "complete";
-  protected static final String BACKUP_FAILED_NODE = "failed";
-
   /**
    * @throws java.lang.Exception
    */

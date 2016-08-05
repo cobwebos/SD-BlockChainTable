@@ -280,6 +280,19 @@ public final class BackupSystemTable implements Closeable {
     return getBackupHistory(false);
   }
   
+  public ArrayList<BackupInfo> getBackupHistoryForTable(TableName table) throws IOException {
+    ArrayList<BackupInfo> history = getBackupHistory();      
+    ArrayList<BackupInfo> list = new ArrayList<BackupInfo>();
+    
+    for(int i=0; i < history.size(); i++){
+      BackupInfo info = history.get(i);
+      if(info.getTableNames().contains(table)){
+        list.add(history.get(i));
+      }
+    }
+    return list;
+  }
+  
   /**
    * Get all backup session with a given status (in desc order by time)
    * @param status status

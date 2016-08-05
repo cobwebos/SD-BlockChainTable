@@ -56,6 +56,8 @@ public class BackupDriver extends AbstractHBaseTool {
     addOptWithArg("w", "Number of workers");
     addOptWithArg("n", "History length");
     addOptWithArg("set", "Backup set name");
+    addOptWithArg("path", "Backup destination root directory path");
+    
 
     // disable irrelevant loggers to avoid it mess up command output
     LogUtils.disableUselessLoggers(LOG);

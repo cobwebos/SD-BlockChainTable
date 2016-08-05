@@ -25,6 +25,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
@@ -61,10 +62,11 @@ public final class BackupCommands {
       + "Enter \'help COMMAND\' to see help message for each command\n";
 
   private static final String CREATE_CMD_USAGE =
-      "Usage: hbase backup create <type> <backup_root_path> [tables] [-s name] [-convert] "
-          + "[-silent] [-w workers][-b bandwith]\n" + " type          \"full\" to create a full backup image;\n"
+      "Usage: hbase backup create <type> <BACKUP_ROOT> [tables] [-s name] [-convert] "
+          + "[-silent] [-w workers][-b bandwith]\n" 
+          + " type          \"full\" to create a full backup image;\n"
           + "               \"incremental\" to create an incremental backup image\n"
-          + "  backup_root_path   The full root path to store the backup image,\n"
+          + "  BACKUP_ROOT   The full root path to store the backup image,\n"
           + "                    the prefix can be hdfs, webhdfs or gpfs\n" + " Options:\n"
           + "  tables      If no tables (\"\") are specified, all tables are backed up. "
           + "Otherwise it is a\n" + "               comma separated list of tables.\n"
@@ -78,8 +80,12 @@ public final class BackupCommands {
   private static final String DESCRIBE_CMD_USAGE = "Usage: hbase backup decsribe <backupId>\n"
       + " backupId      backup image id\n";
 
-  private static final String HISTORY_CMD_USAGE = "Usage: hbase backup history [-n N]\n"
-      + " -n N     show up to N last backup sessions, default - 10;\n";
+  private static final String HISTORY_CMD_USAGE = 
+      "Usage: hbase backup history [-path BACKUP_ROOT] [-n N] [-t table]\n"
+      + " -n N     show up to N last backup sessions, default - 10;\n"
+      + " -path    backup root path;\n"
+      + " -t       table name; ";
+  
 
   private static final String DELETE_CMD_USAGE = "Usage: hbase backup delete <backupId>\n"
       + " backupId      backup image id;\n";
@@ -398,14 +404,40 @@ public final class BackupCommands {
     public void execute() throws IOException {
 
       int n = parseHistoryLength();
+      TableName tableName = getTableName();
+      Path backupRootPath = getBackupRootPath();
+      List<BackupInfo> history = null;
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
-      try(final Connection conn = ConnectionFactory.createConnection(conf); 
+      if(backupRootPath == null) {
+        // Load from hbase:backup
+        try(final Connection conn = ConnectionFactory.createConnection(conf); 
           final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
-        List<BackupInfo> history = admin.getHistory(n);
-        for(BackupInfo info: history){
-          System.out.println(info.getShortDescription());
-        }
-      } 
+          history = admin.getHistory(n, tableName);
+        } 
+      } else {
+        // load from backup FS
+        history = BackupClientUtil.getHistory(conf, n, tableName, backupRootPath);        
+      }      
+      for(BackupInfo info: history){
+        System.out.println(info.getShortDescription());
+      }      
+    }
+    
+    private Path getBackupRootPath() {
+      String value = cmdline.getOptionValue("path");
+      if (value == null) return null;
+      return new Path(value);
+    }
+
+    private TableName getTableName() {
+      String value = cmdline.getOptionValue("t"); 
+      if (value == null) return null;
+      try{
+        return TableName.valueOf(value);
+      } catch (IllegalArgumentException e){
+        System.out.println("Illegal argument: "+ value);
+        return null;
+      }
     }
 
     private int parseHistoryLength() {

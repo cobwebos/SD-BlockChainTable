@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
@@ -112,11 +113,11 @@ public class BackupInfo implements Comparable<BackupInfo> {
   private long bandwidth = -1;  
   
   public BackupInfo() {
+    backupStatusMap = new HashMap<TableName, BackupStatus>();
   }
 
   public BackupInfo(String backupId, BackupType type, TableName[] tables, String targetRootDir) {
-    backupStatusMap = new HashMap<TableName, BackupStatus>();
-
+    this();
     this.backupId = backupId;
     this.type = type;
     this.targetRootDir = targetRootDir;
@@ -467,6 +468,5 @@ public class BackupInfo implements Comparable<BackupInfo> {
           new Long(o.getBackupId().substring(o.getBackupId().lastIndexOf("_") + 1));
       return thisTS.compareTo(otherTS);
   }
-   
-  
+     
 }

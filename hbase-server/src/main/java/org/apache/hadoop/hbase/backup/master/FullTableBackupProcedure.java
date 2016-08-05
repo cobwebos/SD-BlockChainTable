@@ -33,7 +33,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.NotServingRegionException;
 import org.apache.hadoop.hbase.TableName;
@@ -321,8 +323,7 @@ public class FullTableBackupProcedure
         throw new IOException("Failed of exporting snapshot " + args[1] + " to " + args[3]
             + " with reason code " + res);
       }
-
-      LOG.info("Snapshot copy " + args[1] + " finished.");
+      LOG.info("Snapshot copy " + args[1] + " finished.");      
     }
   }
   
@@ -575,7 +576,7 @@ public class FullTableBackupProcedure
           // do snapshot copy
           LOG.debug("snapshot copy for " + backupId);
           try {
-            this.snapshotCopy(backupContext);
+            this.snapshotCopy(backupContext);                        
           } catch (Exception e) {
             setFailure("Failure in full-backup: snapshot copy phase" + backupId, e);
             // fail the overall backup and return

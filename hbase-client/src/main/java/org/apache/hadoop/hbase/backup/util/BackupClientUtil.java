@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -365,4 +367,80 @@ public final class BackupClientUtil {
         + HConstants.HREGION_LOGDIR_NAME;
   }
 
+  public static List<BackupInfo> getHistory(Configuration conf, Path backupRootPath) 
+      throws IOException {
+    // Get all (n) history from backup root destination
+    FileSystem fs = FileSystem.get(conf);
+    RemoteIterator<LocatedFileStatus> it = fs.listLocatedStatus(backupRootPath);
+
+    List<BackupInfo> infos = new ArrayList<BackupInfo>();
+    while( it.hasNext()) {
+      LocatedFileStatus lfs = it.next();     
+      if(!lfs.isDirectory()) continue;
+      if(!isBackupDirectory(lfs)) continue;
+      String backupId = lfs.getPath().getName();
+      infos.add(loadBackupInfo(backupRootPath, backupId, fs));      
+    }
+    // Sort
+    Collections.sort(infos, new Comparator<BackupInfo>() {
+
+      @Override
+      public int compare(BackupInfo o1, BackupInfo o2) {
+        long ts1 = getTimestamp(o1.getBackupId());
+        long ts2 = getTimestamp(o2.getBackupId());
+        if(ts1 == ts2) return 0;
+        return ts1< ts2 ? 1: -1 ;
+      }
+      
+      private long getTimestamp(String backupId) {
+        String[] split = backupId.split("_");
+        return Long.parseLong(split[1]);
+      }
+    });
+    return infos;
+  }
+
+  public static List<BackupInfo> getHistory(Configuration conf, int n, 
+    TableName name, Path backupRootPath) throws IOException
+  {
+    List<BackupInfo> infos = getHistory(conf, backupRootPath);
+    if (name == null) {      
+      if(infos.size() <= n) return infos;
+      return infos.subList(0, n);
+    } else {
+      List<BackupInfo> ret = new ArrayList<BackupInfo>();
+      int count = 0;
+      for(BackupInfo info: infos) {
+        List<TableName> names = info.getTableNames();
+        if(names.contains(name)) {
+          ret.add(info); 
+          if(++count == n) {
+            break;
+          }
+        }
+      }      
+      return ret;
+    }    
+  }      
+  
+  private static boolean isBackupDirectory(LocatedFileStatus lfs) {
+    return lfs.getPath().getName().startsWith(BackupRestoreConstants.BACKUPID_PREFIX);
+  }
+  
+  public static BackupInfo loadBackupInfo(Path backupRootPath, String backupId,
+      FileSystem fs) throws IOException {
+    Path backupPath = new Path(backupRootPath, backupId);
+        
+    RemoteIterator<LocatedFileStatus> it = fs.listFiles(backupPath, true);
+    while(it.hasNext()) {
+      LocatedFileStatus lfs = it.next();
+      if(lfs.getPath().getName().equals(BackupManifest.MANIFEST_FILE_NAME)) {
+        // Load BackupManifest
+        BackupManifest manifest = new BackupManifest(fs, lfs.getPath().getParent());
+        BackupInfo info = manifest.toBackupInfo();   
+        return info;
+      }      
+    }    
+    return null;
+  }
 }

@@ -306,10 +306,21 @@ public class BackupManifest {
    * Construct manifest from a backup directory.
    * @param conf configuration
    * @param backupPath backup path
+   * @throws IOException 
+   */
+
+  public BackupManifest(Configuration conf, Path backupPath) throws IOException {
+    this(backupPath.getFileSystem(conf), backupPath);
+  }
+
+  /**
+   * Construct manifest from a backup directory.
+   * @param conf configuration
+   * @param backupPath backup path
    * @throws BackupException exception
    */
 
-  public BackupManifest(Configuration conf, Path backupPath) throws BackupException {
+  public BackupManifest(FileSystem fs, Path backupPath) throws BackupException {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Loading manifest from: " + backupPath.toString());
     }
@@ -318,10 +329,9 @@ public class BackupManifest {
     // This variable's purpose is to keep the correct and original location so
     // that we can store/persist it.
     this.tableBackupDir = backupPath.toString();
-    this.config = conf;
+    this.config = fs.getConf();
     try {
 
-      FileSystem fs = backupPath.getFileSystem(conf);
       FileStatus[] subFiles = BackupClientUtil.listStatus(fs, backupPath, null);
       if (subFiles == null) {
         String errorMsg = backupPath.toString() + " does not exist";
@@ -375,7 +385,7 @@ public class BackupManifest {
       throw new BackupException(e.getMessage());
     }
   }
-
+  
   private void loadIncrementalTimestampMap(BackupProtos.BackupManifest proto) {
     List<BackupProtos.TableServerTimestamp> list = proto.getTstMapList();
     if(list == null || list.size() == 0) return;
@@ -754,5 +764,20 @@ public class BackupManifest {
 
     LOG.debug("Full image set can cover image " + image.getBackupId());
     return true;
+  }
+  
+  public BackupInfo toBackupInfo()
+  {
+    BackupInfo info = new BackupInfo();
+    info.setType(type);
+    TableName[] tables = new TableName[tableList.size()];
+    info.addTables(getTableList().toArray(tables));
+    info.setBackupId(backupId);
+    info.setStartTs(startTs);
+    info.setTargetRootDir(rootDir);
+    if(type == BackupType.INCREMENTAL) {
+      info.setHlogTargetDir(logBackupDir);
+    }
+    return info;
   }
 }

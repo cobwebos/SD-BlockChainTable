@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupRequest;
@@ -104,6 +105,17 @@ public interface BackupAdmin extends Closeable{
    */
   public List<BackupInfo> getHistory(int n) throws IOException;
 
+
+  /**
+   * Show backup history command for a table
+   * @param n - last n backup sessions
+   * @param name - table's name
+   * @return list of backup infos
+   * @throws IOException exception
+   */
+  public List<BackupInfo> getHistory(int n, TableName name) throws IOException;
+
+  
   /**
    * Backup sets list command - list all backup sets. Backup set is 
    * a named group of tables. 

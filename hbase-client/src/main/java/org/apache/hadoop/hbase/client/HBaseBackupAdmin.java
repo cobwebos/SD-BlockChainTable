@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
@@ -138,6 +139,16 @@ public class HBaseBackupAdmin implements BackupAdmin {
     }  
   }
 
+  @Override
+  public List<BackupInfo> getHistory(int n, TableName name) throws IOException {
+    if(name == null) return getHistory(n);    
+    try (final BackupSystemTable table = new BackupSystemTable(conn)) {
+      List<BackupInfo> history = table.getBackupHistoryForTable(name); 
+      n  = Math.min(n,  history.size());
+      return history.subList(0, n);
+    }  
+  }
+   
   @Override
   public List<BackupSet> listBackupSets() throws IOException {
     try (final BackupSystemTable table = new BackupSystemTable(conn)) {

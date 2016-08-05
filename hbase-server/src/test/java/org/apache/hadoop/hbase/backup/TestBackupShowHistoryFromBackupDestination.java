@@ -26,7 +26,9 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.util.ToolRunner;
 import org.junit.Test;
@@ -35,13 +37,14 @@ import org.junit.experimental.categories.Category;
 import com.google.common.collect.Lists;
 
 @Category(LargeTests.class)
-public class TestBackupShowHistory extends TestBackupBase {
+public class TestBackupShowHistoryFromBackupDestination extends TestBackupBase {
 
-  private static final Log LOG = LogFactory.getLog(TestBackupShowHistory.class);
+  private static final Log LOG = 
+      LogFactory.getLog(TestBackupShowHistoryFromBackupDestination.class);
 
   /**
-   * Verify that full backup is created on a single table with data correctly. Verify that history
-   * works as expected
+   * Verify that full backup is created on a single table with data correctly. 
+   * Verify that history works as expected
    * @throws Exception
    */
   @Test
@@ -54,7 +57,8 @@ public class TestBackupShowHistory extends TestBackupBase {
     assertTrue(checkSucceeded(backupId));
     LOG.info("backup complete");
 
-    List<BackupInfo> history = getBackupAdmin().getHistory(10);
+    List<BackupInfo> history = BackupClientUtil.getHistory(conf1, 10, null, 
+      new Path(BACKUP_ROOT_DIR));
     assertTrue(history.size() > 0);
     boolean success = false;
     for(BackupInfo info: history){
@@ -80,7 +84,7 @@ public class TestBackupShowHistory extends TestBackupBase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
 
-    String[] args = new String[]{"history",  "-n", "10" }; 
+    String[] args = new String[]{"history",  "-n", "10", "-path", BACKUP_ROOT_DIR }; 
     // Run backup
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertTrue(ret == 0);
@@ -106,7 +110,7 @@ public class TestBackupShowHistory extends TestBackupBase {
     assertTrue(checkSucceeded(backupId2));
     LOG.info("backup complete: "+ table2);
     
-    List<BackupInfo> history = getBackupAdmin().getHistory(10, table1);
+    List<BackupInfo> history = BackupClientUtil.getHistory(conf1, 10, table1, new Path(BACKUP_ROOT_DIR));
     assertTrue(history.size() > 0);
     boolean success = true;
     for(BackupInfo info: history){
