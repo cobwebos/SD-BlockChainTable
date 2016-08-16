@@ -260,6 +260,10 @@ public class MapReduceBackupCopyService implements BackupCopyService {
       job.getConfiguration().set(DistCpConstants.CONF_LABEL_DISTCP_JOB_ID, jobID);
 
       LOG.debug("DistCp job-id: " + jobID);
+      if (job.isComplete() && !job.isSuccessful()) {
+        throw new Exception("DistCp job-id: " + jobID + " failed");
+      }
+
       return job;
     }
 
