@@ -65,6 +65,11 @@ class DisabledWALProvider implements WALProvider {
   }
 
   @Override
+  public long getHighestFilenum() {
+    return 0;
+  }
+
+  @Override
   public WAL getWAL(final byte[] identifier, byte[] namespace) throws IOException {
     return disabled;
   }

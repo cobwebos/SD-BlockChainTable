@@ -61,6 +61,7 @@ public class TestIncrementalBackup extends TestBackupBase {
     assertTrue(checkSucceeded(backupIdFull));
 
     // #2 - insert some data to table
+    LOG.debug("writing " + NB_ROWS_IN_BATCH + " rows to " + table1);
     HTable t1 = (HTable) conn.getTable(table1);
     Put p1;
     for (int i = 0; i < NB_ROWS_IN_BATCH; i++) {
@@ -71,6 +72,7 @@ public class TestIncrementalBackup extends TestBackupBase {
 
     Assert.assertThat(TEST_UTIL.countRows(t1), CoreMatchers.equalTo(NB_ROWS_IN_BATCH * 2));
     t1.close();
+    LOG.debug("written " + NB_ROWS_IN_BATCH + " rows to " + table1);
 
     HTable t2 =  (HTable) conn.getTable(table2);
     Put p2;
@@ -82,6 +84,7 @@ public class TestIncrementalBackup extends TestBackupBase {
 
     Assert.assertThat(TEST_UTIL.countRows(t2), CoreMatchers.equalTo(NB_ROWS_IN_BATCH + 5));
     t2.close();
+    LOG.debug("written " + 5 + " rows to " + table2);
 
     // #3 - incremental backup for multiple tables
     tables = Lists.newArrayList(table1, table2, table3);

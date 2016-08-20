@@ -39,10 +39,12 @@ public abstract class WriterBase implements DefaultWALProvider.Writer {
 
   protected CompressionContext compressionContext;
   protected Configuration conf;
+  protected Path path;
 
   @Override
   public void init(FileSystem fs, Path path, Configuration conf, boolean overwritable) throws IOException {
     this.conf = conf;
+    this.path = path;
   }
 
   public boolean initializeCompressionContext(Configuration conf, Path path) throws IOException {

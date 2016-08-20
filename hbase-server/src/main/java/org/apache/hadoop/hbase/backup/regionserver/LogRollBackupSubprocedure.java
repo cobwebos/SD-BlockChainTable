@@ -30,8 +30,10 @@ import org.apache.hadoop.hbase.errorhandling.ForeignException;
 import org.apache.hadoop.hbase.errorhandling.ForeignExceptionDispatcher;
 import org.apache.hadoop.hbase.procedure.ProcedureMember;
 import org.apache.hadoop.hbase.procedure.Subprocedure;
+import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.hadoop.hbase.regionserver.RegionServerServices;
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 
 /**
  * This backup subprocedure implementation forces a log roll on the RS.
@@ -73,10 +75,18 @@ public class LogRollBackupSubprocedure extends Subprocedure {
       }
       hlog = (FSHLog) rss.getWAL(null);
       long filenum = hlog.getFilenum();
+      long highest = ((HRegionServer)rss).getHighestFilenum();
 
-      LOG.info("Trying to roll log in backup subprocedure, current log number: " + filenum);
-      hlog.rollWriter(true);
-      LOG.info("After roll log in backup subprocedure, current log number: " + hlog.getFilenum());
+      LOG.info("Trying to roll log in backup subprocedure, current log number: " + filenum
+          + " highest: " + highest + " on " + rss.getServerName());
+      ((HRegionServer)rss).walRoller.requestRollAll();
+      long start = EnvironmentEdgeManager.currentTime();
+      while (!((HRegionServer)rss).walRoller.walRollFinished()) {
+        Thread.sleep(20);
+      }
+      LOG.debug("log roll took " + (EnvironmentEdgeManager.currentTime()-start));
+      LOG.info("After roll log in backup subprocedure, current log number: " + hlog.getFilenum()
+          + " highest: " + ((HRegionServer)rss).getHighestFilenum() + " on " + rss.getServerName());
 
       Connection connection = rss.getConnection();
       try(final BackupSystemTable table = new BackupSystemTable(connection)) {
@@ -86,17 +96,17 @@ public class LogRollBackupSubprocedure extends Subprocedure {
         int port = rss.getServerName().getPort();
         String server = host + ":" + port;
         Long sts = serverTimestampMap.get(host);
-        if (sts != null && sts > filenum) {
+        if (sts != null && sts > highest) {
           LOG.warn("Won't update server's last roll log result: current="
-              + sts + " new=" + filenum);
+              + sts + " new=" + highest);
           return null;
         }
         // write the log number to hbase:backup.
-        table.writeRegionServerLastLogRollResult(server, filenum, backupRoot);
+        table.writeRegionServerLastLogRollResult(server, highest, backupRoot);
         return null;
       } catch (Exception e) {
         LOG.error(e);
-        throw e; // TODO: is this correct?
+        throw e;
       }
     }
   }
@@ -125,7 +135,6 @@ public class LogRollBackupSubprocedure extends Subprocedure {
   @Override
   public byte[] insideBarrier() throws ForeignException {
     rolllog();
-    // FIXME
     return null;
   }
 

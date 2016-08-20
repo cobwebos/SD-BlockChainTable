@@ -28,7 +28,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupCopyService;
 import org.apache.hadoop.hbase.backup.BackupInfo;
@@ -38,6 +40,7 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.snapshot.ExportSnapshot;
 import org.apache.hadoop.mapreduce.Cluster;
+import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.tools.DistCp;
@@ -239,7 +242,8 @@ public class MapReduceBackupCopyService implements BackupCopyService {
             new BigDecimal(newProgress * 100).setScale(1, BigDecimal.ROUND_HALF_UP);
 
         String newProgressStr = progressData + "%";
-        LOG.info("Progress: " + newProgressStr);
+        LOG.info("Progress: " + newProgressStr + " subTask: " + subTaskPercntgInWholeTask +
+            " mapProgress: " + job.mapProgress());
 
         // accumulate the overall backup progress
         progressDone = newProgress;
@@ -249,7 +253,9 @@ public class MapReduceBackupCopyService implements BackupCopyService {
           bytesCopied);
         LOG.debug("Backup progress data updated to hbase:backup: \"Progress: " + newProgressStr
           + " - " + bytesCopied + " bytes copied.\"");
-
+      } catch (Throwable t) {
+        LOG.error("distcp " + job.getJobID() + " encountered error", t);
+        throw t;
       } finally {
         if (!fieldSubmitted.getBoolean(this)) {
           methodCleanup.invoke(this);
@@ -259,7 +265,10 @@ public class MapReduceBackupCopyService implements BackupCopyService {
       String jobID = job.getJobID().toString();
       job.getConfiguration().set(DistCpConstants.CONF_LABEL_DISTCP_JOB_ID, jobID);
 
-      LOG.debug("DistCp job-id: " + jobID);
+      LOG.debug("DistCp job-id: " + jobID + " completed: " + job.isComplete() + " " +
+          job.isSuccessful());
+      Counters ctrs = job.getCounters();
+      LOG.debug(ctrs);
       if (job.isComplete() && !job.isSuccessful()) {
         throw new Exception("DistCp job-id: " + jobID + " failed");
       }
@@ -303,12 +312,10 @@ public class MapReduceBackupCopyService implements BackupCopyService {
         // target as a file name and copy source file to the target (as a file name).
         // We need to create the target dir before run distcp.
         LOG.debug("DistCp options: " + Arrays.toString(options));
-        if (options.length == 2) {
-          Path dest = new Path(options[1]);
-          FileSystem destfs = dest.getFileSystem(conf);
-          if (!destfs.exists(dest)) {
-            destfs.mkdirs(dest);
-          }
+        Path dest = new Path(options[options.length-1]);
+        FileSystem destfs = dest.getFileSystem(conf);
+        if (!destfs.exists(dest)) {
+          destfs.mkdirs(dest);
         }
         res = distcp.run(options);
       }

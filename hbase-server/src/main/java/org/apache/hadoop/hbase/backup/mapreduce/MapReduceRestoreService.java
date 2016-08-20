@@ -24,7 +24,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.IncrementalRestoreService;
@@ -62,13 +64,13 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
       
       Path bulkOutputPath = getBulkOutputDir(getFileNameCompatibleString(newTableNames[i]));
       String[] playerArgs =
-          { logDirs, tableNames[i].getNameAsString(), newTableNames[i].getNameAsString()};
+        { logDirs, tableNames[i].getNameAsString() };
 
       int result = 0;
       int loaderResult = 0;
       try {
         Configuration conf = getConf();
-        conf.set(WALPlayer.BULK_OUTPUT_CONF_KEY, bulkOutputPath.toString());        
+        conf.set(WALPlayer.BULK_OUTPUT_CONF_KEY, bulkOutputPath.toString());
         player.setConf(getConf());        
         result = player.run(playerArgs);
         if (succeeded(result)) {

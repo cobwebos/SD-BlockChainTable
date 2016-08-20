@@ -184,6 +184,19 @@ class RegionGroupingProvider implements WALProvider {
     return log;
   }
 
+  @Override
+  public long getHighestFilenum() {
+    long filenum = 0;
+    synchronized (this.walCacheLock) {
+      for (WAL log : cached.values()) {
+        if (((FSHLog)log).getFilenum() > filenum) {
+          filenum = ((FSHLog)log).getFilenum();
+        }
+      }
+    }
+    return filenum;
+  }
+
   private WAL getWAL(final String group) throws IOException {
     WAL log = cached.get(group);
     if (null == log) {

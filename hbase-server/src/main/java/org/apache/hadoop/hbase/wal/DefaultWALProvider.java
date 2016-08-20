@@ -118,6 +118,14 @@ public class DefaultWALProvider implements WALProvider {
   }
 
   @Override
+  public long getHighestFilenum() {
+    if (log == null) {
+      return 0;
+    }
+    return log.getFilenum();
+  }
+
+  @Override
   public WAL getWAL(final byte[] identifier, byte[] namespace) throws IOException {
     if (log == null) {
       // only lock when need to create wal, and need to lock since

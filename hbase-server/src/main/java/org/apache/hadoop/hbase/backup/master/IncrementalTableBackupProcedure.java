@@ -101,7 +101,7 @@ public class IncrementalTableBackupProcedure
         LOG.warn("Can't find file: " + file);
       }
     }
-    return list;    
+    return list;
   }
   
   private List<String> getMissingFiles(List<String> incrBackupFileList) throws IOException {

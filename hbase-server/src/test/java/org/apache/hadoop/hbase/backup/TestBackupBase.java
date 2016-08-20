@@ -48,6 +48,7 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.snapshot.SnapshotTestingUtils;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.wal.WALFactory;
 import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -77,7 +78,7 @@ public class TestBackupBase {
   protected static TableName table3_restore = TableName.valueOf("ns3:table3_restore");
   protected static TableName table4_restore = TableName.valueOf("ns4:table4_restore");
 
-  protected static final int NB_ROWS_IN_BATCH = 999;
+  protected static final int NB_ROWS_IN_BATCH = 99;
   protected static final byte[] qualName = Bytes.toBytes("q1");
   protected static final byte[] famName = Bytes.toBytes("f");
 
@@ -93,7 +94,7 @@ public class TestBackupBase {
     conf1 = TEST_UTIL.getConfiguration();
     conf1.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/1");
     // Set MultiWAL (with 2 default WAL files per RS)
-    //conf1.set(WAL_PROVIDER, "multiwal");
+    conf1.set(WALFactory.WAL_PROVIDER, "multiwal");
     TEST_UTIL.startMiniZKCluster();
     MiniZooKeeperCluster miniZK = TEST_UTIL.getZkCluster();
 

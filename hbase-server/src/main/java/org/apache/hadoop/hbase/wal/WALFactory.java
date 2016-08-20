@@ -223,6 +223,10 @@ public class WALFactory {
     }
   }
 
+  public long getHighestFilenum() {
+    return provider.getHighestFilenum();
+  }
+
   /**
    * @param identifier may not be null, contents will not be altered
    * @param namespace could be null, and will use default namespace if null

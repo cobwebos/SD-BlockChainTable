@@ -108,6 +108,11 @@ public class IOTestProvider implements WALProvider {
   }
 
   @Override
+  public long getHighestFilenum() {
+    return log.getFilenum();
+  }
+
+  @Override
   public WAL getWAL(final byte[] identifier, byte[] namespace) throws IOException {
    return log;
   }

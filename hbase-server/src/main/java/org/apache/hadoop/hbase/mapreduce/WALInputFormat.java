@@ -30,7 +30,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.regionserver.wal.WALEdit;
 import org.apache.hadoop.hbase.wal.WAL;
@@ -171,7 +173,7 @@ public class WALInputFormat extends InputFormat<WALKey, WALEdit> {
           temp = reader.next(currentEntry);
           i++;
         } catch (EOFException x) {
-          LOG.info("Corrupted entry detected. Ignoring the rest of the file."
+          LOG.warn("Corrupted entry detected. Ignoring the rest of the file."
               + " (This is normal when a RegionServer crashed.)");
           return false;
         }
@@ -262,9 +264,10 @@ public class WALInputFormat extends InputFormat<WALKey, WALEdit> {
     List<FileStatus> result = new ArrayList<FileStatus>();
     LOG.debug("Scanning " + dir.toString() + " for WAL files");
 
-    FileStatus[] files = fs.listStatus(dir);
-    if (files == null) return Collections.emptyList();
-    for (FileStatus file : files) {
+    RemoteIterator<LocatedFileStatus> iter = fs.listLocatedStatus(dir);
+    if (!iter.hasNext()) return Collections.emptyList();
+    while (iter.hasNext()) {
+      LocatedFileStatus file = iter.next();
       if (file.isDirectory()) {
         // recurse into sub directories
         result.addAll(getFiles(fs, file.getPath(), startTime, endTime));
@@ -275,7 +278,7 @@ public class WALInputFormat extends InputFormat<WALKey, WALEdit> {
           try {
             long fileStartTime = Long.parseLong(name.substring(idx+1));
             if (fileStartTime <= endTime) {
-              LOG.info("Found: " + name);
+              LOG.info("Found: " + file);
               result.add(file);
             }
           } catch (NumberFormatException x) {

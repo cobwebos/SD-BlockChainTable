@@ -368,7 +368,7 @@ public class HRegionServer extends HasThread implements
 
   // WAL roller. log is protected rather than private to avoid
   // eclipse warning when accessed by inner classes
-  final LogRoller walRoller;
+  public final LogRoller walRoller;
   // Lazily initialized if this RegionServer hosts a meta table.
   final AtomicReference<LogRoller> metawalRoller = new AtomicReference<LogRoller>();
 
@@ -1872,6 +1872,10 @@ public class HRegionServer extends HasThread implements
   }
 
   private static final byte[] UNSPECIFIED_REGION = new byte[]{};
+
+  public long getHighestFilenum() {
+    return walFactory.getHighestFilenum();
+  }
 
   @Override
   public WAL getWAL(HRegionInfo regionInfo) throws IOException {
