@@ -18,6 +18,7 @@
 package org.apache.hadoop.hbase.wal;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -65,8 +66,10 @@ class DisabledWALProvider implements WALProvider {
   }
 
   @Override
-  public long getHighestFilenum() {
-    return 0;
+  public List<WAL> getWALs() throws IOException {
+    List<WAL> wals = new ArrayList<WAL>();
+    wals.add(disabled);
+    return wals;
   }
 
   @Override

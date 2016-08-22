@@ -19,6 +19,7 @@
 package org.apache.hadoop.hbase.backup.regionserver;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.logging.Log;
@@ -34,6 +35,7 @@ import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.hadoop.hbase.regionserver.RegionServerServices;
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
+import org.apache.hadoop.hbase.wal.WAL;
 
 /**
  * This backup subprocedure implementation forces a log roll on the RS.
@@ -73,20 +75,25 @@ public class LogRollBackupSubprocedure extends Subprocedure {
       if (LOG.isDebugEnabled()) {
         LOG.debug("++ DRPC started: " + rss.getServerName());
       }
-      hlog = (FSHLog) rss.getWAL(null);
-      long filenum = hlog.getFilenum();
-      long highest = ((HRegionServer)rss).getHighestFilenum();
+      List<WAL> wals = rss.getWALs();
+      long highest = 0;
+      for (WAL wal : wals) {
+        if (wal == null) continue;
+        if (((FSHLog)wal).getFilenum() > highest) {
+          highest = ((FSHLog)wal).getFilenum();
+        }
+      }
 
-      LOG.info("Trying to roll log in backup subprocedure, current log number: " + filenum
-          + " highest: " + highest + " on " + rss.getServerName());
+      LOG.info("Trying to roll log in backup subprocedure, "
+          + " highest log num: " + highest + " on " + rss.getServerName());
       ((HRegionServer)rss).walRoller.requestRollAll();
       long start = EnvironmentEdgeManager.currentTime();
       while (!((HRegionServer)rss).walRoller.walRollFinished()) {
         Thread.sleep(20);
       }
       LOG.debug("log roll took " + (EnvironmentEdgeManager.currentTime()-start));
-      LOG.info("After roll log in backup subprocedure, current log number: " + hlog.getFilenum()
-          + " highest: " + ((HRegionServer)rss).getHighestFilenum() + " on " + rss.getServerName());
+      LOG.info("After roll log in backup subprocedure, "
+          + " on " + rss.getServerName());
 
       Connection connection = rss.getConnection();
       try(final BackupSystemTable table = new BackupSystemTable(connection)) {

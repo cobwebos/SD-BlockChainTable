@@ -19,6 +19,7 @@
 package org.apache.hadoop.hbase.wal;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -108,8 +109,10 @@ public class IOTestProvider implements WALProvider {
   }
 
   @Override
-  public long getHighestFilenum() {
-    return log.getFilenum();
+  public List<WAL> getWALs() throws IOException {
+    List<WAL> wals = new ArrayList<WAL>();
+    wals.add(log);
+    return wals;
   }
 
   @Override

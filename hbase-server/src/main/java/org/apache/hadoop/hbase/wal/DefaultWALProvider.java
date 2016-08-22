@@ -19,6 +19,7 @@
 package org.apache.hadoop.hbase.wal;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -118,11 +119,10 @@ public class DefaultWALProvider implements WALProvider {
   }
 
   @Override
-  public long getHighestFilenum() {
-    if (log == null) {
-      return 0;
-    }
-    return log.getFilenum();
+  public List<WAL> getWALs() throws IOException {
+    List<WAL> wals = new ArrayList<WAL>();
+    wals.add(log);
+    return wals;
   }
 
   @Override

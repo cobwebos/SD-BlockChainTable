@@ -22,6 +22,7 @@ import static org.apache.hadoop.hbase.wal.DefaultWALProvider.META_WAL_PROVIDER_I
 import static org.apache.hadoop.hbase.wal.DefaultWALProvider.WAL_FILE_NAME_DELIMITER;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -185,16 +186,12 @@ class RegionGroupingProvider implements WALProvider {
   }
 
   @Override
-  public long getHighestFilenum() {
-    long filenum = 0;
-    synchronized (this.walCacheLock) {
-      for (WAL log : cached.values()) {
-        if (((FSHLog)log).getFilenum() > filenum) {
-          filenum = ((FSHLog)log).getFilenum();
-        }
-      }
+  public List<WAL> getWALs() throws IOException {
+    List<WAL> wals = new ArrayList<WAL>();
+    for (FSHLog log : cached.values()) {
+      wals.add(log);
     }
-    return filenum;
+    return wals;
   }
 
   private WAL getWAL(final String group) throws IOException {

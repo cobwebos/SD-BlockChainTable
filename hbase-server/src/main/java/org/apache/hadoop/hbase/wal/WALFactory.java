@@ -223,8 +223,8 @@ public class WALFactory {
     }
   }
 
-  public long getHighestFilenum() {
-    return provider.getHighestFilenum();
+  public List<WAL> getWALs() throws IOException {
+    return provider.getWALs();
   }
 
   /**
