@@ -115,6 +115,7 @@ import org.apache.hadoop.hbase.util.JVMClusterUtil.MasterThread;
 import org.apache.hadoop.hbase.util.JVMClusterUtil.RegionServerThread;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.RegionSplitter;
+import org.apache.hadoop.hbase.util.RegionSplitter.SplitAlgorithm;
 import org.apache.hadoop.hbase.util.RetryCounter;
 import org.apache.hadoop.hbase.util.Threads;
 import org.apache.hadoop.hbase.wal.WAL;
@@ -2076,6 +2077,18 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
     }
   }
 
+  public void loadRandomRows(final Table t, final byte[] f, int rowSize, int totalRows)
+      throws IOException {
+    Random r = new Random();
+    byte[] row = new byte[rowSize];
+    for (int i = 0; i < totalRows; i++) {
+      r.nextBytes(row);
+      Put put = new Put(row);
+      put.addColumn(f, new byte[]{0}, new byte[]{0});
+      t.put(put);
+    }
+  }  
+  
   public void verifyNumericRows(Table table, final byte[] f, int startRow, int endRow,
       int replicaId)
       throws IOException {
@@ -3632,7 +3645,7 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
     return createPreSplitLoadTestTable(conf, desc, new HColumnDescriptor[] {hcd},
         numRegionsPerServer);
   }
-
+  
   /**
    * Creates a pre-split table for load testing. If the table already exists,
    * logs a warning and continues.
@@ -3640,12 +3653,24 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
    */
   public static int createPreSplitLoadTestTable(Configuration conf,
       HTableDescriptor desc, HColumnDescriptor[] hcds, int numRegionsPerServer) throws IOException {
+    
+    return createPreSplitLoadTestTable(conf, desc, hcds, 
+      new RegionSplitter.HexStringSplit(), numRegionsPerServer);
+  }
+    
+  /**
+   * Creates a pre-split table for load testing. If the table already exists,
+   * logs a warning and continues.
+   * @return the number of regions the table was split into
+   */
+  public static int createPreSplitLoadTestTable(Configuration conf,
+      HTableDescriptor desc, HColumnDescriptor[] hcds,
+      SplitAlgorithm splitter, int numRegionsPerServer) throws IOException {
     for (HColumnDescriptor hcd : hcds) {
       if (!desc.hasFamily(hcd.getName())) {
         desc.addFamily(hcd);
       }
     }
-
     int totalNumberOfRegions = 0;
     Connection unmanagedConnection = ConnectionFactory.createConnection(conf);
     Admin admin = unmanagedConnection.getAdmin();
@@ -3664,7 +3689,7 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
           "pre-splitting table into " + totalNumberOfRegions + " regions " +
           "(regions per server: " + numRegionsPerServer + ")");
 
-      byte[][] splits = new RegionSplitter.HexStringSplit().split(
+      byte[][] splits = splitter.split(
           totalNumberOfRegions);
 
       admin.createTable(desc, splits);
