@@ -43,6 +43,7 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Durability;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
@@ -84,6 +85,7 @@ public class TestBackupBase {
 
   protected static String BACKUP_ROOT_DIR = "/backupUT";
   protected static String BACKUP_REMOTE_ROOT_DIR = "/backupUT";
+  protected static String provider = "defaultProvider";
 
   /**
    * @throws java.lang.Exception
@@ -94,7 +96,7 @@ public class TestBackupBase {
     conf1 = TEST_UTIL.getConfiguration();
     conf1.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/1");
     // Set MultiWAL (with 2 default WAL files per RS)
-    conf1.set(WALFactory.WAL_PROVIDER, "multiwal");
+    conf1.set(WALFactory.WAL_PROVIDER, provider);
     TEST_UTIL.startMiniZKCluster();
     MiniZooKeeperCluster miniZK = TEST_UTIL.getZkCluster();
 
@@ -179,6 +181,7 @@ public class TestBackupBase {
     Put p; // 100 + 1 row to t1_syncup
     for (int i = 0; i < NB_ROWS_IN_BATCH; i++) {
       p = new Put(Bytes.toBytes("row" + i));
+      p.setDurability(Durability.SKIP_WAL);
       p.addColumn(famName, qualName, Bytes.toBytes("val" + i));
       table.put(p);
     }

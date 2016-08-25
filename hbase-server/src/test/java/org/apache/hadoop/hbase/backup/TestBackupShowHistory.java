@@ -26,7 +26,9 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.util.ToolRunner;
 import org.junit.Test;
@@ -38,6 +40,18 @@ import com.google.common.collect.Lists;
 public class TestBackupShowHistory extends TestBackupBase {
 
   private static final Log LOG = LogFactory.getLog(TestBackupShowHistory.class);
+
+  private boolean findBackup(List<BackupInfo> history, String backupId) {
+    assertTrue(history.size() > 0);
+    boolean success = false;
+    for (BackupInfo info: history){
+      if (info.getBackupId().equals(backupId)){
+        success = true;
+        break;
+      }
+    }
+    return success;
+  }
 
   /**
    * Verify that full backup is created on a single table with data correctly. Verify that history
@@ -55,68 +69,50 @@ public class TestBackupShowHistory extends TestBackupBase {
     LOG.info("backup complete");
 
     List<BackupInfo> history = getBackupAdmin().getHistory(10);
-    assertTrue(history.size() > 0);
-    boolean success = false;
-    for(BackupInfo info: history){
-      if(info.getBackupId().equals(backupId)){
-        success = true; break;
-      }
-    }
-    assertTrue(success);
-    LOG.info("show_history");
-
-  }
-
-  @Test
-  public void testBackupHistoryCommand() throws Exception {
-
-    LOG.info("test backup history on a single table with data: command-line");
+    assertTrue(findBackup(history, backupId));
+    history = BackupClientUtil.getHistory(conf1, 10, null, new Path(BACKUP_ROOT_DIR));
+    assertTrue(findBackup(history, backupId));
     
-    List<TableName> tableList = Lists.newArrayList(table1);
-    String backupId = fullTableBackup(tableList);
-    assertTrue(checkSucceeded(backupId));
-    LOG.info("backup complete");
-
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
 
-    String[] args = new String[]{"history",  "-n", "10" }; 
+    String[] args = new String[]{"history",  "-n", "10", "-path", BACKUP_ROOT_DIR }; 
     // Run backup
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertTrue(ret == 0);
     LOG.info("show_history");
     String output = baos.toString();
-    LOG.info(baos.toString());
+    LOG.info(output);
+    baos.close();
     assertTrue(output.indexOf(backupId) > 0);
-  }  
-  
-  
-  @Test
-  public void testBackupHistoryOneTable() throws Exception {
-
-    LOG.info("test backup history on a single table with data");
-    
-    List<TableName> tableList = Lists.newArrayList(table1);
-    String backupId1 = fullTableBackup(tableList);
-    assertTrue(checkSucceeded(backupId1));
-    LOG.info("backup complete: "+table1);
 
     tableList = Lists.newArrayList(table2);
     String backupId2 = fullTableBackup(tableList);
     assertTrue(checkSucceeded(backupId2));
     LOG.info("backup complete: "+ table2);
     
-    List<BackupInfo> history = getBackupAdmin().getHistory(10, table1);
+    history = getBackupAdmin().getHistory(10, table1);
     assertTrue(history.size() > 0);
     boolean success = true;
-    for(BackupInfo info: history){
-      if(!info.getTableNames().contains(table1)){
-        success = false; break;
+    for (BackupInfo info: history){
+      if (!info.getTableNames().contains(table1)){
+        success = false;
+        break;
       }
     }
     assertTrue(success);
-    LOG.info("show_history");
+    history = BackupClientUtil.getHistory(conf1, 10, table1, new Path(BACKUP_ROOT_DIR));
+    assertTrue(history.size() > 0);
+    success = true;
+    for (BackupInfo info: history){
+      if (!info.getTableNames().contains(table1)){
+        success = false;
+        break;
+      }
+    }
+    assertTrue(success);
 
+    LOG.info("show_history");
   }
 
 }

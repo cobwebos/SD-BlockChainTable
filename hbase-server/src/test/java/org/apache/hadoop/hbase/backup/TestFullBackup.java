@@ -38,56 +38,6 @@ public class TestFullBackup extends TestBackupBase {
 
   private static final Log LOG = LogFactory.getLog(TestFullBackup.class);
 
-  /**
-   * Verify that full backup is created on a single table with data correctly.
-   * @throws Exception
-   */
-  @Test
-  public void testFullBackupSingle() throws Exception {
-    LOG.info("test full backup on a single table with data");
-    List<TableName> tables = Lists.newArrayList(table1);
-    String backupId = fullTableBackup(tables);
-    assertTrue(checkSucceeded(backupId));
-    LOG.info("backup complete for " + backupId);
-  }
-
-  /**
-   * Verify that full backup is created on a single table with data correctly.
-   * @throws Exception
-   */
-  @Test
-  public void testFullBackupSingleCommand() throws Exception {
-    LOG.info("test full backup on a single table with data: command-line");
-    try(BackupSystemTable table = new BackupSystemTable(TEST_UTIL.getConnection())) {    
-      int before = table.getBackupHistory().size();
-      String[] args = new String[]{"create", "full", BACKUP_ROOT_DIR,  table1.getNameAsString() }; 
-      // Run backup
-      int ret = ToolRunner.run(conf1, new BackupDriver(), args);
-      assertTrue(ret == 0);
-      ArrayList<BackupInfo> backups = table.getBackupHistory(); 
-      int after = table.getBackupHistory().size();
-      assertTrue(after == before +1);
-      for(BackupInfo data : backups){
-        String backupId = data.getBackupId();
-        assertTrue(checkSucceeded(backupId));
-      }
-    }
-    LOG.info("backup complete");
-  }
-
-
-  /**
-   * Verify that full backup is created on multiple tables correctly.
-   * @throws Exception
-   */
-  @Test
-  public void testFullBackupMultiple() throws Exception {
-    LOG.info("create full backup image on multiple tables with data");
-    List<TableName> tables = Lists.newArrayList(table1, table1);
-    String backupId = fullTableBackup(tables);
-    assertTrue(checkSucceeded(backupId));
-  }
-
   @Test
   public void testFullBackupMultipleCommand() throws Exception {
     LOG.info("test full backup on a multiple tables with data: command-line");
@@ -107,17 +57,6 @@ public class TestFullBackup extends TestBackupBase {
       }
     }
     LOG.info("backup complete");
-  }
-  /**
-   * Verify that full backup is created on all tables correctly.
-   * @throws Exception
-   */
-  @Test
-  public void testFullBackupAll() throws Exception {
-    LOG.info("create full backup image on all tables");
-    String backupId = fullTableBackup(null);
-    assertTrue(checkSucceeded(backupId));
-
   }
   
   @Test
