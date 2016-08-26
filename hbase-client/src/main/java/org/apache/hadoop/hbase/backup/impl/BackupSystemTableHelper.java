@@ -48,13 +48,12 @@ import org.apache.hadoop.hbase.util.Bytes;
 public final class BackupSystemTableHelper {
 
   /**
-   * hbase:backup schema:
-   * 1. Backup sessions rowkey= "session:" + backupId; value = serialized
-   * BackupContext
-   * 2. Backup start code rowkey = "startcode:" + backupRoot; value = startcode
-   * 3. Incremental backup set rowkey="incrbackupset:" + backupRoot; value=[list of tables]
-   * 4. Table-RS-timestamp map rowkey="trslm:"+ backupRoot+table_name; value = map[RS-> 
-   * last WAL timestamp]
+   * hbase:backup schema: 
+   * 1. Backup sessions rowkey= "session:" + backupId; value = serialized BackupContext 
+   * 2. Backup start code rowkey = "startcode:" + backupRoot; value = startcode 
+   * 3. Incremental backup set rowkey="incrbackupset:" + backupRoot; value=[list of tables] 
+   * 4. Table-RS-timestamp map rowkey="trslm:"+ backupRoot+table_name; value = map[RS-> last WAL
+   * timestamp] 
    * 5. RS - WAL ts map rowkey="rslogts:"+backupRoot +server; value = last WAL timestamp
    * 6. WALs recorded rowkey="wals:"+WAL unique file name; value = backupId and full WAL file name
    */
@@ -68,7 +67,7 @@ public final class BackupSystemTableHelper {
   private final static String SET_KEY_PREFIX = "backupset:";
 
   private final static byte[] EMPTY_VALUE = new byte[] {};
-  
+
   // Safe delimiter in a string
   private final static String NULL = "\u0000";
 
@@ -130,7 +129,7 @@ public final class BackupSystemTableHelper {
    * @return get operation
    * @throws IOException exception
    */
-  static Get createGetForStartCode(String rootPath) throws IOException {    
+  static Get createGetForStartCode(String rootPath) throws IOException {
     Get get = new Get(rowkey(START_CODE_ROW, rootPath));
     get.addFamily(BackupSystemTable.META_FAMILY);
     get.setMaxVersions(1);
@@ -175,6 +174,17 @@ public final class BackupSystemTableHelper {
   }
 
   /**
+   * Creates Delete for incremental backup table set
+   * @param backupRoot backup root
+   * @return delete operation
+   */
+  static Delete createDeleteForIncrBackupTableSet(String backupRoot) {
+    Delete delete = new Delete(rowkey(INCR_BACKUP_SET, backupRoot));
+    delete.addFamily(BackupSystemTable.META_FAMILY);
+    return delete;
+  }
+
+  /**
    * Creates Scan operation to load backup history
    * @return scan operation
    */
@@ -207,8 +217,8 @@ public final class BackupSystemTableHelper {
    * @param smap - map, containing RS:ts
    * @return put operation
    */
-  static Put createPutForWriteRegionServerLogTimestamp(TableName table, byte[] smap, 
-      String backupRoot) {    
+  static Put createPutForWriteRegionServerLogTimestamp(TableName table, byte[] smap,
+      String backupRoot) {
     Put put = new Put(rowkey(TABLE_RS_LOG_MAP_PREFIX, backupRoot, NULL, table.getNameAsString()));
     put.addColumn(BackupSystemTable.META_FAMILY, "log-roll-map".getBytes(), smap);
     return put;
@@ -237,8 +247,8 @@ public final class BackupSystemTableHelper {
    */
   static String getTableNameForReadLogTimestampMap(byte[] cloneRow) {
     String s = new String(cloneRow);
-    int index = s.lastIndexOf(NULL); 
-    return s.substring(index +1);
+    int index = s.lastIndexOf(NULL);
+    return s.substring(index + 1);
   }
 
   /**
@@ -247,11 +257,11 @@ public final class BackupSystemTableHelper {
    * @param timestamp - log roll result (timestamp)
    * @return put operation
    */
-  static Put createPutForRegionServerLastLogRollResult(String server, 
-      Long timestamp, String backupRoot ) {
+  static Put createPutForRegionServerLastLogRollResult(String server, Long timestamp,
+      String backupRoot) {
     Put put = new Put(rowkey(RS_LOG_TS_PREFIX, backupRoot, NULL, server));
-    put.addColumn(BackupSystemTable.META_FAMILY, "rs-log-ts".getBytes(), 
-      timestamp.toString().getBytes());
+    put.addColumn(BackupSystemTable.META_FAMILY, "rs-log-ts".getBytes(), timestamp.toString()
+        .getBytes());
     return put;
   }
 
@@ -280,7 +290,7 @@ public final class BackupSystemTableHelper {
   static String getServerNameForReadRegionServerLastLogRollResult(byte[] row) {
     String s = new String(row);
     int index = s.lastIndexOf(NULL);
-    return s.substring(index +1);
+    return s.substring(index + 1);
   }
 
   /**
@@ -290,9 +300,8 @@ public final class BackupSystemTableHelper {
    * @return put list
    * @throws IOException exception
    */
-  public static List<Put> createPutsForAddWALFiles(List<String> files, 
-    String backupId, String backupRoot)
-      throws IOException {
+  public static List<Put> createPutsForAddWALFiles(List<String> files, String backupId,
+      String backupRoot) throws IOException {
 
     List<Put> puts = new ArrayList<Put>();
     for (String file : files) {
@@ -306,9 +315,8 @@ public final class BackupSystemTableHelper {
   }
 
   /**
-   * Creates Scan operation to load WALs
-   * TODO: support for backupRoot
-   * @param backupRoot - path to backup destination 
+   * Creates Scan operation to load WALs TODO: support for backupRoot
+   * @param backupRoot - path to backup destination
    * @return scan operation
    */
   public static Scan createScanForGetWALs(String backupRoot) {
@@ -321,9 +329,9 @@ public final class BackupSystemTableHelper {
     scan.addFamily(BackupSystemTable.META_FAMILY);
     return scan;
   }
+
   /**
-   * Creates Get operation for a given wal file name
-   * TODO: support for backup destination
+   * Creates Get operation for a given wal file name TODO: support for backup destination
    * @param file file
    * @return get operation
    * @throws IOException exception
@@ -335,94 +343,91 @@ public final class BackupSystemTableHelper {
     return get;
   }
 
-  
- /**
-  * Creates Scan operation to load backup set list
-  * @return scan operation
-  */
- static Scan createScanForBackupSetList() {
-   Scan scan = new Scan();
-   byte[] startRow = SET_KEY_PREFIX.getBytes();
-   byte[] stopRow = Arrays.copyOf(startRow, startRow.length);
-   stopRow[stopRow.length - 1] = (byte) (stopRow[stopRow.length - 1] + 1);
-   scan.setStartRow(startRow);
-   scan.setStopRow(stopRow);
-   scan.addFamily(BackupSystemTable.META_FAMILY);
-   return scan;
- }
+  /**
+   * Creates Scan operation to load backup set list
+   * @return scan operation
+   */
+  static Scan createScanForBackupSetList() {
+    Scan scan = new Scan();
+    byte[] startRow = SET_KEY_PREFIX.getBytes();
+    byte[] stopRow = Arrays.copyOf(startRow, startRow.length);
+    stopRow[stopRow.length - 1] = (byte) (stopRow[stopRow.length - 1] + 1);
+    scan.setStartRow(startRow);
+    scan.setStopRow(stopRow);
+    scan.addFamily(BackupSystemTable.META_FAMILY);
+    return scan;
+  }
 
- /**
-  * Creates Get operation to load backup set content
-  * @return get operation
-  */
- static Get createGetForBackupSet(String name) {    
-   Get get  = new Get(rowkey(SET_KEY_PREFIX, name));
-   get.addFamily(BackupSystemTable.META_FAMILY);
-   return get;
- }
- 
- /**
-  * Creates Delete operation to delete backup set content
-  * @param name - backup set's name
-  * @return delete operation
-  */
- static Delete createDeleteForBackupSet(String name) {    
-   Delete del  = new Delete(rowkey(SET_KEY_PREFIX, name));
-   del.addFamily(BackupSystemTable.META_FAMILY);
-   return del;
- }
- 
- 
- /**
-  * Creates Put operation to update backup set content
-  * @param name - backup set's name
-  * @param tables - list of tables
-  * @return put operation
-  */
- static Put createPutForBackupSet(String name, String[] tables) {    
-   Put put  = new Put(rowkey(SET_KEY_PREFIX, name));
-   byte[] value = convertToByteArray(tables);
-   put.addColumn(BackupSystemTable.META_FAMILY, "tables".getBytes(), value);
-   return put;
- }
- 
- private static byte[] convertToByteArray(String[] tables) {
-   return StringUtils.join(tables, ",").getBytes();
- }
+  /**
+   * Creates Get operation to load backup set content
+   * @return get operation
+   */
+  static Get createGetForBackupSet(String name) {
+    Get get = new Get(rowkey(SET_KEY_PREFIX, name));
+    get.addFamily(BackupSystemTable.META_FAMILY);
+    return get;
+  }
 
- 
- /**
-  * Converts cell to backup set list.
-  * @param current - cell
-  * @return backup set 
-  * @throws IOException
-  */
- static  String[] cellValueToBackupSet(Cell current) throws IOException {
-   byte[] data = CellUtil.cloneValue(current);
-   if( data != null && data.length > 0){
-     return new String(data).split(",");
-   } else{
-     return new String[0];
-   }
- }
+  /**
+   * Creates Delete operation to delete backup set content
+   * @param name - backup set's name
+   * @return delete operation
+   */
+  static Delete createDeleteForBackupSet(String name) {
+    Delete del = new Delete(rowkey(SET_KEY_PREFIX, name));
+    del.addFamily(BackupSystemTable.META_FAMILY);
+    return del;
+  }
 
- /**
-  * Converts cell key to backup set name.
-  * @param current - cell
-  * @return backup set name
-  * @throws IOException
-  */
- static  String cellKeyToBackupSetName(Cell current) throws IOException {
-   byte[] data = CellUtil.cloneRow(current);    
-   return new String(data).substring(SET_KEY_PREFIX.length());    
- }
- 
- static byte[] rowkey(String s, String ... other){
-   StringBuilder sb = new StringBuilder(s);
-   for(String ss: other){
-     sb.append(ss);
-   }
-   return sb.toString().getBytes();   
- }
- 
+  /**
+   * Creates Put operation to update backup set content
+   * @param name - backup set's name
+   * @param tables - list of tables
+   * @return put operation
+   */
+  static Put createPutForBackupSet(String name, String[] tables) {
+    Put put = new Put(rowkey(SET_KEY_PREFIX, name));
+    byte[] value = convertToByteArray(tables);
+    put.addColumn(BackupSystemTable.META_FAMILY, "tables".getBytes(), value);
+    return put;
+  }
+
+  private static byte[] convertToByteArray(String[] tables) {
+    return StringUtils.join(tables, ",").getBytes();
+  }
+
+  /**
+   * Converts cell to backup set list.
+   * @param current - cell
+   * @return backup set
+   * @throws IOException
+   */
+  static String[] cellValueToBackupSet(Cell current) throws IOException {
+    byte[] data = CellUtil.cloneValue(current);
+    if (data != null && data.length > 0) {
+      return new String(data).split(",");
+    } else {
+      return new String[0];
+    }
+  }
+
+  /**
+   * Converts cell key to backup set name.
+   * @param current - cell
+   * @return backup set name
+   * @throws IOException
+   */
+  static String cellKeyToBackupSetName(Cell current) throws IOException {
+    byte[] data = CellUtil.cloneRow(current);
+    return new String(data).substring(SET_KEY_PREFIX.length());
+  }
+
+  static byte[] rowkey(String s, String... other) {
+    StringBuilder sb = new StringBuilder(s);
+    for (String ss : other) {
+      sb.append(ss);
+    }
+    return sb.toString().getBytes();
+  }
+
 }

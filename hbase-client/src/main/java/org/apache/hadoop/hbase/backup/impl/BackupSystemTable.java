@@ -61,14 +61,13 @@ import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public final class BackupSystemTable implements Closeable {
-  
+
   static class WALItem {
     String backupId;
     String walFile;
     String backupRoot;
-    
-    WALItem(String backupId, String walFile, String backupRoot)
-    {
+
+    WALItem(String backupId, String walFile, String backupRoot) {
       this.backupId = backupId;
       this.walFile = walFile;
       this.backupRoot = backupRoot;
@@ -85,30 +84,29 @@ public final class BackupSystemTable implements Closeable {
     public String getBackupRoot() {
       return backupRoot;
     }
-    
+
     public String toString() {
-      return "/"+ backupRoot + "/"+backupId + "/" + walFile;
+      return "/" + backupRoot + "/" + backupId + "/" + walFile;
     }
-    
+
   }
-  
+
   private static final Log LOG = LogFactory.getLog(BackupSystemTable.class);
-  private final static TableName tableName = TableName.BACKUP_TABLE_NAME;  
+  private final static TableName tableName = TableName.BACKUP_TABLE_NAME;
   // Stores backup sessions (contexts)
   final static byte[] SESSIONS_FAMILY = "session".getBytes();
-  // Stores other meta 
+  // Stores other meta
   final static byte[] META_FAMILY = "meta".getBytes();
   // Connection to HBase cluster, shared
   // among all instances
   private final Connection connection;
-    
+
   public BackupSystemTable(Connection conn) throws IOException {
     this.connection = conn;
   }
 
- 
   public void close() {
-     // do nothing 
+    // do nothing
   }
 
   /**
@@ -120,7 +118,7 @@ public final class BackupSystemTable implements Closeable {
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("update backup status in hbase:backup for: " + context.getBackupId()
-        + " set status=" + context.getState());
+          + " set status=" + context.getState());
     }
     try (Table table = connection.getTable(tableName)) {
       Put put = BackupSystemTableHelper.createPutForBackupContext(context);
@@ -131,7 +129,6 @@ public final class BackupSystemTable implements Closeable {
   /**
    * Deletes backup status from hbase:backup table
    * @param backupId backup id
-   * @return true, if operation succeeded, false - otherwise 
    * @throws IOException exception
    */
 
@@ -160,7 +157,7 @@ public final class BackupSystemTable implements Closeable {
     try (Table table = connection.getTable(tableName)) {
       Get get = BackupSystemTableHelper.createGetForBackupContext(backupId);
       Result res = table.get(get);
-      if(res.isEmpty()){
+      if (res.isEmpty()) {
         return null;
       }
       return BackupSystemTableHelper.resultToBackupInfo(res);
@@ -171,7 +168,7 @@ public final class BackupSystemTable implements Closeable {
    * Read the last backup start code (timestamp) of last successful backup. Will return null if
    * there is no start code stored on hbase or the value is of length 0. These two cases indicate
    * there is no successful backup completed so far.
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @return the timestamp of last successful backup
    * @throws IOException exception
    */
@@ -187,7 +184,7 @@ public final class BackupSystemTable implements Closeable {
       }
       Cell cell = res.listCells().get(0);
       byte[] val = CellUtil.cloneValue(cell);
-      if (val.length == 0){
+      if (val.length == 0) {
         return null;
       }
       return new String(val);
@@ -197,7 +194,7 @@ public final class BackupSystemTable implements Closeable {
   /**
    * Write the start code (timestamp) to hbase:backup. If passed in null, then write 0 byte.
    * @param startCode start code
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @throws IOException exception
    */
   public void writeBackupStartCode(Long startCode, String backupRoot) throws IOException {
@@ -212,7 +209,7 @@ public final class BackupSystemTable implements Closeable {
 
   /**
    * Get the Region Servers log information after the last log roll from hbase:backup.
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @return RS log info
    * @throws IOException exception
    */
@@ -244,8 +241,8 @@ public final class BackupSystemTable implements Closeable {
   /**
    * Writes Region Server last roll log result (timestamp) to hbase:backup table
    * @param server - Region Server name
-   * @param timestamp - last log timestamp
-   * @param backupRoot root directory path to backup 
+   * @param ts- last log timestamp
+   * @param backupRoot root directory path to backup
    * @throws IOException exception
    */
   public void writeRegionServerLastLogRollResult(String server, Long ts, String backupRoot)
@@ -255,7 +252,7 @@ public final class BackupSystemTable implements Closeable {
     }
     try (Table table = connection.getTable(tableName)) {
       Put put =
-          BackupSystemTableHelper.createPutForRegionServerLastLogRollResult(server,ts,backupRoot);
+          BackupSystemTableHelper.createPutForRegionServerLastLogRollResult(server, ts, backupRoot);
       table.put(put);
     }
   }
@@ -270,27 +267,74 @@ public final class BackupSystemTable implements Closeable {
     if (LOG.isDebugEnabled()) {
       LOG.debug("get backup history from hbase:backup");
     }
-    ArrayList<BackupInfo> list ;
-    BackupState state = onlyCompleted? BackupState.COMPLETE: BackupState.ANY;
+    ArrayList<BackupInfo> list;
+    BackupState state = onlyCompleted ? BackupState.COMPLETE : BackupState.ANY;
     list = getBackupContexts(state);
-    return BackupClientUtil.sortHistoryListDesc(list);    
+    return BackupClientUtil.sortHistoryListDesc(list);
   }
 
-  public ArrayList<BackupInfo> getBackupHistory() throws IOException {
+  public List<BackupInfo> getBackupHistory() throws IOException {
     return getBackupHistory(false);
   }
-  
-  public ArrayList<BackupInfo> getBackupHistoryForTable(TableName table) throws IOException {
-    ArrayList<BackupInfo> history = getBackupHistory();      
-    ArrayList<BackupInfo> list = new ArrayList<BackupInfo>();
-    
-    for(int i=0; i < history.size(); i++){
-      BackupInfo info = history.get(i);
-      if(info.getTableNames().contains(table)){
-        list.add(history.get(i));
+
+  /**
+   * Get history for backup destination
+   * @param backupRoot - backup destination
+   * @return List of backup info
+   * @throws IOException
+   */
+  public List<BackupInfo> getBackupHistory(String backupRoot) throws IOException {
+    ArrayList<BackupInfo> history = getBackupHistory(false);
+    for (Iterator<BackupInfo> iterator = history.iterator(); iterator.hasNext();) {
+      BackupInfo info = iterator.next();
+      if (!backupRoot.equals(info.getTargetRootDir())) {
+        iterator.remove();
       }
     }
-    return list;
+    return history;
+  }
+  
+  /**
+   * Get history for a table
+   * @param name - table name
+   * @return history for a table
+   * @throws IOException
+   */
+  public List<BackupInfo> getBackupHistoryForTable(TableName name) throws IOException {
+    List<BackupInfo> history = getBackupHistory();
+    List<BackupInfo> tableHistory = new ArrayList<BackupInfo>();
+    for (BackupInfo info : history) {
+      List<TableName> tables = info.getTableNames();
+      if (tables.contains(name)) {
+        tableHistory.add(info);
+      }
+    }
+    return tableHistory;
+  }
+
+  public Map<TableName, ArrayList<BackupInfo>> 
+    getBackupHistoryForTableSet(Set<TableName> set, String backupRoot) throws IOException {
+    List<BackupInfo> history = getBackupHistory(backupRoot);
+    Map<TableName, ArrayList<BackupInfo>> tableHistoryMap = 
+        new HashMap<TableName, ArrayList<BackupInfo>>();
+    for (Iterator<BackupInfo> iterator = history.iterator(); iterator.hasNext();) {
+      BackupInfo info = iterator.next();
+      if (!backupRoot.equals(info.getTargetRootDir())) {
+        continue;
+      }
+      List<TableName> tables = info.getTableNames();
+      for (TableName tableName: tables) {      
+        if (set.contains(tableName)) {
+          ArrayList<BackupInfo> list = tableHistoryMap.get(tableName);
+          if (list == null) {
+            list = new ArrayList<BackupInfo>();
+            tableHistoryMap.put(tableName, list);
+          }
+          list.add(info);
+        }
+      }
+    }
+    return tableHistoryMap;
   }
   
   /**
@@ -313,7 +357,7 @@ public final class BackupSystemTable implements Closeable {
       while ((res = scanner.next()) != null) {
         res.advance();
         BackupInfo context = BackupSystemTableHelper.cellToBackupInfo(res.current());
-        if (status != BackupState.ANY && context.getState() != status){
+        if (status != BackupState.ANY && context.getState() != status) {
           continue;
         }
         list.add(context);
@@ -323,26 +367,25 @@ public final class BackupSystemTable implements Closeable {
   }
 
   /**
-   * Write the current timestamps for each regionserver to hbase:backup 
-   * after a successful full or incremental backup. The saved timestamp is of the last
-   *  log file that was backed up already.
+   * Write the current timestamps for each regionserver to hbase:backup after a successful full or
+   * incremental backup. The saved timestamp is of the last log file that was backed up already.
    * @param tables tables
    * @param newTimestamps timestamps
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @throws IOException exception
    */
   public void writeRegionServerLogTimestamp(Set<TableName> tables,
       HashMap<String, Long> newTimestamps, String backupRoot) throws IOException {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("write RS log time stamps to hbase:backup for tables ["+ 
-          StringUtils.join(tables, ",")+"]");
+      LOG.debug("write RS log time stamps to hbase:backup for tables ["
+          + StringUtils.join(tables, ",") + "]");
     }
     List<Put> puts = new ArrayList<Put>();
     for (TableName table : tables) {
       byte[] smapData = toTableServerTimestampProto(table, newTimestamps).toByteArray();
-      Put put = 
-          BackupSystemTableHelper.createPutForWriteRegionServerLogTimestamp(table, 
-            smapData, backupRoot);
+      Put put =
+          BackupSystemTableHelper.createPutForWriteRegionServerLogTimestamp(table, smapData,
+            backupRoot);
       puts.add(put);
     }
     try (Table table = connection.getTable(tableName)) {
@@ -354,7 +397,7 @@ public final class BackupSystemTable implements Closeable {
    * Read the timestamp for each region server log after the last successful backup. Each table has
    * its own set of the timestamps. The info is stored for each table as a concatenated string of
    * rs->timestapmp
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @return the timestamp for each region server. key: tableName value:
    *         RegionServer,PreviousTimeStamp
    * @throws IOException exception
@@ -362,7 +405,7 @@ public final class BackupSystemTable implements Closeable {
   public HashMap<TableName, HashMap<String, Long>> readLogTimestampMap(String backupRoot)
       throws IOException {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("read RS log ts from hbase:backup for root="+ backupRoot);
+      LOG.debug("read RS log ts from hbase:backup for root=" + backupRoot);
     }
 
     HashMap<TableName, HashMap<String, Long>> tableTimestampMap =
@@ -399,7 +442,7 @@ public final class BackupSystemTable implements Closeable {
         BackupProtos.TableServerTimestamp.newBuilder();
     tstBuilder.setTable(ProtobufUtil.toProtoTableName(table));
 
-    for(Entry<String, Long> entry: map.entrySet()) {
+    for (Entry<String, Long> entry : map.entrySet()) {
       BackupProtos.ServerTimestamp.Builder builder = BackupProtos.ServerTimestamp.newBuilder();
       builder.setServer(entry.getKey());
       builder.setTimestamp(entry.getValue());
@@ -411,9 +454,9 @@ public final class BackupSystemTable implements Closeable {
 
   private HashMap<String, Long> fromTableServerTimestampProto(
       BackupProtos.TableServerTimestamp proto) {
-    HashMap<String, Long> map = new HashMap<String, Long> ();
+    HashMap<String, Long> map = new HashMap<String, Long>();
     List<BackupProtos.ServerTimestamp> list = proto.getServerTimestampList();
-    for(BackupProtos.ServerTimestamp st: list) {
+    for (BackupProtos.ServerTimestamp st : list) {
       map.put(st.getServer(), st.getTimestamp());
     }
     return map;
@@ -421,12 +464,11 @@ public final class BackupSystemTable implements Closeable {
 
   /**
    * Return the current tables covered by incremental backup.
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @return set of tableNames
    * @throws IOException exception
    */
-  public  Set<TableName> getIncrementalBackupTableSet(String backupRoot)
-      throws IOException {
+  public Set<TableName> getIncrementalBackupTableSet(String backupRoot) throws IOException {
     if (LOG.isDebugEnabled()) {
       LOG.debug("get incr backup table set from hbase:backup");
     }
@@ -450,13 +492,14 @@ public final class BackupSystemTable implements Closeable {
   /**
    * Add tables to global incremental backup set
    * @param tables - set of tables
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @throws IOException exception
    */
-  public void addIncrementalBackupTableSet(Set<TableName> tables, String backupRoot) throws IOException {
+  public void addIncrementalBackupTableSet(Set<TableName> tables, String backupRoot)
+      throws IOException {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Add incremental backup table set to hbase:backup. ROOT="+backupRoot +
-        " tables ["+ StringUtils.join(tables, " ")+"]");
+      LOG.debug("Add incremental backup table set to hbase:backup. ROOT=" + backupRoot
+          + " tables [" + StringUtils.join(tables, " ") + "]");
       for (TableName table : tables) {
         LOG.debug(table);
       }
@@ -468,23 +511,38 @@ public final class BackupSystemTable implements Closeable {
   }
 
   /**
+   * Removes incremental backup set
+   * @param backupRoot backup root
+   */
+
+  public void deleteIncrementalBackupTableSet(String backupRoot) throws IOException {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Delete incremental backup table set to hbase:backup. ROOT=" + backupRoot);
+    }
+    try (Table table = connection.getTable(tableName)) {
+      Delete delete = BackupSystemTableHelper.createDeleteForIncrBackupTableSet(backupRoot);
+      table.delete(delete);
+    }
+  }
+
+  /**
    * Register WAL files as eligible for deletion
    * @param files files
    * @param backupId backup id
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @throws IOException exception
    */
-  public void addWALFiles(List<String> files, String backupId, 
-      String backupRoot) throws IOException {
+  public void addWALFiles(List<String> files, String backupId, String backupRoot)
+      throws IOException {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("add WAL files to hbase:backup: "+backupId +" "+backupRoot+" files ["+
-     StringUtils.join(files, ",")+"]");
-      for(String f: files){
-        LOG.debug("add :"+f);
+      LOG.debug("add WAL files to hbase:backup: " + backupId + " " + backupRoot + " files ["
+          + StringUtils.join(files, ",") + "]");
+      for (String f : files) {
+        LOG.debug("add :" + f);
       }
     }
     try (Table table = connection.getTable(tableName)) {
-      List<Put> puts = 
+      List<Put> puts =
           BackupSystemTableHelper.createPutsForAddWALFiles(files, backupId, backupRoot);
       table.put(puts);
     }
@@ -492,7 +550,7 @@ public final class BackupSystemTable implements Closeable {
 
   /**
    * Register WAL files as eligible for deletion
-   * @param backupRoot root directory path to backup 
+   * @param backupRoot root directory path to backup
    * @throws IOException exception
    */
   public Iterator<WALItem> getWALFilesIterator(String backupRoot) throws IOException {
@@ -535,7 +593,7 @@ public final class BackupSystemTable implements Closeable {
         buf = cells.get(2).getValueArray();
         len = cells.get(2).getValueLength();
         offset = cells.get(2).getValueOffset();
-        String backupRoot = new String(buf, offset, len);    
+        String backupRoot = new String(buf, offset, len);
         return new WALItem(backupId, walFile, backupRoot);
       }
 
@@ -549,20 +607,19 @@ public final class BackupSystemTable implements Closeable {
   }
 
   /**
-   * Check if WAL file is eligible for deletion
-   * Future: to support all backup destinations
+   * Check if WAL file is eligible for deletion Future: to support all backup destinations
    * @param file file
    * @return true, if - yes.
    * @throws IOException exception
    */
   public boolean isWALFileDeletable(String file) throws IOException {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Check if WAL file has been already backed up in hbase:backup "+ file);
+      LOG.debug("Check if WAL file has been already backed up in hbase:backup " + file);
     }
     try (Table table = connection.getTable(tableName)) {
       Get get = BackupSystemTableHelper.createGetForCheckWALFile(file);
       Result res = table.get(get);
-      if (res.isEmpty()){
+      if (res.isEmpty()) {
         return false;
       }
       return true;
@@ -590,11 +647,11 @@ public final class BackupSystemTable implements Closeable {
       return result;
     }
   }
-  
+
   /**
    * BACKUP SETS
    */
-  
+
   /**
    * Get backup set list
    * @return backup set list
@@ -613,115 +670,112 @@ public final class BackupSystemTable implements Closeable {
       scan.setMaxVersions(1);
       scanner = table.getScanner(scan);
       Result res = null;
-     while ((res = scanner.next()) != null) {
-       res.advance();
-       list.add(BackupSystemTableHelper.cellKeyToBackupSetName(res.current()));
-     }
-     return list;
-   } finally {
-     if(scanner != null) {
-       scanner.close();
-     }
-     if (table != null) {
-       table.close();
-     }
-   }
- }
- 
- /**
-  * Get backup set description (list of tables)
-  * @param name - set's name
-  * @return list of tables in a backup set 
-  * @throws IOException
-  */
- public List<TableName> describeBackupSet(String name) throws IOException {
-   if (LOG.isDebugEnabled()) {
-     LOG.debug(" Backup set describe: "+name);
-   }
-   Table table = null;
-   try {
-     table = connection.getTable(tableName);
-     Get get = BackupSystemTableHelper.createGetForBackupSet(name);
-     Result res = table.get(get);
-     if(res.isEmpty()) return null;
-     res.advance();
-     String[] tables = 
-         BackupSystemTableHelper.cellValueToBackupSet(res.current());
-     return toList(tables);
-   } finally {
-     if (table != null) {
-       table.close();
-     }
-   }
- }
- 
- private List<TableName> toList(String[] tables)
- {
-   List<TableName> list = new ArrayList<TableName>(tables.length);
-   for(String name: tables) {
-     list.add(TableName.valueOf(name));
-   }
-   return list;
- }
- 
- /**
-  * Add backup set (list of tables)
-  * @param name - set name
-  * @param tables - list of tables, comma-separated
-  * @throws IOException
-  */
- public void addToBackupSet(String name, String[] newTables) throws IOException {
-   if (LOG.isDebugEnabled()) {
-     LOG.debug("Backup set add: "+name+" tables ["+ StringUtils.join(newTables, " ")+"]");
-   }
-   Table table = null;
-   String[] union = null;
-   try {
-     table = connection.getTable(tableName);
-     Get get = BackupSystemTableHelper.createGetForBackupSet(name);
-     Result res = table.get(get);
-     if(res.isEmpty()) {
-       union = newTables;
-     } else {
-       res.advance();
-       String[] tables = 
-         BackupSystemTableHelper.cellValueToBackupSet(res.current());
-       union = merge(tables, newTables);  
-     }
-     Put put = BackupSystemTableHelper.createPutForBackupSet(name, union);
-     table.put(put);
-   } finally {
-     if (table != null) {
-       table.close();
-     }
-   }
- }
- 
- private String[] merge(String[] tables, String[] newTables) {
-   List<String> list = new ArrayList<String>();
-   // Add all from tables
-   for(String t: tables){
-     list.add(t);
-   }
-   for(String nt: newTables){
-     if(list.contains(nt)) continue;
-     list.add(nt);
-   }
-   String[] arr = new String[list.size()];
-   list.toArray(arr);
-   return arr;
- }
+      while ((res = scanner.next()) != null) {
+        res.advance();
+        list.add(BackupSystemTableHelper.cellKeyToBackupSetName(res.current()));
+      }
+      return list;
+    } finally {
+      if (scanner != null) {
+        scanner.close();
+      }
+      if (table != null) {
+        table.close();
+      }
+    }
+  }
 
- /**
-  * Remove tables from backup set (list of tables)
-  * @param name - set name
-  * @param tables - list of tables, comma-separated
-  * @throws IOException
-  */
+  /**
+   * Get backup set description (list of tables)
+   * @param name - set's name
+   * @return list of tables in a backup set
+   * @throws IOException
+   */
+  public List<TableName> describeBackupSet(String name) throws IOException {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(" Backup set describe: " + name);
+    }
+    Table table = null;
+    try {
+      table = connection.getTable(tableName);
+      Get get = BackupSystemTableHelper.createGetForBackupSet(name);
+      Result res = table.get(get);
+      if (res.isEmpty()) return null;
+      res.advance();
+      String[] tables = BackupSystemTableHelper.cellValueToBackupSet(res.current());
+      return toList(tables);
+    } finally {
+      if (table != null) {
+        table.close();
+      }
+    }
+  }
+
+  private List<TableName> toList(String[] tables) {
+    List<TableName> list = new ArrayList<TableName>(tables.length);
+    for (String name : tables) {
+      list.add(TableName.valueOf(name));
+    }
+    return list;
+  }
+
+  /**
+   * Add backup set (list of tables)
+   * @param name - set name
+   * @param tables - list of tables, comma-separated
+   * @throws IOException
+   */
+  public void addToBackupSet(String name, String[] newTables) throws IOException {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Backup set add: " + name + " tables [" + StringUtils.join(newTables, " ") + "]");
+    }
+    Table table = null;
+    String[] union = null;
+    try {
+      table = connection.getTable(tableName);
+      Get get = BackupSystemTableHelper.createGetForBackupSet(name);
+      Result res = table.get(get);
+      if (res.isEmpty()) {
+        union = newTables;
+      } else {
+        res.advance();
+        String[] tables = BackupSystemTableHelper.cellValueToBackupSet(res.current());
+        union = merge(tables, newTables);
+      }
+      Put put = BackupSystemTableHelper.createPutForBackupSet(name, union);
+      table.put(put);
+    } finally {
+      if (table != null) {
+        table.close();
+      }
+    }
+  }
+
+  private String[] merge(String[] tables, String[] newTables) {
+    List<String> list = new ArrayList<String>();
+    // Add all from tables
+    for (String t : tables) {
+      list.add(t);
+    }
+    for (String nt : newTables) {
+      if (list.contains(nt)) continue;
+      list.add(nt);
+    }
+    String[] arr = new String[list.size()];
+    list.toArray(arr);
+    return arr;
+  }
+
+  /**
+   * Remove tables from backup set (list of tables)
+   * @param name - set name
+   * @param tables - list of tables, comma-separated
+   * @throws IOException
+   */
   public void removeFromBackupSet(String name, String[] toRemove) throws IOException {
     if (LOG.isDebugEnabled()) {
-      LOG.debug(" Backup set remove from : " + name+" tables ["+
-     StringUtils.join(toRemove, " ")+"]");
+      LOG.debug(" Backup set remove from : " + name + " tables [" + StringUtils.join(toRemove, " ")
+          + "]");
     }
     Table table = null;
     String[] disjoint = null;
@@ -730,7 +784,7 @@ public final class BackupSystemTable implements Closeable {
       Get get = BackupSystemTableHelper.createGetForBackupSet(name);
       Result res = table.get(get);
       if (res.isEmpty()) {
-        LOG.warn("Backup set '"+ name+"' not found.");
+        LOG.warn("Backup set '" + name + "' not found.");
         return;
       } else {
         res.advance();
@@ -742,9 +796,9 @@ public final class BackupSystemTable implements Closeable {
         table.put(put);
       } else {
         // Delete
-        //describeBackupSet(name);
-        LOG.warn("Backup set '"+ name+"' does not contain tables ["+
-        StringUtils.join(toRemove, " ")+"]");
+        // describeBackupSet(name);
+        LOG.warn("Backup set '" + name + "' does not contain tables ["
+            + StringUtils.join(toRemove, " ") + "]");
       }
     } finally {
       if (table != null) {
@@ -769,11 +823,11 @@ public final class BackupSystemTable implements Closeable {
     return arr;
   }
 
- /**
-  * Delete backup set 
-  * @param name set's name
-  * @throws IOException
-  */
+  /**
+   * Delete backup set
+   * @param name set's name
+   * @throws IOException
+   */
   public void deleteBackupSet(String name) throws IOException {
     if (LOG.isDebugEnabled()) {
       LOG.debug(" Backup set delete: " + name);
@@ -800,12 +854,11 @@ public final class BackupSystemTable implements Closeable {
     colSessionsDesc.setMaxVersions(1);
     // Time to keep backup sessions (secs)
     Configuration config = HBaseConfiguration.create();
-    int ttl =
-        config.getInt(HConstants.BACKUP_SYSTEM_TTL_KEY, HConstants.BACKUP_SYSTEM_TTL_DEFAULT);
+    int ttl = config.getInt(HConstants.BACKUP_SYSTEM_TTL_KEY, HConstants.BACKUP_SYSTEM_TTL_DEFAULT);
     colSessionsDesc.setTimeToLive(ttl);
     tableDesc.addFamily(colSessionsDesc);
     HColumnDescriptor colMetaDesc = new HColumnDescriptor(META_FAMILY);
-    //colDesc.setMaxVersions(1);
+    // colDesc.setMaxVersions(1);
     tableDesc.addFamily(colMetaDesc);
     return tableDesc;
   }
@@ -813,7 +866,7 @@ public final class BackupSystemTable implements Closeable {
   public static String getTableNameAsString() {
     return tableName.getNameAsString();
   }
-  
+
   public static TableName getTableName() {
     return tableName;
   }

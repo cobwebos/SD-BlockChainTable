@@ -48,7 +48,7 @@ public class TestFullBackup extends TestBackupBase {
       // Run backup
       int ret = ToolRunner.run(conf1, new BackupDriver(), args);
       assertTrue(ret == 0);
-      ArrayList<BackupInfo> backups = table.getBackupHistory(); 
+      List<BackupInfo> backups = table.getBackupHistory(); 
       int after = table.getBackupHistory().size();
       assertTrue(after == before +1);
       for(BackupInfo data : backups){
@@ -68,7 +68,7 @@ public class TestFullBackup extends TestBackupBase {
       // Run backup
       int ret = ToolRunner.run(conf1, new BackupDriver(), args);
       assertTrue(ret == 0);
-      ArrayList<BackupInfo> backups = table.getBackupHistory(); 
+      List<BackupInfo> backups = table.getBackupHistory(); 
       int after = table.getBackupHistory().size();
       assertTrue(after == before +1);
       for(BackupInfo data : backups){

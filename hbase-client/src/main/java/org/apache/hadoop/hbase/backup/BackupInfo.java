@@ -32,9 +32,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -42,6 +40,7 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupInfo.Builder;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableBackupStatus;
+import org.apache.hadoop.hbase.util.Bytes;
 
 
 /**
@@ -51,11 +50,13 @@ import org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableBackupStatus
 @InterfaceStability.Evolving
 public class BackupInfo implements Comparable<BackupInfo> {
   private static final Log LOG = LogFactory.getLog(BackupInfo.class);
+
   // backup status flag
   public static enum BackupState {
     WAITING, RUNNING, COMPLETE, FAILED, ANY;
   }
-  // backup phase    
+
+  // backup phase
   public static enum BackupPhase {
     SNAPSHOTCOPY, INCREMENTAL_COPY, STORE_MANIFEST;
   }
@@ -102,16 +103,16 @@ public class BackupInfo implements Comparable<BackupInfo> {
 
   // backup progress in %% (0-100)
   private int progress;
-  
+
   // distributed job id
   private String jobId;
-  
+
   // Number of parallel workers. -1 - system defined
   private int workers = -1;
- 
+
   // Bandwidth per worker in MB per sec. -1 - unlimited
-  private long bandwidth = -1;  
-  
+  private long bandwidth = -1;
+
   public BackupInfo() {
     backupStatusMap = new HashMap<TableName, BackupStatus>();
   }
@@ -121,8 +122,8 @@ public class BackupInfo implements Comparable<BackupInfo> {
     this.backupId = backupId;
     this.type = type;
     this.targetRootDir = targetRootDir;
-    if(LOG.isDebugEnabled()){
-      LOG.debug("CreateBackupContext: " + tables.length+" "+tables[0] );
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("CreateBackupContext: " + tables.length + " " + tables[0]);
     }
     this.addTables(tables);
 
@@ -165,8 +166,9 @@ public class BackupInfo implements Comparable<BackupInfo> {
   public HashMap<TableName, HashMap<String, Long>> getTableSetTimestampMap() {
     return tableSetTimestampMap;
   }
-  
-  public void setTableSetTimestampMap(HashMap<TableName, HashMap<String, Long>> tableSetTimestampMap) {
+
+  public void
+      setTableSetTimestampMap(HashMap<TableName, HashMap<String, Long>> tableSetTimestampMap) {
     this.tableSetTimestampMap = tableSetTimestampMap;
   }
 
@@ -293,6 +295,14 @@ public class BackupInfo implements Comparable<BackupInfo> {
     }
   }
 
+  public void setTables(List<TableName> tables) {
+    this.backupStatusMap.clear();
+    for (TableName table : tables) {
+      BackupStatus backupStatus = new BackupStatus(table, this.targetRootDir, this.backupId);
+      this.backupStatusMap.put(table, backupStatus);
+    }
+  }
+
   public String getTargetRootDir() {
     return targetRootDir;
   }
@@ -317,8 +327,8 @@ public class BackupInfo implements Comparable<BackupInfo> {
    * Set the new region server log timestamps after distributed log roll
    * @param newTableSetTimestampMap table timestamp map
    */
-  public void setIncrTimestampMap(HashMap<TableName,
-      HashMap<String, Long>> newTableSetTimestampMap) {
+  public void
+      setIncrTimestampMap(HashMap<TableName, HashMap<String, Long>> newTableSetTimestampMap) {
     this.tableSetTimestampMap = newTableSetTimestampMap;
   }
 
@@ -366,12 +376,27 @@ public class BackupInfo implements Comparable<BackupInfo> {
     return builder.build();
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof BackupInfo) {
+      BackupInfo other = (BackupInfo) obj;
+      try {
+        return Bytes.equals(toByteArray(), other.toByteArray());
+      } catch (IOException e) {
+        LOG.error(e);
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   public byte[] toByteArray() throws IOException {
     return toProtosBackupInfo().toByteArray();
   }
 
   private void setBackupStatusMap(Builder builder) {
-    for (Entry<TableName, BackupStatus> entry: backupStatusMap.entrySet()) {
+    for (Entry<TableName, BackupStatus> entry : backupStatusMap.entrySet()) {
       builder.addTableBackupStatus(entry.getValue().toProto());
     }
   }
@@ -379,7 +404,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
   public static BackupInfo fromByteArray(byte[] data) throws IOException {
     return fromProto(BackupProtos.BackupInfo.parseFrom(data));
   }
-  
+
   public static BackupInfo fromStream(final InputStream stream) throws IOException {
     return fromProto(BackupProtos.BackupInfo.parseDelimitedFrom(stream));
   }
@@ -418,7 +443,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
 
   private static Map<TableName, BackupStatus> toMap(List<TableBackupStatus> list) {
     HashMap<TableName, BackupStatus> map = new HashMap<>();
-    for (TableBackupStatus tbs : list){
+    for (TableBackupStatus tbs : list) {
       map.put(ProtobufUtil.toTableName(tbs.getTable()), BackupStatus.convert(tbs));
     }
     return map;
@@ -455,18 +480,16 @@ public class BackupInfo implements Comparable<BackupInfo> {
         .append(" progress: ").append(getProgress());
     return sb.toString();
   }
-  
+
   public String getTableListAsString() {
     return StringUtils.join(backupStatusMap.keySet(), ",");
   }
 
   @Override
   public int compareTo(BackupInfo o) {
-      Long thisTS =
-          new Long(this.getBackupId().substring(this.getBackupId().lastIndexOf("_") + 1));
-      Long otherTS =
-          new Long(o.getBackupId().substring(o.getBackupId().lastIndexOf("_") + 1));
-      return thisTS.compareTo(otherTS);
+    Long thisTS = new Long(this.getBackupId().substring(this.getBackupId().lastIndexOf("_") + 1));
+    Long otherTS = new Long(o.getBackupId().substring(o.getBackupId().lastIndexOf("_") + 1));
+    return thisTS.compareTo(otherTS);
   }
-     
+
 }

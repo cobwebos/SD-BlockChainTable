@@ -141,7 +141,7 @@ public class TestBackupSystemTable {
 
     // Reverse list for comparison
     Collections.reverse(list);
-    ArrayList<BackupInfo> history = table.getBackupHistory();
+    List<BackupInfo> history = table.getBackupHistory();
     assertTrue(history.size() == n);
 
     for (int i = 0; i < n; i++) {

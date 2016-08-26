@@ -430,7 +430,7 @@ public class BackupManager implements Closeable {
    * @return history info of BackupCompleteData
    * @throws IOException exception
    */
-  public ArrayList<BackupInfo> getBackupHistory() throws IOException {
+  public List<BackupInfo> getBackupHistory() throws IOException {
     return systemTable.getBackupHistory();
   }
 

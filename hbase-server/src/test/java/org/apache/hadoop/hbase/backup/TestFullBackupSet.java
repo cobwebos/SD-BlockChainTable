@@ -62,7 +62,7 @@ public class TestFullBackupSet extends TestBackupBase {
       // Run backup
       int ret = ToolRunner.run(conf1, new BackupDriver(), args);
       assertTrue(ret == 0);
-      ArrayList<BackupInfo> backups = table.getBackupHistory();
+      List<BackupInfo> backups = table.getBackupHistory();
       assertTrue(backups.size() == 1);
       String backupId = backups.get(0).getBackupId();
       assertTrue(checkSucceeded(backupId));

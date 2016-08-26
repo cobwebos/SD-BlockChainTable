@@ -56,7 +56,7 @@ public final class BackupClientUtil {
   protected static final Log LOG = LogFactory.getLog(BackupClientUtil.class);
   public static final String LOGNAME_SEPARATOR = ".";
 
-  private BackupClientUtil(){
+  private BackupClientUtil() {
     throw new AssertionError("Instantiating utility class...");
   }
 
@@ -67,8 +67,7 @@ public final class BackupClientUtil {
    * @return Yes if path exists
    * @throws IOException exception
    */
-  public static boolean checkPathExist(String backupStr, Configuration conf)
-    throws IOException {
+  public static boolean checkPathExist(String backupStr, Configuration conf) throws IOException {
     boolean isExist = false;
     Path backupPath = new Path(backupStr);
     FileSystem fileSys = backupPath.getFileSystem(conf);
@@ -125,7 +124,7 @@ public final class BackupClientUtil {
   }
 
   /**
-   * Parses host name:port from archived WAL path 
+   * Parses host name:port from archived WAL path
    * @param p path
    * @return host name
    * @throws IOException exception
@@ -158,7 +157,7 @@ public final class BackupClientUtil {
   }
 
   public static List<String> getFiles(FileSystem fs, Path rootDir, List<String> files,
-    PathFilter filter) throws FileNotFoundException, IOException {
+      PathFilter filter) throws FileNotFoundException, IOException {
     RemoteIterator<LocatedFileStatus> it = fs.listFiles(rootDir, true);
 
     while (it.hasNext()) {
@@ -173,10 +172,8 @@ public final class BackupClientUtil {
     }
     return files;
   }
-  
-  public static void cleanupBackupData(BackupInfo context, Configuration conf) 
-      throws IOException 
-  {
+
+  public static void cleanupBackupData(BackupInfo context, Configuration conf) throws IOException {
     cleanupHLogDir(context, conf);
     cleanupTargetDir(context, conf);
   }
@@ -209,23 +206,22 @@ public final class BackupClientUtil {
   /**
    * Clean up the data at target directory
    */
-  private static void cleanupTargetDir(BackupInfo backupContext, Configuration conf) {
+  private static void cleanupTargetDir(BackupInfo backupInfo, Configuration conf) {
     try {
       // clean up the data at target directory
-      LOG.debug("Trying to cleanup up target dir : " + backupContext.getBackupId());
-      String targetDir = backupContext.getTargetRootDir();
+      LOG.debug("Trying to cleanup up target dir : " + backupInfo.getBackupId());
+      String targetDir = backupInfo.getTargetRootDir();
       if (targetDir == null) {
-        LOG.warn("No target directory specified for " + backupContext.getBackupId());
+        LOG.warn("No target directory specified for " + backupInfo.getBackupId());
         return;
       }
 
-      FileSystem outputFs =
-          FileSystem.get(new Path(backupContext.getTargetRootDir()).toUri(), conf);
+      FileSystem outputFs = FileSystem.get(new Path(backupInfo.getTargetRootDir()).toUri(), conf);
 
-      for (TableName table : backupContext.getTables()) {
+      for (TableName table : backupInfo.getTables()) {
         Path targetDirPath =
-            new Path(getTableBackupDir(backupContext.getTargetRootDir(),
-              backupContext.getBackupId(), table));
+            new Path(getTableBackupDir(backupInfo.getTargetRootDir(), backupInfo.getBackupId(),
+              table));
         if (outputFs.delete(targetDirPath, true)) {
           LOG.info("Cleaning up backup data at " + targetDirPath.toString() + " done.");
         } else {
@@ -239,10 +235,10 @@ public final class BackupClientUtil {
           LOG.debug(tableDir.toString() + " is empty, remove it.");
         }
       }
-      outputFs.delete(new Path(targetDir, backupContext.getBackupId()), true);
+      outputFs.delete(new Path(targetDir, backupInfo.getBackupId()), true);
     } catch (IOException e1) {
-      LOG.error("Cleaning up backup data of " + backupContext.getBackupId() + " at "
-          + backupContext.getTargetRootDir() + " failed due to " + e1.getMessage() + ".");
+      LOG.error("Cleaning up backup data of " + backupInfo.getBackupId() + " at "
+          + backupInfo.getTargetRootDir() + " failed due to " + e1.getMessage() + ".");
     }
   }
 
@@ -251,17 +247,17 @@ public final class BackupClientUtil {
    * which is also where the backup manifest file is. return value look like:
    * "hdfs://backup.hbase.org:9000/user/biadmin/backup1/backup_1396650096738/default/t1_dn/"
    * @param backupRootDir backup root directory
-   * @param backupId  backup id
+   * @param backupId backup id
    * @param table table name
    * @return backupPath String for the particular table
    */
-  public static String getTableBackupDir(String backupRootDir, String backupId,
-      TableName tableName) {
-    return backupRootDir + Path.SEPARATOR+ backupId + Path.SEPARATOR + 
-        tableName.getNamespaceAsString() + Path.SEPARATOR
-        + tableName.getQualifierAsString() + Path.SEPARATOR ;
-  }  
-  
+  public static String
+      getTableBackupDir(String backupRootDir, String backupId, TableName tableName) {
+    return backupRootDir + Path.SEPARATOR + backupId + Path.SEPARATOR
+        + tableName.getNamespaceAsString() + Path.SEPARATOR + tableName.getQualifierAsString()
+        + Path.SEPARATOR;
+  }
+
   public static TableName[] parseTableNames(String tables) {
     if (tables == null) {
       return null;
@@ -280,8 +276,7 @@ public final class BackupClientUtil {
    * @param historyList history list
    * @return sorted list of BackupCompleteData
    */
-  public static ArrayList<BackupInfo> sortHistoryListDesc(
-    ArrayList<BackupInfo> historyList) {
+  public static ArrayList<BackupInfo> sortHistoryListDesc(ArrayList<BackupInfo> historyList) {
     ArrayList<BackupInfo> list = new ArrayList<BackupInfo>();
     TreeMap<String, BackupInfo> map = new TreeMap<String, BackupInfo>();
     for (BackupInfo h : historyList) {
@@ -314,21 +309,19 @@ public final class BackupClientUtil {
   public static String getUniqueWALFileNamePart(Path p) throws IOException {
     return p.getName();
   }
-  
+
   /**
-   * Calls fs.listStatus() and treats FileNotFoundException as non-fatal
-   * This accommodates differences between hadoop versions, where hadoop 1
-   * does not throw a FileNotFoundException, and return an empty FileStatus[]
-   * while Hadoop 2 will throw FileNotFoundException.
-   *
+   * Calls fs.listStatus() and treats FileNotFoundException as non-fatal This accommodates
+   * differences between hadoop versions, where hadoop 1 does not throw a FileNotFoundException, and
+   * return an empty FileStatus[] while Hadoop 2 will throw FileNotFoundException.
    * @param fs file system
    * @param dir directory
    * @param filter path filter
    * @return null if dir is empty or doesn't exist, otherwise FileStatus array
    */
-  public static FileStatus [] listStatus(final FileSystem fs,
-      final Path dir, final PathFilter filter) throws IOException {
-    FileStatus [] status = null;
+  public static FileStatus[]
+      listStatus(final FileSystem fs, final Path dir, final PathFilter filter) throws IOException {
+    FileStatus[] status = null;
     try {
       status = filter == null ? fs.listStatus(dir) : fs.listStatus(dir, filter);
     } catch (FileNotFoundException fnfe) {
@@ -339,22 +332,21 @@ public final class BackupClientUtil {
     }
     if (status == null || status.length < 1) return null;
     return status;
-  }  
-  
+  }
+
   /**
-   * Return the 'path' component of a Path.  In Hadoop, Path is an URI.  This
-   * method returns the 'path' component of a Path's URI: e.g. If a Path is
-   * <code>hdfs://example.org:9000/hbase_trunk/TestTable/compaction.dir</code>,
-   * this method returns <code>/hbase_trunk/TestTable/compaction.dir</code>.
-   * This method is useful if you want to print out a Path without qualifying
-   * Filesystem instance.
+   * Return the 'path' component of a Path. In Hadoop, Path is an URI. This method returns the
+   * 'path' component of a Path's URI: e.g. If a Path is
+   * <code>hdfs://example.org:9000/hbase_trunk/TestTable/compaction.dir</code>, this method returns
+   * <code>/hbase_trunk/TestTable/compaction.dir</code>. This method is useful if you want to print
+   * out a Path without qualifying Filesystem instance.
    * @param p Filesystem Path whose 'path' component we are to return.
    * @return Path portion of the Filesystem
    */
   public static String getPath(Path p) {
     return p.toUri().getPath();
   }
- 
+
   /**
    * Given the backup root dir and the backup id, return the log file location for an incremental
    * backup.
@@ -363,23 +355,23 @@ public final class BackupClientUtil {
    * @return logBackupDir: ".../user/biadmin/backup1/WALs/backup_1396650096738"
    */
   public static String getLogBackupDir(String backupRootDir, String backupId) {
-    return backupRootDir + Path.SEPARATOR + backupId+ Path.SEPARATOR
+    return backupRootDir + Path.SEPARATOR + backupId + Path.SEPARATOR
         + HConstants.HREGION_LOGDIR_NAME;
   }
 
-  public static List<BackupInfo> getHistory(Configuration conf, Path backupRootPath) 
+  public static List<BackupInfo> getHistory(Configuration conf, Path backupRootPath)
       throws IOException {
     // Get all (n) history from backup root destination
     FileSystem fs = FileSystem.get(conf);
     RemoteIterator<LocatedFileStatus> it = fs.listLocatedStatus(backupRootPath);
 
     List<BackupInfo> infos = new ArrayList<BackupInfo>();
-    while( it.hasNext()) {
-      LocatedFileStatus lfs = it.next();     
-      if(!lfs.isDirectory()) continue;
-      if(!isBackupDirectory(lfs)) continue;
+    while (it.hasNext()) {
+      LocatedFileStatus lfs = it.next();
+      if (!lfs.isDirectory()) continue;
+      if (!isBackupDirectory(lfs)) continue;
       String backupId = lfs.getPath().getName();
-      infos.add(loadBackupInfo(backupRootPath, backupId, fs));      
+      infos.add(loadBackupInfo(backupRootPath, backupId, fs));
     }
     // Sort
     Collections.sort(infos, new Comparator<BackupInfo>() {
@@ -388,10 +380,10 @@ public final class BackupClientUtil {
       public int compare(BackupInfo o1, BackupInfo o2) {
         long ts1 = getTimestamp(o1.getBackupId());
         long ts2 = getTimestamp(o2.getBackupId());
-        if(ts1 == ts2) return 0;
-        return ts1< ts2 ? 1: -1 ;
+        if (ts1 == ts2) return 0;
+        return ts1 < ts2 ? 1 : -1;
       }
-      
+
       private long getTimestamp(String backupId) {
         String[] split = backupId.split("_");
         return Long.parseLong(split[1]);
@@ -400,47 +392,46 @@ public final class BackupClientUtil {
     return infos;
   }
 
-  public static List<BackupInfo> getHistory(Configuration conf, int n, 
-    TableName name, Path backupRootPath) throws IOException
-  {
+  public static List<BackupInfo> getHistory(Configuration conf, int n, TableName name,
+      Path backupRootPath) throws IOException {
     List<BackupInfo> infos = getHistory(conf, backupRootPath);
-    if (name == null) {      
-      if(infos.size() <= n) return infos;
+    if (name == null) {
+      if (infos.size() <= n) return infos;
       return infos.subList(0, n);
     } else {
       List<BackupInfo> ret = new ArrayList<BackupInfo>();
       int count = 0;
-      for(BackupInfo info: infos) {
+      for (BackupInfo info : infos) {
         List<TableName> names = info.getTableNames();
-        if(names.contains(name)) {
-          ret.add(info); 
-          if(++count == n) {
+        if (names.contains(name)) {
+          ret.add(info);
+          if (++count == n) {
             break;
           }
         }
-      }      
+      }
       return ret;
-    }    
-  }      
-  
+    }
+  }
+
   private static boolean isBackupDirectory(LocatedFileStatus lfs) {
     return lfs.getPath().getName().startsWith(BackupRestoreConstants.BACKUPID_PREFIX);
   }
-  
-  public static BackupInfo loadBackupInfo(Path backupRootPath, String backupId,
-      FileSystem fs) throws IOException {
+
+  public static BackupInfo loadBackupInfo(Path backupRootPath, String backupId, FileSystem fs)
+      throws IOException {
     Path backupPath = new Path(backupRootPath, backupId);
-        
+
     RemoteIterator<LocatedFileStatus> it = fs.listFiles(backupPath, true);
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       LocatedFileStatus lfs = it.next();
-      if(lfs.getPath().getName().equals(BackupManifest.MANIFEST_FILE_NAME)) {
+      if (lfs.getPath().getName().equals(BackupManifest.MANIFEST_FILE_NAME)) {
         // Load BackupManifest
         BackupManifest manifest = new BackupManifest(fs, lfs.getPath().getParent());
-        BackupInfo info = manifest.toBackupInfo();   
+        BackupInfo info = manifest.toBackupInfo();
         return info;
-      }      
-    }    
+      }
+    }
     return null;
   }
 }
