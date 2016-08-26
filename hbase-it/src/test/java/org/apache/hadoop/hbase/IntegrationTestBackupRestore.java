@@ -71,7 +71,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
   protected static final String REGION_COUNT_KEY = "regions_per_rs";
   protected static final String REGIONSERVER_COUNT_KEY = "region_servers";
   protected static final int DEFAULT_REGION_COUNT = 10;
-  protected static final int DEFAULT_REGIONSERVER_COUNT = 5;
+  protected static final int DEFAULT_REGIONSERVER_COUNT = 2;
   protected static int regionsCountPerServer;
   protected static int regionServerCount;
   protected static final String NB_ROWS_IN_BATCH_KEY = "rows_in_batch";
@@ -95,13 +95,16 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     LOG.info("Cluster ready");
   }
 
-
   @After
   public void tearDown() throws IOException {
     LOG.info("Cleaning up after test.");
-    util.deleteTableIfAny(TABLE_NAME1);
-    util.deleteTableIfAny(TABLE_NAME2);
-    cleanUpBackupDir();
+    if(util.isDistributedCluster()) {
+      util.deleteTableIfAny(TABLE_NAME1);
+      LOG.info("Cleaning up after test. TABLE1 done");
+      util.deleteTableIfAny(TABLE_NAME2);
+      LOG.info("Cleaning up after test. TABLE2 done");
+      cleanUpBackupDir();
+    }
     LOG.info("Restoring cluster.");
     util.restoreCluster();
     LOG.info("Cluster restored.");
@@ -112,15 +115,20 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     fs.delete(new Path(BACKUP_ROOT_DIR), true);    
   }
 
-
+  private String absolutePath(String dir) {
+    String defaultFs = util.getConfiguration().get("fs.defaultFS");
+    return defaultFs + Path.SEPARATOR + dir;
+  }
+  
   @Test
   public void testBackupRestore() throws Exception {
-    BACKUP_ROOT_DIR = util.getConfiguration().get("fs.defaultFS") + BACKUP_ROOT_DIR;
+    BACKUP_ROOT_DIR = absolutePath(BACKUP_ROOT_DIR);
     createTable(TABLE_NAME1);
     createTable(TABLE_NAME2);
     runTest();
   }
 
+  
   private void createTable(TableName tableName) throws Exception {
     long startTime, endTime;
     HTableDescriptor desc = new HTableDescriptor(tableName);
@@ -130,7 +138,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     LOG.info(String.format("Creating table %s with %d splits.", tableName, 
       regionsCountPerServer));
     startTime = System.currentTimeMillis();
-    HBaseTestingUtility.createPreSplitLoadTestTable(conf, desc, columns, 
+    HBaseTestingUtility.createPreSplitLoadTestTable(util.getConfiguration(), desc, columns, 
       algo, regionsCountPerServer);
     util.waitTableAvailable(tableName);
     endTime = System.currentTimeMillis();
@@ -147,7 +155,8 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
   }
 
   private void runTest() throws IOException {
-    Connection conn = util.getConnection();
+    Connection conn = util.getConnection();    
+
     // #0- insert some data to table TABLE_NAME1, TABLE_NAME2
     loadData(TABLE_NAME1, rowsInBatch);
     loadData(TABLE_NAME2, rowsInBatch);
@@ -180,7 +189,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     TableName[] tablesRestoreFull = new TableName[] { TABLE_NAME1, TABLE_NAME2 };
     BackupAdmin client = util.getAdmin().getBackupAdmin();
     client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false, tablesRestoreFull,
-      null, false));
+      null, true));
     // #5.1 - check tables for full restore
     Admin hAdmin = util.getConnection().getAdmin();
     assertTrue(hAdmin.tableExists(TABLE_NAME1));
