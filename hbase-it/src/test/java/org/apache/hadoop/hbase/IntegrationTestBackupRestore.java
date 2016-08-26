@@ -68,15 +68,13 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
   protected static final TableName TABLE_NAME1 = TableName.valueOf(CLASS_NAME + ".table1");
   protected static final TableName TABLE_NAME2 = TableName.valueOf(CLASS_NAME + ".table2");
   protected static final String COLUMN_NAME = "f";
-  protected static final String REGION_COUNT_KEY = String.format("hbase.%s.regions.perRS", CLASS_NAME);
-  protected static final String REGIONSERVER_COUNT_KEY = String.format("hbase.%s.regionServers",
-    CLASS_NAME);
+  protected static final String REGION_COUNT_KEY = "regions_per_rs";
+  protected static final String REGIONSERVER_COUNT_KEY = "region_servers";
   protected static final int DEFAULT_REGION_COUNT = 10;
   protected static final int DEFAULT_REGIONSERVER_COUNT = 5;
   protected static int regionsCountPerServer;
   protected static int regionServerCount;
-  protected static final String NB_ROWS_IN_BATCH_KEY =
-      String.format("hbase.%s.rows-in-batch", CLASS_NAME);
+  protected static final String NB_ROWS_IN_BATCH_KEY = "rows_in_batch";
   protected static final int DEFAULT_NB_ROWS_IN_BATCH = 20000;
   private static int rowsInBatch;
   private static String BACKUP_ROOT_DIR = "backupIT";
