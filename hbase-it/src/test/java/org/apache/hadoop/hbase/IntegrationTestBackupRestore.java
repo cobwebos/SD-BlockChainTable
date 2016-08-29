@@ -122,7 +122,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
   
   @Test
   public void testBackupRestore() throws Exception {
-    BACKUP_ROOT_DIR = absolutePath(BACKUP_ROOT_DIR);
+    BACKUP_ROOT_DIR = absolutePath(conf.get("hbase.fs.tmp.dir") + Path.SEPARATOR + BACKUP_ROOT_DIR);
     createTable(TABLE_NAME1);
     createTable(TABLE_NAME2);
     runTest();
