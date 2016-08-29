@@ -137,7 +137,8 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
   {
     Configuration conf = getConf();
     FileSystem fs = FileSystem.get(conf);
-    String tmp = conf.get("hbase.tmp.dir");
+    String tmp = conf.get(HConstants.TEMPORARY_FS_DIRECTORY_KEY,
+        HConstants.DEFAULT_TEMPORARY_HDFS_DIRECTORY);
     Path path =  new Path(tmp + Path.SEPARATOR + "bulk_output-"+tableName + "-"
         + EnvironmentEdgeManager.currentTime());
     fs.deleteOnExit(path);

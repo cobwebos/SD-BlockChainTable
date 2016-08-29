@@ -73,7 +73,6 @@ public class RestoreServerUtil {
   protected String backupId;
 
   protected FileSystem fs;
-  private final String RESTORE_TMP_PATH = "/tmp";
   private final Path restoreTmpPath;
 
   // store table name and snapshot dir mapping
@@ -85,9 +84,8 @@ public class RestoreServerUtil {
     this.backupRootPath = backupRootPath;
     this.backupId = backupId;
     this.fs = backupRootPath.getFileSystem(conf);
-    this.restoreTmpPath = new Path(conf.get("hbase.fs.tmp.dir") != null?
-        conf.get("hbase.fs.tmp.dir"): RESTORE_TMP_PATH,
-      "restore");
+    this.restoreTmpPath = new Path(conf.get(HConstants.TEMPORARY_FS_DIRECTORY_KEY,
+        HConstants.DEFAULT_TEMPORARY_HDFS_DIRECTORY), "restore");
   }
 
   /**
