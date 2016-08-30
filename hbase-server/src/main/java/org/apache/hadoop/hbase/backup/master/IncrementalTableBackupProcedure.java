@@ -53,6 +53,7 @@ import org.apache.hadoop.hbase.procedure2.StateMachineProcedure;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos.IncrementalTableBackupState;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos.ServerTimestamp;
+import org.apache.hadoop.security.UserGroupInformation;
 
 @InterfaceAudience.Private
 public class IncrementalTableBackupProcedure
@@ -84,6 +85,7 @@ public class IncrementalTableBackupProcedure
     this.targetRootDir = targetRootDir;
     backupContext = backupManager.createBackupContext(backupId, 
       BackupType.INCREMENTAL, tableList, targetRootDir, workers, (int)bandwidth);
+    this.setOwner(env.getRequestUser().getUGI().getShortUserName());
   }
 
   @Override
