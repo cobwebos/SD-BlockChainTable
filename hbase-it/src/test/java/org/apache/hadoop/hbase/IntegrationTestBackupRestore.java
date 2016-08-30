@@ -115,14 +115,9 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     fs.delete(new Path(BACKUP_ROOT_DIR), true);    
   }
 
-  private String absolutePath(String dir) {
-    String defaultFs = util.getConfiguration().get("fs.defaultFS");
-    return defaultFs + Path.SEPARATOR + dir;
-  }
-  
   @Test
   public void testBackupRestore() throws Exception {
-    BACKUP_ROOT_DIR = absolutePath(util.getDataTestDirOnTestFS() + Path.SEPARATOR + BACKUP_ROOT_DIR);
+    BACKUP_ROOT_DIR = util.getDataTestDirOnTestFS() + Path.SEPARATOR + BACKUP_ROOT_DIR;
     createTable(TABLE_NAME1);
     createTable(TABLE_NAME2);
     runTest();
