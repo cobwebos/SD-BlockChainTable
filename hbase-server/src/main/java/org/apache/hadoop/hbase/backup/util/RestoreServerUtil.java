@@ -54,6 +54,7 @@ import org.apache.hadoop.hbase.regionserver.StoreFileInfo;
 import org.apache.hadoop.hbase.snapshot.SnapshotDescriptionUtils;
 import org.apache.hadoop.hbase.snapshot.SnapshotManifest;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 
 /**
  * A collection for methods used by multiple classes to restore HBase tables.
@@ -65,6 +66,8 @@ public class RestoreServerUtil {
   public static final Log LOG = LogFactory.getLog(RestoreServerUtil.class);
 
   private final String[] ignoreDirs = { "recovered.edits" };
+  
+  private final long TABLE_AVAILABILITY_WAIT_TIME = 180000;
 
   protected Configuration conf = null;
 
@@ -600,6 +603,14 @@ public class RestoreServerUtil {
         byte[][] keys = generateBoundaryKeys(regionDirList);
         // create table using table descriptor and region boundaries
         hbadmin.createTable(htd, keys);
+        long startTime = EnvironmentEdgeManager.currentTime();
+        while (!hbadmin.isTableAvailable(targetTableName, keys)) {
+          Thread.sleep(100);
+          if (EnvironmentEdgeManager.currentTime() - startTime > TABLE_AVAILABILITY_WAIT_TIME) {
+            throw new IOException("Time out "+TABLE_AVAILABILITY_WAIT_TIME+
+              "ms expired, table " + targetTableName + " is still not available");
+          }
+        }
       }
     } catch (Exception e) {
       throw new IOException(e);
@@ -612,5 +623,4 @@ public class RestoreServerUtil {
       }
     }
   }
-
 }
