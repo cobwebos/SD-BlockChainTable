@@ -120,7 +120,7 @@ public class TestBackupBase {
   
   public static void waitForSystemTable() throws Exception
   {
-    try(Admin admin = TEST_UTIL.getAdmin();) {
+    try (Admin admin = TEST_UTIL.getAdmin();) {
       while (!admin.tableExists(BackupSystemTable.getTableName()) 
           || !admin.isTableAvailable(BackupSystemTable.getTableName())) {
         Thread.sleep(1000);
@@ -140,6 +140,18 @@ public class TestBackupBase {
     TEST_UTIL2.shutdownMiniCluster();
     TEST_UTIL.shutdownMiniCluster();
     TEST_UTIL.shutdownMiniMapReduceCluster();
+  }
+
+  HTable insertIntoTable(Connection conn, TableName table, byte[] family, int id, int numRows)
+      throws IOException {
+    HTable t = (HTable) conn.getTable(table);
+    Put p1;
+    for (int i = 0; i < numRows; i++) {
+      p1 = new Put(Bytes.toBytes("row-" + table + "-" + id + "-"+ i));
+      p1.addColumn(family, qualName, Bytes.toBytes("val" + i));
+      t.put(p1);
+    }
+    return t;
   }
 
   protected String backupTables(BackupType type, List<TableName> tables, String path)

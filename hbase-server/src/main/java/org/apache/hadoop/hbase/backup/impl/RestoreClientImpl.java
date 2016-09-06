@@ -261,35 +261,40 @@ public final class RestoreClientImpl implements RestoreClient {
 
     // TODO: convert feature will be provided in a future JIRA
     boolean converted = false;
+    String lastIncrBackupId = null;
+    List<String> logDirList = null;
 
+    // Scan incremental backups
+    if (it.hasNext()) {
+      // obtain the backupId for most recent incremental
+      logDirList = new ArrayList<String>();
+      while (it.hasNext()) {
+        BackupImage im = it.next();
+        String logBackupDir = HBackupFileSystem.getLogBackupDir(im.getRootDir(), im.getBackupId());
+        logDirList.add(logBackupDir);
+        lastIncrBackupId = im.getBackupId();
+      }
+    }
     if (manifest.getType() == BackupType.FULL || converted) {
       LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from "
           + (converted ? "converted" : "full") + " backup image " + tableBackupPath.toString());
       restoreTool.fullRestoreTable(tableBackupPath, sTable, tTable, 
-        converted, truncateIfExists);
-      
+        converted, truncateIfExists, lastIncrBackupId);
     } else { // incremental Backup
       throw new IOException("Unexpected backup type " + image.getType());
     }
 
     // The rest one are incremental
-    if (it.hasNext()) {
-      List<String> logDirList = new ArrayList<String>();
-      while (it.hasNext()) {
-        BackupImage im = it.next();
-        String logBackupDir = HBackupFileSystem.getLogBackupDir(im.getRootDir(), im.getBackupId());
-        logDirList.add(logBackupDir);
-      }
+    if (logDirList != null) {
       String logDirs = StringUtils.join(logDirList, ",");
       LOG.info("Restoring '" + sTable + "' to '" + tTable
           + "' from log dirs: " + logDirs);
       String[] sarr = new String[logDirList.size()];
       logDirList.toArray(sarr);
       Path[] paths = org.apache.hadoop.util.StringUtils.stringToPath(sarr);
-      restoreTool.incrementalRestoreTable(paths, new TableName[] { sTable },
-        new TableName[] { tTable });
+      restoreTool.incrementalRestoreTable(tableBackupPath, paths, new TableName[] { sTable },
+        new TableName[] { tTable }, lastIncrBackupId);
     }
     LOG.info(sTable + " has been successfully restored to " + tTable);
   }
-  
 }

@@ -172,7 +172,6 @@ public final class BackupServerUtil {
           LOG.warn("Table "+ table+" does not exists, skipping it.");
           continue;
         }
-        LOG.debug("Attempting to copy table info for:" + table);
         TableDescriptor orig = FSTableDescriptors.getTableDescriptorFromFs(fs, rootDir, table);
 
         // write a copy of descriptor to the target directory
@@ -181,6 +180,8 @@ public final class BackupServerUtil {
         FSTableDescriptors descriptors =
             new FSTableDescriptors(conf, targetFs, FSUtils.getRootDir(conf));
         descriptors.createTableDescriptorForTableDirectory(target, orig, false);
+        LOG.debug("Attempting to copy table info for:" + table + " target: " + target +
+            " descriptor: " + orig);
         LOG.debug("Finished copying tableinfo.");
         List<HRegionInfo> regions = null;
         regions = admin.getTableRegions(table);

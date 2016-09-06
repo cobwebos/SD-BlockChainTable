@@ -20,8 +20,11 @@ package org.apache.hadoop.hbase.backup.util;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
@@ -31,9 +34,11 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.IncrementalRestoreService;
@@ -55,6 +60,8 @@ import org.apache.hadoop.hbase.snapshot.SnapshotDescriptionUtils;
 import org.apache.hadoop.hbase.snapshot.SnapshotManifest;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
+import org.apache.hadoop.hbase.util.FSTableDescriptors;
+import org.apache.hadoop.hbase.util.Pair;
 
 /**
  * A collection for methods used by multiple classes to restore HBase tables.
@@ -133,21 +140,54 @@ public class RestoreServerUtil {
     return regionDirList;
   }
 
+  static void modifyTableSync(Admin admin, HTableDescriptor desc)
+      throws IOException {
+    admin.modifyTable(desc.getTableName(), desc);
+    Pair<Integer, Integer> status = new Pair<Integer, Integer>() {{
+      setFirst(0);
+      setSecond(0);
+    }};
+    int i = 0;
+    do {
+      status = admin.getAlterStatus(desc.getTableName());
+      if (status.getSecond() != 0) {
+        LOG.debug(status.getSecond() - status.getFirst() + "/" + status.getSecond()
+          + " regions updated.");
+        try {
+          Thread.sleep(1 * 1000l);
+        } catch (InterruptedException ie) {
+          InterruptedIOException iie = new InterruptedIOException();
+          iie.initCause(ie);
+          throw iie;
+        }
+      } else {
+        LOG.debug("All regions updated.");
+        break;
+      }
+    } while (status.getFirst() != 0 && i++ < 500);
+    if (status.getFirst() != 0) {
+      throw new IOException("Failed to update all regions even after 500 seconds.");
+    }
+  }
+
   /**
    * During incremental backup operation. Call WalPlayer to replay WAL in backup image Currently
    * tableNames and newTablesNames only contain single table, will be expanded to multiple tables in
    * the future
-   * @param logDir : incremental backup folders, which contains WAL
+   * @param tableBackupPath backup path
+   * @param logDirs : incremental backup folders, which contains WAL
    * @param tableNames : source tableNames(table names were backuped)
    * @param newTableNames : target tableNames(table names to be restored to)
+   * @param incrBackupId incremental backup Id
    * @throws IOException exception
    */
-  public void incrementalRestoreTable(Path[] logDirs,
-      TableName[] tableNames, TableName[] newTableNames) throws IOException {
+  public void incrementalRestoreTable(Path tableBackupPath, Path[] logDirs, TableName[] tableNames,
+      TableName[] newTableNames, String incrBackupId) throws IOException {
 
     if (tableNames.length != newTableNames.length) {
       throw new IOException("Number of source tables and target tables does not match!");
     }
+    FileSystem fileSys = tableBackupPath.getFileSystem(this.conf);
 
     // for incremental backup image, expect the table already created either by user or previous
     // full backup. Here, check that all new tables exists
@@ -160,6 +200,35 @@ public class RestoreServerUtil {
             + " does not exist. Create the table first, e.g. by restoring a full backup.");
         }
       }
+      // adjust table schema
+      for (int i = 0; i < tableNames.length; i++) {
+        TableName tableName = tableNames[i];
+        HTableDescriptor tableDescriptor = getTableDescriptor(fileSys, tableName, incrBackupId);
+        LOG.debug("Found descriptor " + tableDescriptor + " through " + incrBackupId);
+
+        TableName newTableName = newTableNames[i];
+        HTableDescriptor newTableDescriptor = admin.getTableDescriptor(newTableName);
+        List<HColumnDescriptor> families = Arrays.asList(tableDescriptor.getColumnFamilies());
+        List<HColumnDescriptor> existingFamilies =
+            Arrays.asList(newTableDescriptor.getColumnFamilies());
+        boolean schemaChangeNeeded = false;
+        for (HColumnDescriptor family : families) {
+          if (!existingFamilies.contains(family)) {
+            newTableDescriptor.addFamily(family);
+            schemaChangeNeeded = true;
+          }
+        }
+        for (HColumnDescriptor family : existingFamilies) {
+          if (!families.contains(family)) {
+            newTableDescriptor.removeFamily(family.getName());
+            schemaChangeNeeded = true;
+          }
+        }
+        if (schemaChangeNeeded) {
+          RestoreServerUtil.modifyTableSync(admin, newTableDescriptor);
+          LOG.info("Changed " + newTableDescriptor.getTableName() + " to: " + newTableDescriptor);
+        }
+      }
       IncrementalRestoreService restoreService =
           BackupRestoreServerFactory.getIncrementalRestoreService(conf);
 
@@ -168,8 +237,9 @@ public class RestoreServerUtil {
   }
 
   public void fullRestoreTable(Path tableBackupPath, TableName tableName, TableName newTableName,
-      boolean converted, boolean truncateIfExists) throws IOException {
-    restoreTableAndCreate(tableName, newTableName, tableBackupPath, converted, truncateIfExists);
+      boolean converted, boolean truncateIfExists, String lastIncrBackupId) throws IOException {
+    restoreTableAndCreate(tableName, newTableName, tableBackupPath, converted, truncateIfExists,
+        lastIncrBackupId);
   }
 
   /**
@@ -275,104 +345,126 @@ public class RestoreServerUtil {
     return tableArchivePath;
   }
 
+  private HTableDescriptor getTableDescriptor(FileSystem fileSys, TableName tableName,
+      String lastIncrBackupId) throws IOException {
+    if (lastIncrBackupId != null) {
+      String target = BackupClientUtil.getTableBackupDir(backupRootPath.toString(),
+          lastIncrBackupId, tableName);
+      // Path target = new Path(info.getBackupStatus(tableName).getTargetDir());
+      return FSTableDescriptors.getTableDescriptorFromFs(fileSys,
+          new Path(target)).getHTableDescriptor();
+    }
+    return null;
+  }
+
   private void restoreTableAndCreate(TableName tableName, TableName newTableName,
-      Path tableBackupPath, boolean converted, boolean truncateIfExists) throws IOException {
+      Path tableBackupPath, boolean converted, boolean truncateIfExists, String lastIncrBackupId)
+          throws IOException {
     if (newTableName == null || newTableName.equals("")) {
       newTableName = tableName;
     }
 
     FileSystem fileSys = tableBackupPath.getFileSystem(this.conf);
 
-    // get table descriptor first
-    HTableDescriptor tableDescriptor = null;
+    HTableDescriptor tableDescriptor = getTableDescriptor(fileSys, tableName, lastIncrBackupId);
+    if (tableDescriptor != null) {
+      LOG.debug("Retrieved descriptor: " + tableDescriptor + " thru " + lastIncrBackupId);
+    }
 
-    Path tableSnapshotPath = getTableSnapshotPath(backupRootPath, tableName, backupId);
-
-    if (fileSys.exists(tableSnapshotPath)) {
-      // snapshot path exist means the backup path is in HDFS
-      // check whether snapshot dir already recorded for target table
-      if (snapshotMap.get(tableName) != null) {
-        SnapshotDescription desc =
-            SnapshotDescriptionUtils.readSnapshotInfo(fileSys, tableSnapshotPath);
-        SnapshotManifest manifest = SnapshotManifest.open(conf, fileSys, tableSnapshotPath, desc);
-        tableDescriptor = manifest.getTableDescriptor();
-      } else {
-        tableDescriptor = getTableDesc(tableName);
-        snapshotMap.put(tableName, getTableInfoPath(tableName));
-      }
+    try (Connection conn = ConnectionFactory.createConnection(conf);
+        HBaseAdmin hbadmin = (HBaseAdmin) conn.getAdmin();) {
       if (tableDescriptor == null) {
-        LOG.debug("Found no table descriptor in the snapshot dir, previous schema would be lost");
-      }
-    } else if (converted) {
-      // first check if this is a converted backup image
-      LOG.error("convert will be supported in a future jira");
-    }
-
-    Path tableArchivePath = getTableArchivePath(tableName);
-    if (tableArchivePath == null) {
-      if (tableDescriptor != null) {
-        // find table descriptor but no archive dir means the table is empty, create table and exit
-        if(LOG.isDebugEnabled()) {
-          LOG.debug("find table descriptor but no archive dir for table " + tableName
-            + ", will only create table");
-        }
-        tableDescriptor.setName(newTableName);
-        checkAndCreateTable(tableBackupPath, tableName, newTableName, null, 
-          tableDescriptor, truncateIfExists);
-        return;
-      } else {
-        throw new IllegalStateException("Cannot restore hbase table because directory '"
-            + " tableArchivePath is null.");
-      }
-    }
-
-    if (tableDescriptor == null) {
-      tableDescriptor = new HTableDescriptor(newTableName);
-    } else {
-      tableDescriptor.setName(newTableName);
-    }
-
-    if (!converted) {
-      // record all region dirs:
-      // load all files in dir
-      try {
-        ArrayList<Path> regionPathList = getRegionList(tableName);
-
-        // should only try to create the table with all region informations, so we could pre-split
-        // the regions in fine grain
-        checkAndCreateTable(tableBackupPath, tableName, newTableName, regionPathList,
-          tableDescriptor, truncateIfExists);
-        if (tableArchivePath != null) {
-          // start real restore through bulkload
-          // if the backup target is on local cluster, special action needed
-          Path tempTableArchivePath = checkLocalAndBackup(tableArchivePath);
-          if (tempTableArchivePath.equals(tableArchivePath)) {
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("TableArchivePath for bulkload using existPath: " + tableArchivePath);
-            }
+        Path tableSnapshotPath = getTableSnapshotPath(backupRootPath, tableName, backupId);
+        if (fileSys.exists(tableSnapshotPath)) {
+          // snapshot path exist means the backup path is in HDFS
+          // check whether snapshot dir already recorded for target table
+          if (snapshotMap.get(tableName) != null) {
+            SnapshotDescription desc =
+                SnapshotDescriptionUtils.readSnapshotInfo(fileSys, tableSnapshotPath);
+            SnapshotManifest manifest = SnapshotManifest.open(conf,fileSys,tableSnapshotPath,desc);
+            tableDescriptor = manifest.getTableDescriptor();
+            LOG.debug("obtained descriptor from " + manifest);
           } else {
-            regionPathList = getRegionList(tempTableArchivePath); // point to the tempDir
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("TableArchivePath for bulkload using tempPath: " + tempTableArchivePath);
-            }
+            tableDescriptor = getTableDesc(tableName);
+            snapshotMap.put(tableName, getTableInfoPath(tableName));
+            LOG.debug("obtained descriptor from snapshot for " + tableName);
           }
-
-          LoadIncrementalHFiles loader = createLoader(tempTableArchivePath, false);
-          for (Path regionPath : regionPathList) {
-            String regionName = regionPath.toString();
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("Restoring HFiles from directory " + regionName);
-            }
-            String[] args = { regionName, newTableName.getNameAsString()};
-            loader.run(args);
+          if (tableDescriptor == null) {
+            LOG.debug("Found no table descriptor in the snapshot dir, previous schema was lost");
           }
+        } else if (converted) {
+          // first check if this is a converted backup image
+          LOG.error("convert will be supported in a future jira");
         }
-        // we do not recovered edits
-      } catch (Exception e) {
-        throw new IllegalStateException("Cannot restore hbase table", e);
       }
-    } else {
-      LOG.debug("convert will be supported in a future jira");
+
+      Path tableArchivePath = getTableArchivePath(tableName);
+      if (tableArchivePath == null) {
+        if (tableDescriptor != null) {
+          // find table descriptor but no archive dir => the table is empty, create table and exit
+          if(LOG.isDebugEnabled()) {
+            LOG.debug("find table descriptor but no archive dir for table " + tableName
+                + ", will only create table");
+          }
+          tableDescriptor.setName(newTableName);
+          checkAndCreateTable(hbadmin, tableBackupPath, tableName, newTableName, null, 
+              tableDescriptor, truncateIfExists);
+          return;
+        } else {
+          throw new IllegalStateException("Cannot restore hbase table because directory '"
+              + " tableArchivePath is null.");
+        }
+      }
+
+      if (tableDescriptor == null) {
+        LOG.debug("New descriptor for " + newTableName);
+        tableDescriptor = new HTableDescriptor(newTableName);
+      } else {
+        tableDescriptor.setName(newTableName);
+      }
+
+      if (!converted) {
+        // record all region dirs:
+        // load all files in dir
+        try {
+          ArrayList<Path> regionPathList = getRegionList(tableName);
+
+          // should only try to create the table with all region informations, so we could pre-split
+          // the regions in fine grain
+          checkAndCreateTable(hbadmin, tableBackupPath, tableName, newTableName, regionPathList,
+              tableDescriptor, truncateIfExists);
+          if (tableArchivePath != null) {
+            // start real restore through bulkload
+            // if the backup target is on local cluster, special action needed
+            Path tempTableArchivePath = checkLocalAndBackup(tableArchivePath);
+            if (tempTableArchivePath.equals(tableArchivePath)) {
+              if(LOG.isDebugEnabled()) {
+                LOG.debug("TableArchivePath for bulkload using existPath: " + tableArchivePath);
+              }
+            } else {
+              regionPathList = getRegionList(tempTableArchivePath); // point to the tempDir
+              if(LOG.isDebugEnabled()) {
+                LOG.debug("TableArchivePath for bulkload using tempPath: " + tempTableArchivePath);
+              }
+            }
+
+            LoadIncrementalHFiles loader = createLoader(tempTableArchivePath, false);
+            for (Path regionPath : regionPathList) {
+              String regionName = regionPath.toString();
+              if(LOG.isDebugEnabled()) {
+                LOG.debug("Restoring HFiles from directory " + regionName);
+              }
+              String[] args = { regionName, newTableName.getNameAsString() };
+              loader.run(args);
+            }
+          }
+          // we do not recovered edits
+        } catch (Exception e) {
+          throw new IllegalStateException("Cannot restore hbase table", e);
+        }
+      } else {
+        LOG.debug("convert will be supported in a future jira");
+      }
     }
   }
 
@@ -472,6 +564,7 @@ public class RestoreServerUtil {
     // By default, it is 32 and loader will fail if # of files in any region exceed this
     // limit. Bad for snapshot restore.
     this.conf.setInt(LoadIncrementalHFiles.MAX_FILES_PER_REGION_PER_FAMILY, Integer.MAX_VALUE);
+    this.conf.set(LoadIncrementalHFiles.IGNORE_UNMATCHED_CF_CONF_KEY, "yes");
     LoadIncrementalHFiles loader = null;
     try {
       loader = new LoadIncrementalHFiles(this.conf);
@@ -571,15 +664,11 @@ public class RestoreServerUtil {
    * @param htd table descriptor
    * @throws IOException exception
    */
-  private void checkAndCreateTable(Path tableBackupPath, TableName tableName,
+  private void checkAndCreateTable(HBaseAdmin hbadmin, Path tableBackupPath, TableName tableName,
       TableName targetTableName, ArrayList<Path> regionDirList, 
       HTableDescriptor htd, boolean truncateIfExists)
           throws IOException {
-    HBaseAdmin hbadmin = null;
-    Connection conn = null;
     try {
-      conn = ConnectionFactory.createConnection(conf);
-      hbadmin = (HBaseAdmin) conn.getAdmin();
       boolean createNew = false;
       if (hbadmin.tableExists(targetTableName)) {
         if(truncateIfExists) {
@@ -592,8 +681,8 @@ public class RestoreServerUtil {
         }
       } else {
         createNew = true;
-      }      
-      if(createNew){
+      }
+      if (createNew){
         LOG.info("Creating target table '" + targetTableName + "'");
         // if no region directory given, create the table and return
         if (regionDirList == null || regionDirList.size() == 0) {
@@ -614,13 +703,6 @@ public class RestoreServerUtil {
       }
     } catch (Exception e) {
       throw new IOException(e);
-    } finally {
-      if (hbadmin != null) {
-        hbadmin.close();
-      }
-      if(conn != null){
-        conn.close();
-      }
     }
   }
 }
