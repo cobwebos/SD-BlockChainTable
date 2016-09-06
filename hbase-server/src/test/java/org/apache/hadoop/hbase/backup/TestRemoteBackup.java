@@ -13,9 +13,25 @@ package org.apache.hadoop.hbase.backup;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.BackupAdmin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Threads;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -32,14 +48,72 @@ public class TestRemoteBackup extends TestBackupBase {
    */
   @Test
   public void testFullBackupRemote() throws Exception {
-
     LOG.info("test remote full backup on a single table");
+    final CountDownLatch latch = new CountDownLatch(1);
+    final int NB_ROWS_IN_FAM3 = 6;
+    final byte[] fam3Name = Bytes.toBytes("f3");
+    final Connection conn = ConnectionFactory.createConnection(conf1);
+    Thread t = new Thread() {
+      @Override
+      public void run() {
+        try {
+          latch.await();
+        } catch (InterruptedException ie) {
+        }
+        try {
+          HTable t1 = (HTable) conn.getTable(table1);
+          Put p1;
+          for (int i = 0; i < NB_ROWS_IN_FAM3; i++) {
+            p1 = new Put(Bytes.toBytes("row-t1" + i));
+            p1.addColumn(fam3Name, qualName, Bytes.toBytes("val" + i));
+            t1.put(p1);
+          }
+          LOG.debug("Wrote " + NB_ROWS_IN_FAM3 + " rows into family3");
+          t1.close();
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+      }
+    };
+    t.start();
 
+    table1Desc.addFamily(new HColumnDescriptor(fam3Name));
+    HBaseTestingUtility.modifyTableSync(TEST_UTIL.getAdmin(), table1Desc);
+
+    latch.countDown();
     String backupId = backupTables(BackupType.FULL,
       Lists.newArrayList(table1), BACKUP_REMOTE_ROOT_DIR);
     assertTrue(checkSucceeded(backupId));
     
     LOG.info("backup complete " + backupId);
-  }
+    HTable t1 = (HTable) conn.getTable(table1);
+    Assert.assertThat(TEST_UTIL.countRows(t1, famName), CoreMatchers.equalTo(NB_ROWS_IN_BATCH));
 
+    t.join();
+    Assert.assertThat(TEST_UTIL.countRows(t1, fam3Name), CoreMatchers.equalTo(NB_ROWS_IN_FAM3));
+    t1.close();
+
+    TableName[] tablesRestoreFull =
+        new TableName[] { table1 };
+
+    TableName[] tablesMapFull =
+        new TableName[] { table1_restore };
+
+    BackupAdmin client = getBackupAdmin();
+    client.restore(createRestoreRequest(BACKUP_REMOTE_ROOT_DIR, backupId, false, tablesRestoreFull,
+      tablesMapFull, false));
+
+    // check tables for full restore
+    HBaseAdmin hAdmin = TEST_UTIL.getHBaseAdmin();
+    assertTrue(hAdmin.tableExists(table1_restore));
+
+    // #5.2 - checking row count of tables for full restore
+    HTable hTable = (HTable) conn.getTable(table1_restore);
+    Assert.assertThat(TEST_UTIL.countRows(hTable, famName), CoreMatchers.equalTo(NB_ROWS_IN_BATCH));
+    int cnt3 = TEST_UTIL.countRows(hTable, fam3Name);
+    Assert.assertTrue(cnt3 >= 0 && cnt3 <= NB_ROWS_IN_FAM3);
+    hTable.close();
+
+    hAdmin.close();
+  }
 }

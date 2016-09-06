@@ -70,6 +70,7 @@ public class TestBackupBase {
   protected static HBaseTestingUtility TEST_UTIL;
   protected static HBaseTestingUtility TEST_UTIL2;
   protected static TableName table1 = TableName.valueOf("table1");
+  protected static HTableDescriptor table1Desc;
   protected static TableName table2 = TableName.valueOf("table2");
   protected static TableName table3 = TableName.valueOf("table3");
   protected static TableName table4 = TableName.valueOf("table4");
@@ -209,6 +210,7 @@ public class TestBackupBase {
     HColumnDescriptor fam = new HColumnDescriptor(famName);
     desc.addFamily(fam);
     ha.createTable(desc);
+    table1Desc = desc;
     Connection conn = ConnectionFactory.createConnection(conf1);
     HTable table = (HTable) conn.getTable(table1);
     loadTable(table);
