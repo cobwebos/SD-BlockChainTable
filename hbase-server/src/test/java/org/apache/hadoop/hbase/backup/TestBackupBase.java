@@ -266,21 +266,7 @@ public class TestBackupBase {
   protected BackupAdmin getBackupAdmin() throws IOException {
     return TEST_UTIL.getAdmin().getBackupAdmin();
   }
-  
-  /**
-   * Get restore request.
-   *  
-   */
-  public  RestoreRequest createRestoreRequest(
-      String backupRootDir,
-      String backupId, boolean check, TableName[] fromTables,
-      TableName[] toTables, boolean isOverwrite) {
-    RestoreRequest request = new RestoreRequest();
-    request.setBackupRootDir(backupRootDir).setBackupId(backupId).setCheck(check).
-    setFromTables(fromTables).setToTables(toTables).setOverwrite(isOverwrite);
-    return request;
-}
-  
+
   /**
    * Helper method
    */

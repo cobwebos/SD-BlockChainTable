@@ -19,6 +19,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -55,16 +56,16 @@ public class TestBackupDeleteRestore extends TestBackupBase {
       Delete delete = new Delete("row0".getBytes());
       table.delete(delete);
       hba.flush(table1);
-    }   
-        
+    }
+
     TableName[] tableset = new TableName[] { table1 };
     TableName[] tablemap = null;//new TableName[] { table1_restore };
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupId, false, tableset, tablemap, true));
-    
-    
+    client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupId, false,
+        tableset, tablemap, true));
+
     int numRowsAfterRestore = TEST_UTIL.countRows(table1);
     assertEquals( numRows, numRowsAfterRestore);    
     hba.close();
-  }    
+  }
 }

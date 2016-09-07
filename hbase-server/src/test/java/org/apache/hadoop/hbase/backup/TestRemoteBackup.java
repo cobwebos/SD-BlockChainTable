@@ -21,6 +21,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -100,8 +101,8 @@ public class TestRemoteBackup extends TestBackupBase {
         new TableName[] { table1_restore };
 
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_REMOTE_ROOT_DIR, backupId, false, tablesRestoreFull,
-      tablesMapFull, false));
+    client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_REMOTE_ROOT_DIR, backupId, false,
+        tablesRestoreFull, tablesMapFull, false));
 
     // check tables for full restore
     HBaseAdmin hAdmin = TEST_UTIL.getHBaseAdmin();

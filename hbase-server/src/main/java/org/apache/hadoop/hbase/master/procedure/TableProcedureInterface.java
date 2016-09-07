@@ -30,7 +30,7 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
 @InterfaceStability.Evolving
 public interface TableProcedureInterface {
   public enum TableOperationType {
-    CREATE, DELETE, DISABLE, EDIT, ENABLE, READ, BACKUP,
+    CREATE, DELETE, DISABLE, EDIT, ENABLE, READ, BACKUP, RESTORE,
   };
 
   /**

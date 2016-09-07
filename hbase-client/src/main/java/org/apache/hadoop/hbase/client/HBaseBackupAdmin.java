@@ -36,9 +36,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.BackupRequest;
-import org.apache.hadoop.hbase.backup.BackupRestoreClientFactory;
 import org.apache.hadoop.hbase.backup.BackupType;
-import org.apache.hadoop.hbase.backup.RestoreClient;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
@@ -407,10 +405,12 @@ public class HBaseBackupAdmin implements BackupAdmin {
 
   @Override
   public void restore(RestoreRequest request) throws IOException {
-    RestoreClient client = BackupRestoreClientFactory.getRestoreClient(admin.getConfiguration());
-    client.restore(request.getBackupRootDir(), request.getBackupId(), request.isCheck(),
-      request.getFromTables(), request.getToTables(), request.isOverwrite());
+    admin.restoreTables(request);
+  }
 
+  @Override
+  public Future<Void> restoreAsync(RestoreRequest request) throws IOException {
+    return admin.restoreTablesAsync(request);
   }
 
   @Override

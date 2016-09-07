@@ -198,6 +198,13 @@ public interface MasterServices extends Server {
       final int workers,
       final long bandwidth) throws IOException;
 
+  /*
+   * Restore table set
+   */
+  public long restoreTables(String backupRootDir,
+      String backupId, boolean check, List<TableName> sTableList,
+      List<TableName> tTableList, boolean isOverwrite) throws IOException;
+
   /**
    * Enable an existing table
    * @param tableName The table name

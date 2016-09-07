@@ -1072,6 +1072,27 @@ public class MasterRpcServices extends RSRpcServices
   }
 
   @Override
+  public MasterProtos.RestoreTablesResponse restoreTables(
+      RpcController controller,
+      MasterProtos.RestoreTablesRequest request)  throws ServiceException {
+    try {
+      RestoreTablesResponse.Builder response = RestoreTablesResponse.newBuilder();
+      List<TableName> tablesList = new ArrayList<>(request.getTablesList().size());
+      for (HBaseProtos.TableName table : request.getTablesList()) {
+        tablesList.add(ProtobufUtil.toTableName(table));
+      }
+      List<TableName> targetTablesList = new ArrayList<>(request.getTargetTablesList().size());
+      for (HBaseProtos.TableName table : request.getTargetTablesList()) {
+        targetTablesList.add(ProtobufUtil.toTableName(table));
+      }
+      long procId = master.restoreTables(request.getBackupRootDir(), request.getBackupId(),
+        request.getDependencyCheckOnly(), tablesList, targetTablesList, request.getOverwrite());
+      return response.setProcId(procId).build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+  @Override
   public ListTableDescriptorsByNamespaceResponse listTableDescriptorsByNamespace(RpcController c,
       ListTableDescriptorsByNamespaceRequest request) throws ServiceException {
     try {

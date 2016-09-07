@@ -38,7 +38,7 @@ import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.backup.BackupRequest;
-import org.apache.hadoop.hbase.backup.BackupType;
+import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.security.SecurityCapability;
@@ -914,6 +914,20 @@ public interface Admin extends Abortable, Closeable {
   void splitRegion(final byte[] regionName, final byte[] splitPoint)
     throws IOException;
 
+
+  /**
+   * Restore operation. Asynchronous version.
+   * @param request RestoreRequest instance
+   * @throws IOException
+   */
+  public Future<Void> restoreTablesAsync(final RestoreRequest request) throws IOException;
+
+  /**
+   * Restore operation. Synchronous version.
+   * @param request RestoreRequest instance
+   * @throws IOException
+   */
+  public void restoreTables(final RestoreRequest userRequest) throws IOException;
 
   /**
    * Modify an existing table, more IRB friendly version. Asynchronous operation.  This means that

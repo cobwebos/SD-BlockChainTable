@@ -62,6 +62,7 @@ import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.UnknownRegionException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.backup.BackupRequest;
+import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -148,6 +149,8 @@ import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.ModifyTableRespon
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.MoveRegionRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreSnapshotRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreSnapshotResponse;
+import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreTablesRequest;
+import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreTablesResponse;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SecurityCapabilitiesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetBalancerRunningRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetNormalizerRunningRequest;
@@ -218,6 +221,7 @@ public class HBaseAdmin implements Admin {
   private final int retryLongerMultiplier;
   private final int syncWaitTimeout;
   private final long backupWaitTimeout;
+  private final long restoreWaitTimeout;
   private boolean aborted;
   private int operationTimeout;
 
@@ -246,6 +250,8 @@ public class HBaseAdmin implements Admin {
       "hbase.client.sync.wait.timeout.msec", 10 * 60000); // 10min
     this.backupWaitTimeout = this.conf.getInt(
       "hbase.client.backup.wait.timeout.sec", 24 * 3600); // 24 h
+    this.restoreWaitTimeout = this.conf.getInt(
+        "hbase.client.restore.wait.timeout.sec", 24 * 3600); // 24 h
     this.rpcCallerFactory = RpcRetryingCallerFactory.instantiate(this.conf);
 
     this.ng = this.connection.getNonceGenerator();
@@ -1627,6 +1633,50 @@ public class HBaseAdmin implements Admin {
     protected String postOperationResult(final String result,
       final long deadlineTs) throws IOException, TimeoutException {
       return result;
+    }
+  }
+
+  /**
+   * Restore operation.
+   * @param request RestoreRequest instance
+   * @throws IOException
+   */
+  @Override
+  public Future<Void> restoreTablesAsync(final RestoreRequest userRequest) throws IOException {
+    RestoreTablesResponse response = executeCallable(
+      new MasterCallable<RestoreTablesResponse>(getConnection()) {
+        @Override
+        public RestoreTablesResponse call(int callTimeout) throws ServiceException {
+          try {
+            RestoreTablesRequest request = RequestConverter.buildRestoreTablesRequest(
+                userRequest.getBackupRootDir(), userRequest.getBackupId(),
+                userRequest.isCheck(), userRequest.getFromTables(), userRequest.getToTables(),
+                userRequest.isOverwrite(), ng.getNonceGroup(), ng.newNonce());
+            return master.restoreTables(null, request);
+          } catch (IOException ioe) {
+            throw new ServiceException(ioe);
+          }
+        }
+      });
+    return new TableRestoreFuture(this, TableName.BACKUP_TABLE_NAME, response);
+  }
+
+  @Override
+  public void restoreTables(final RestoreRequest userRequest) throws IOException {
+    get(restoreTablesAsync(userRequest),
+        restoreWaitTimeout, TimeUnit.SECONDS);
+  }
+
+  private static class TableRestoreFuture extends TableFuture<Void> {
+    public TableRestoreFuture(final HBaseAdmin admin, final TableName tableName,
+        final RestoreTablesResponse response) {
+      super(admin, tableName,
+          (response != null) ? response.getProcId() : null);
+    }
+
+    @Override
+    public String getOperationType() {
+      return "RESTORE";
     }
   }
 

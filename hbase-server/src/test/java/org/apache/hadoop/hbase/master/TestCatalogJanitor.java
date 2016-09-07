@@ -440,6 +440,12 @@ public class TestCatalogJanitor {
       return null;
     }
 
+    @Override
+    public long restoreTables(String backupRootDir,
+        String backupId, boolean check, List<TableName> sTableList,
+        List<TableName> tTableList, boolean isOverwrite) throws IOException {
+      return -1;
+    }
 
     @Override
     public List<HTableDescriptor> listTableDescriptorsByNamespace(String name) throws IOException {

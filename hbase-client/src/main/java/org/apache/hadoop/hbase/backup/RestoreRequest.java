@@ -21,22 +21,21 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
-@InterfaceAudience.Public
-@InterfaceStability.Evolving
-
 /**
  * POJO class for restore request
  */
+@InterfaceAudience.Public
+@InterfaceStability.Evolving
 public class RestoreRequest {
-  
-  private String backupRootDir;  
-  private String backupId;  
+
+  private String backupRootDir;
+  private String backupId;
   private boolean check = false;
   private TableName[] fromTables;
   private TableName[] toTables;
   private boolean overwrite = false;
-  
-  public RestoreRequest(){    
+
+  public RestoreRequest() {
   }
 
   public String getBackupRootDir() {
@@ -73,7 +72,6 @@ public class RestoreRequest {
   public RestoreRequest setFromTables(TableName[] fromTables) {
     this.fromTables = fromTables;
     return this;
-
   }
 
   public TableName[] getToTables() {
@@ -93,6 +91,4 @@ public class RestoreRequest {
     this.overwrite = overwrite;
     return this;
   }
-          
-  
 }

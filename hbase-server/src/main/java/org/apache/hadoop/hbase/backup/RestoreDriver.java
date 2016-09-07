@@ -30,6 +30,8 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
+import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.util.AbstractHBaseTool;
@@ -152,11 +154,10 @@ public class RestoreDriver extends AbstractHBaseTool {
       return -4;
     }
 
-    
-    RestoreClient client = BackupRestoreClientFactory.getRestoreClient(getConf());
-    try{
-      client.restore(backupRootDir, backupId, check, sTableArray,
-        tTableArray, isOverwrite);
+    try (final Connection conn = ConnectionFactory.createConnection(conf);
+        BackupAdmin client = conn.getAdmin().getBackupAdmin();) {
+      client.restore(RestoreServerUtil.createRestoreRequest(backupRootDir, backupId, check,
+          sTableArray, tTableArray, isOverwrite));
     } catch (Exception e){
       e.printStackTrace();
       return -5;

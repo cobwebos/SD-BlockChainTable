@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -101,7 +102,7 @@ public class TestIncrementalBackupDeleteTable extends TestBackupBase {
         new TableName[] { table1_restore, table2_restore };
 
     BackupAdmin client = getBackupAdmin();
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
+    client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
       tablesRestoreFull,
       tablesMapFull, false));
 
@@ -126,8 +127,8 @@ public class TestIncrementalBackupDeleteTable extends TestBackupBase {
         new TableName[] { table1 };
     TableName[] tablesMapIncMultiple =
         new TableName[] { table1_restore };
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple, false,
-      tablesRestoreIncMultiple, tablesMapIncMultiple, true));
+    client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple,
+        false, tablesRestoreIncMultiple, tablesMapIncMultiple, true));
 
     hTable = (HTable) conn.getTable(table1_restore);
     Assert.assertThat(TEST_UTIL.countRows(hTable), CoreMatchers.equalTo(NB_ROWS_IN_BATCH * 2));

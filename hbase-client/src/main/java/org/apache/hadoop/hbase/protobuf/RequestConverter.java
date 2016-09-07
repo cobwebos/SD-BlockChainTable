@@ -105,6 +105,7 @@ import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.ModifyTableReques
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.MoveRegionRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.NormalizeRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.OfflineRegionRequest;
+import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreTablesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RunCatalogScanRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetBalancerRunningRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetNormalizerRunningRequest;
@@ -1283,6 +1284,29 @@ public final class RequestConverter {
         builder.addTables(ProtobufUtil.toProtoTableName(table));
       }
     }
+    return builder.build();
+  }
+
+  public static RestoreTablesRequest buildRestoreTablesRequest(String backupRootDir,
+      String backupId, boolean check, TableName[] sTableList,
+      TableName[] tTableList, boolean isOverwrite, final long nonceGroup, final long nonce)
+          throws IOException {
+    RestoreTablesRequest.Builder builder = RestoreTablesRequest.newBuilder();
+    builder.setBackupId(backupId).setBackupRootDir(backupRootDir);
+    builder.setDependencyCheckOnly(check).setOverwrite(isOverwrite);
+    if (sTableList != null) {
+      for (TableName table : sTableList) {
+        builder.addTables(ProtobufUtil.toProtoTableName(table));
+      }
+    } else {
+      throw new IOException("Source table list shouldn't be empty");
+    }
+    if (tTableList != null) {
+      for (TableName table : tTableList) {
+        builder.addTargetTables(ProtobufUtil.toProtoTableName(table));
+      }
+    }
+    builder.setNonceGroup(nonceGroup).setNonce(nonce);
     return builder.build();
   }
 

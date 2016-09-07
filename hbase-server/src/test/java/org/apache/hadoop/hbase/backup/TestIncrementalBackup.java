@@ -30,6 +30,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -142,7 +143,7 @@ public class TestIncrementalBackup extends TestBackupBase {
 
     BackupAdmin client = getBackupAdmin();
     LOG.debug("Restoring full " + backupIdFull);
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
+    client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
       tablesRestoreFull,
       tablesMapFull, false));
 
@@ -168,8 +169,8 @@ public class TestIncrementalBackup extends TestBackupBase {
         new TableName[] { table1, table2 };
     TableName[] tablesMapIncMultiple =
         new TableName[] { table1_restore, table2_restore };
-    client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple2, false,
-      tablesRestoreIncMultiple, tablesMapIncMultiple, true));
+    client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple2,
+        false, tablesRestoreIncMultiple, tablesMapIncMultiple, true));
 
     hTable = (HTable) conn.getTable(table1_restore);
     LOG.debug("After incremental restore: " + hTable.getTableDescriptor());

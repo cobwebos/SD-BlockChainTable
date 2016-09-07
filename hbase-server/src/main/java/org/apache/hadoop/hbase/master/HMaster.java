@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -79,10 +80,13 @@ import org.apache.hadoop.hbase.UnknownRegionException;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
+import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
+import org.apache.hadoop.hbase.backup.impl.RestoreTablesProcedure;
 import org.apache.hadoop.hbase.backup.master.FullTableBackupProcedure;
 import org.apache.hadoop.hbase.backup.master.IncrementalTableBackupProcedure;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.RegionReplicaUtil;
@@ -2693,6 +2697,35 @@ public class HMaster extends HRegionServer implements MasterServices {
       tableList.remove(table);
     }
     return tableList;
+  }
+
+  @Override
+  public long restoreTables(String backupRootDir,
+      String backupId, boolean check, List<TableName> sTableList,
+      List<TableName> tTableList, boolean isOverwrite) throws IOException {
+    if (check) {
+      HashMap<TableName, BackupManifest> backupManifestMap = new HashMap<>();
+      // check and load backup image manifest for the tables
+      Path rootPath = new Path(backupRootDir);
+      HBackupFileSystem.checkImageManifestExist(backupManifestMap,
+        sTableList.toArray(new TableName[sTableList.size()]),
+        conf, rootPath, backupId);
+
+      // Check and validate the backup image and its dependencies
+      if (check) {
+        if (RestoreServerUtil.validate(backupManifestMap, conf)) {
+          LOG.info("Checking backup images: ok");
+        } else {
+          String errMsg = "Some dependencies are missing for restore";
+          LOG.error(errMsg);
+          throw new IOException(errMsg);
+        }
+      }
+    }
+    long procId = this.procedureExecutor.submitProcedure(
+      new RestoreTablesProcedure(procedureExecutor.getEnvironment(), backupRootDir, backupId,
+        sTableList, tTableList, isOverwrite));
+    return procId;
   }
 
   /**

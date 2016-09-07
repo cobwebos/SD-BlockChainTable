@@ -73,6 +73,21 @@ public interface BackupAdmin extends Closeable{
   public Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException;
 
   /**
+   * Restore backup
+   * @param request - restore request
+   * @throws IOException exception
+   */
+  public void restore(RestoreRequest request) throws IOException;
+
+  /**
+   * Restore backup
+   * @param request - restore request
+   * @return Future which client can wait on
+   * @throws IOException exception
+   */
+  public Future<Void> restoreAsync(RestoreRequest request) throws IOException;
+
+  /**
    * Describe backup image command
    * @param backupId - backup id
    * @return backup info
@@ -156,12 +171,4 @@ public interface BackupAdmin extends Closeable{
    * @throws IOException exception
    */
   public void removeFromBackupSet(String name, String[] tables) throws IOException;
-    
-  /**
-   * Restore backup
-   * @param request - restore request
-   * @throws IOException exception
-   */
-  public void restore(RestoreRequest request) throws IOException;
-  
 }
