@@ -436,14 +436,16 @@ public class TestCatalogJanitor {
         final BackupType type,
         final List<TableName> tableList,
         final String targetRootDir, final int workers,
-        final long bandwidth) throws IOException {
+        final long bandwidth,
+        final long nonceGroup, final long nonce) throws IOException {
       return null;
     }
 
     @Override
     public long restoreTables(String backupRootDir,
         String backupId, boolean check, List<TableName> sTableList,
-        List<TableName> tTableList, boolean isOverwrite) throws IOException {
+        List<TableName> tTableList, boolean isOverwrite, long nonceGroup, long nonce)
+            throws IOException {
       return -1;
     }
 

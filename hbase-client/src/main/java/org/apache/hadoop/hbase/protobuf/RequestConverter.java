@@ -1273,7 +1273,7 @@ public final class RequestConverter {
 
   public static BackupTablesRequest buildBackupTablesRequest(
       final BackupType type, List<TableName> tableList, String targetRootDir, final int workers,
-      final long bandwidth) {
+      final long bandwidth, final long nonceGroup, final long nonce) {
     BackupTablesRequest.Builder builder = BackupTablesRequest.newBuilder();
     builder.setType(ProtobufUtil.toProtoBackupType(type));
     builder.setTargetRootDir(targetRootDir);
@@ -1284,6 +1284,7 @@ public final class RequestConverter {
         builder.addTables(ProtobufUtil.toProtoTableName(table));
       }
     }
+    builder.setNonceGroup(nonceGroup).setNonce(nonce);
     return builder.build();
   }
 

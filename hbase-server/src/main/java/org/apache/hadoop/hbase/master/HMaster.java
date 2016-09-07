@@ -2618,7 +2618,7 @@ public class HMaster extends HRegionServer implements MasterServices {
   @Override
   public Pair<Long, String> backupTables(final BackupType type,
         List<TableName> tableList, final String targetRootDir, final int workers,
-        final long bandwidth) throws IOException {
+        final long bandwidth, final long nonceGroup, final long nonce) throws IOException {
     long procId;
     String backupId = BackupRestoreConstants.BACKUPID_PREFIX + 
         EnvironmentEdgeManager.currentTime();
@@ -2681,11 +2681,11 @@ public class HMaster extends HRegionServer implements MasterServices {
     if (type == BackupType.FULL) {
       procId = this.procedureExecutor.submitProcedure(
         new FullTableBackupProcedure(procedureExecutor.getEnvironment(), backupId,
-          tableList, targetRootDir, workers, bandwidth));
+          tableList, targetRootDir, workers, bandwidth), nonceGroup, nonce);
     } else {
       procId = this.procedureExecutor.submitProcedure(
         new IncrementalTableBackupProcedure(procedureExecutor.getEnvironment(), backupId,
-          tableList, targetRootDir, workers, bandwidth));
+          tableList, targetRootDir, workers, bandwidth), nonceGroup, nonce);
     }
     return new Pair<>(procId, backupId);
   }
@@ -2700,9 +2700,9 @@ public class HMaster extends HRegionServer implements MasterServices {
   }
 
   @Override
-  public long restoreTables(String backupRootDir,
-      String backupId, boolean check, List<TableName> sTableList,
-      List<TableName> tTableList, boolean isOverwrite) throws IOException {
+  public long restoreTables(String backupRootDir, String backupId, boolean check,
+      List<TableName> sTableList, List<TableName> tTableList, boolean isOverwrite,
+      final long nonceGroup, final long nonce) throws IOException {
     if (check) {
       HashMap<TableName, BackupManifest> backupManifestMap = new HashMap<>();
       // check and load backup image manifest for the tables
@@ -2724,7 +2724,7 @@ public class HMaster extends HRegionServer implements MasterServices {
     }
     long procId = this.procedureExecutor.submitProcedure(
       new RestoreTablesProcedure(procedureExecutor.getEnvironment(), backupRootDir, backupId,
-        sTableList, tTableList, isOverwrite));
+        sTableList, tTableList, isOverwrite), nonceGroup, nonce);
     return procId;
   }
 

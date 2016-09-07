@@ -1064,7 +1064,8 @@ public class MasterRpcServices extends RSRpcServices
       }
       Pair<Long, String> pair = master.backupTables(
         BackupType.valueOf(request.getType().name()), tablesList, request.getTargetRootDir(),
-        (int)request.getWorkers(), request.getBandwidth());
+        (int)request.getWorkers(), request.getBandwidth(), request.getNonceGroup(),
+        request.getNonce());
       return response.setProcId(pair.getFirst()).setBackupId(pair.getSecond()).build();
     } catch (IOException e) {
       throw new ServiceException(e);
@@ -1086,7 +1087,8 @@ public class MasterRpcServices extends RSRpcServices
         targetTablesList.add(ProtobufUtil.toTableName(table));
       }
       long procId = master.restoreTables(request.getBackupRootDir(), request.getBackupId(),
-        request.getDependencyCheckOnly(), tablesList, targetTablesList, request.getOverwrite());
+        request.getDependencyCheckOnly(), tablesList, targetTablesList, request.getOverwrite(),
+        request.getNonceGroup(), request.getNonce());
       return response.setProcId(procId).build();
     } catch (IOException e) {
       throw new ServiceException(e);

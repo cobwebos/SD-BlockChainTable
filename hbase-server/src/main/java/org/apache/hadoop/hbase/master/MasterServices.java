@@ -188,6 +188,8 @@ public interface MasterServices extends Server {
    * @param targetRootDir root dir for saving the backup
    * @param workers number of paralle workers. -1 - system defined
    * @param bandwidth bandwidth per worker in MB per sec. -1 - unlimited
+   * @param nonceGroup nonce group
+   * @param nonce nonce
    * @return pair of procedure Id and backupId
    * @throws IOException
    */
@@ -196,14 +198,17 @@ public interface MasterServices extends Server {
       List<TableName> tableList,
       final String targetRootDir,
       final int workers,
-      final long bandwidth) throws IOException;
+      final long bandwidth,
+      final long nonceGroup,
+      final long nonce) throws IOException;
 
   /*
    * Restore table set
    */
   public long restoreTables(String backupRootDir,
       String backupId, boolean check, List<TableName> sTableList,
-      List<TableName> tTableList, boolean isOverwrite) throws IOException;
+      List<TableName> tTableList, boolean isOverwrite, long nonceGroup, long nonce)
+          throws IOException;
 
   /**
    * Enable an existing table
