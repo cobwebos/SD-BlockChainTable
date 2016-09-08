@@ -96,7 +96,8 @@ public class FullTableBackupProcedure
   public FullTableBackupProcedure(final MasterProcedureEnv env,
       final String backupId, List<TableName> tableList, String targetRootDir, final int workers,
       final long bandwidth) throws IOException {
-    backupManager = new BackupManager(env.getMasterConfiguration());
+    backupManager = new BackupManager(env.getMasterServices().getConnection(),
+        env.getMasterConfiguration());
     this.backupId = backupId;
     this.tableList = tableList;
     this.targetRootDir = targetRootDir;
@@ -489,7 +490,8 @@ public class FullTableBackupProcedure
     }
     if (backupManager == null) {
       try {
-        backupManager = new BackupManager(env.getMasterConfiguration());
+        backupManager = new BackupManager(env.getMasterServices().getConnection(),
+            env.getMasterConfiguration());
       } catch (IOException ioe) {
         setFailure("full backup", ioe);
         return Flow.NO_MORE_STATE;

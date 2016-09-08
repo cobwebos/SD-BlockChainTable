@@ -80,13 +80,13 @@ public class BackupManager implements Closeable {
    * @param conf configuration
    * @throws IOException exception
    */
-  public BackupManager(Configuration conf) throws IOException {
+  public BackupManager(Connection conn, Configuration conf) throws IOException {
     if (!conf.getBoolean(HConstants.BACKUP_ENABLE_KEY, HConstants.BACKUP_ENABLE_DEFAULT)) {
       throw new BackupException("HBase backup is not enabled. Check your " +
           HConstants.BACKUP_ENABLE_KEY + " setting.");
     }
     this.conf = conf;
-    this.conn = ConnectionFactory.createConnection(conf);
+    this.conn = conn;
     this.systemTable = new BackupSystemTable(conn);
      
   }

@@ -125,37 +125,37 @@ public class RestoreDriver extends AbstractHBaseTool {
     String backupId = remainArgs[1];
     String tables = null;
     String tableMapping = null;
-    // Check backup set
-    if (cmd.hasOption(OPTION_SET)) {
-      String setName = cmd.getOptionValue(OPTION_SET);
-      try{
-        tables = getTablesForSet(setName, conf);       
-      } catch(IOException e){
-        System.out.println("ERROR: "+ e.getMessage()+" for setName="+setName);
-        return -2;
-      }
-      if (tables == null) {
-        System.out.println("ERROR: Backup set '" + setName
-        + "' is either empty or does not exist");
-        return -3;
-      }
-      tableMapping = (remainArgs.length > 2) ? remainArgs[2] : null;
-    } else {
-      tables = remainArgs[2];    
-      tableMapping = (remainArgs.length > 3) ? remainArgs[3] : null;
-    }    
-
-    TableName[] sTableArray = BackupServerUtil.parseTableNames(tables);
-    TableName[] tTableArray = BackupServerUtil.parseTableNames(tableMapping);
-
-    if (sTableArray != null && tTableArray != null && (sTableArray.length != tTableArray.length)) {
-      System.out.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
-      System.out.println(USAGE);
-      return -4;
-    }
-
     try (final Connection conn = ConnectionFactory.createConnection(conf);
         BackupAdmin client = conn.getAdmin().getBackupAdmin();) {
+      // Check backup set
+      if (cmd.hasOption(OPTION_SET)) {
+        String setName = cmd.getOptionValue(OPTION_SET);
+        try{
+          tables = getTablesForSet(conn, setName, conf);
+        } catch(IOException e){
+          System.out.println("ERROR: "+ e.getMessage()+" for setName="+setName);
+          return -2;
+        }
+        if (tables == null) {
+          System.out.println("ERROR: Backup set '" + setName
+              + "' is either empty or does not exist");
+          return -3;
+        }
+        tableMapping = (remainArgs.length > 2) ? remainArgs[2] : null;
+      } else {
+        tables = remainArgs[2];    
+        tableMapping = (remainArgs.length > 3) ? remainArgs[3] : null;
+      }    
+
+      TableName[] sTableArray = BackupServerUtil.parseTableNames(tables);
+      TableName[] tTableArray = BackupServerUtil.parseTableNames(tableMapping);
+
+      if (sTableArray != null && tTableArray != null && (sTableArray.length != tTableArray.length)){
+        System.out.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
+        System.out.println(USAGE);
+        return -4;
+      }
+
       client.restore(RestoreServerUtil.createRestoreRequest(backupRootDir, backupId, check,
           sTableArray, tTableArray, isOverwrite));
     } catch (Exception e){
@@ -165,9 +165,9 @@ public class RestoreDriver extends AbstractHBaseTool {
     return 0;
   }
 
-  private String getTablesForSet(String name, Configuration conf) throws IOException {
-    try (final Connection conn = ConnectionFactory.createConnection(conf);
-        final BackupSystemTable table = new BackupSystemTable(conn)) {
+  private String getTablesForSet(Connection conn, String name, Configuration conf)
+      throws IOException {
+    try (final BackupSystemTable table = new BackupSystemTable(conn)) {
       List<TableName> tables = table.describeBackupSet(name);
       if (tables == null) return null;
       return StringUtils.join(tables, BackupRestoreConstants.TABLENAME_DELIMITER_IN_COMMAND);

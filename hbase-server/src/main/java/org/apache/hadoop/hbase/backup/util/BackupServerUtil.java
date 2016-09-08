@@ -150,22 +150,20 @@ public final class BackupServerUtil {
   /**
    * copy out Table RegionInfo into incremental backup image need to consider move this logic into
    * HBackupFileSystem
+   * @conn the Connection
    * @param backupContext backup context
    * @param conf configuration
    * @throws IOException exception
    * @throws InterruptedException exception
    */
-  public static void copyTableRegionInfo(BackupInfo backupContext, Configuration conf)
-      throws IOException, InterruptedException {
-
+  public static void copyTableRegionInfo(Connection conn, BackupInfo backupContext,
+      Configuration conf) throws IOException, InterruptedException {
     Path rootDir = FSUtils.getRootDir(conf);
     FileSystem fs = rootDir.getFileSystem(conf);
 
     // for each table in the table set, copy out the table info and region 
     // info files in the correct directory structure
-    try (Connection conn = ConnectionFactory.createConnection(conf); 
-        Admin admin = conn.getAdmin()) {
-
+    try (Admin admin = conn.getAdmin()) {
       for (TableName table : backupContext.getTables()) {
 
         if(!admin.tableExists(table)) {

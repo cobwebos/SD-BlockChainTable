@@ -39,6 +39,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.MetaTableAccessor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
@@ -186,8 +187,8 @@ public class RestoreServerUtil {
    * @param incrBackupId incremental backup Id
    * @throws IOException exception
    */
-  public void incrementalRestoreTable(Path tableBackupPath, Path[] logDirs, TableName[] tableNames,
-      TableName[] newTableNames, String incrBackupId) throws IOException {
+  public void incrementalRestoreTable(Connection conn, Path tableBackupPath, Path[] logDirs,
+      TableName[] tableNames, TableName[] newTableNames, String incrBackupId) throws IOException {
 
     if (tableNames.length != newTableNames.length) {
       throw new IOException("Number of source tables and target tables does not match!");
@@ -196,10 +197,9 @@ public class RestoreServerUtil {
 
     // for incremental backup image, expect the table already created either by user or previous
     // full backup. Here, check that all new tables exists
-    try (Connection conn = ConnectionFactory.createConnection(conf);
-        Admin admin = conn.getAdmin()) {
+    try (Admin admin = conn.getAdmin()) {
       for (TableName tableName : newTableNames) {
-        if (!admin.tableExists(tableName)) {
+        if (!MetaTableAccessor.tableExists(conn, tableName)) {
           admin.close();
           throw new IOException("HBase table " + tableName
             + " does not exist. Create the table first, e.g. by restoring a full backup.");
@@ -241,9 +241,10 @@ public class RestoreServerUtil {
     }
   }
 
-  public void fullRestoreTable(Path tableBackupPath, TableName tableName, TableName newTableName,
-      boolean converted, boolean truncateIfExists, String lastIncrBackupId) throws IOException {
-    restoreTableAndCreate(tableName, newTableName, tableBackupPath, converted, truncateIfExists,
+  public void fullRestoreTable(Connection conn, Path tableBackupPath, TableName tableName,
+      TableName newTableName, boolean converted, boolean truncateIfExists, String lastIncrBackupId)
+          throws IOException {
+    restoreTableAndCreate(conn, tableName, newTableName, tableBackupPath, converted, truncateIfExists,
         lastIncrBackupId);
   }
 
@@ -362,7 +363,7 @@ public class RestoreServerUtil {
     return null;
   }
 
-  private void restoreTableAndCreate(TableName tableName, TableName newTableName,
+  private void restoreTableAndCreate(Connection conn, TableName tableName, TableName newTableName,
       Path tableBackupPath, boolean converted, boolean truncateIfExists, String lastIncrBackupId)
           throws IOException {
     if (newTableName == null || newTableName.equals("")) {
@@ -376,8 +377,7 @@ public class RestoreServerUtil {
       LOG.debug("Retrieved descriptor: " + tableDescriptor + " thru " + lastIncrBackupId);
     }
 
-    try (Connection conn = ConnectionFactory.createConnection(conf);
-        HBaseAdmin hbadmin = (HBaseAdmin) conn.getAdmin();) {
+    try (HBaseAdmin hbadmin = (HBaseAdmin) conn.getAdmin();) {
       if (tableDescriptor == null) {
         Path tableSnapshotPath = getTableSnapshotPath(backupRootPath, tableName, backupId);
         if (fileSys.exists(tableSnapshotPath)) {

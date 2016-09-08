@@ -79,7 +79,8 @@ public class IncrementalTableBackupProcedure
       final String backupId,
       List<TableName> tableList, String targetRootDir, final int workers,
       final long bandwidth) throws IOException {
-    backupManager = new BackupManager(env.getMasterConfiguration());
+    backupManager = new BackupManager(env.getMasterServices().getConnection(),
+        env.getMasterConfiguration());
     this.backupId = backupId;
     this.tableList = tableList;
     this.targetRootDir = targetRootDir;
@@ -203,7 +204,8 @@ public class IncrementalTableBackupProcedure
     }
     if (backupManager == null) {
       try {
-        backupManager = new BackupManager(env.getMasterConfiguration());
+        backupManager = new BackupManager(env.getMasterServices().getConnection(),
+            env.getMasterConfiguration());
       } catch (IOException ioe) {
         setFailure("incremental backup", ioe);
       }
@@ -233,7 +235,8 @@ public class IncrementalTableBackupProcedure
         case INCREMENTAL_COPY:
           try {
             // copy out the table and region info files for each table
-            BackupServerUtil.copyTableRegionInfo(backupContext, conf);
+            BackupServerUtil.copyTableRegionInfo(env.getMasterServices().getConnection(),
+                backupContext, conf);
             incrementalCopy(backupContext);
             // Save list of WAL files copied
             backupManager.recordWALFiles(backupContext.getIncrBackupFileList());
