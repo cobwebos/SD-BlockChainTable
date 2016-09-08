@@ -28,6 +28,8 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.snapshot.MobSnapshotTestingUtils;
+import org.apache.hadoop.hbase.snapshot.SnapshotTestingUtils;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Threads;
@@ -53,6 +55,7 @@ public class TestRemoteBackup extends TestBackupBase {
     final CountDownLatch latch = new CountDownLatch(1);
     final int NB_ROWS_IN_FAM3 = 6;
     final byte[] fam3Name = Bytes.toBytes("f3");
+    final byte[] fam2Name = Bytes.toBytes("f2");
     final Connection conn = ConnectionFactory.createConnection(conf1);
     Thread t = new Thread() {
       @Override
@@ -79,7 +82,16 @@ public class TestRemoteBackup extends TestBackupBase {
     t.start();
 
     table1Desc.addFamily(new HColumnDescriptor(fam3Name));
+    // family 2 is MOB enabled
+    HColumnDescriptor hcd = new HColumnDescriptor(fam2Name);
+    hcd.setMobEnabled(true);
+    hcd.setMobThreshold(0L);
+    table1Desc.addFamily(hcd);
     HBaseTestingUtility.modifyTableSync(TEST_UTIL.getAdmin(), table1Desc);
+
+    SnapshotTestingUtils.loadData(TEST_UTIL, table1, 50, fam2Name);
+    HTable t1 = (HTable) conn.getTable(table1);
+    int rows0 = MobSnapshotTestingUtils.countMobRows(t1, fam2Name);
 
     latch.countDown();
     String backupId = backupTables(BackupType.FULL,
@@ -87,7 +99,6 @@ public class TestRemoteBackup extends TestBackupBase {
     assertTrue(checkSucceeded(backupId));
     
     LOG.info("backup complete " + backupId);
-    HTable t1 = (HTable) conn.getTable(table1);
     Assert.assertThat(TEST_UTIL.countRows(t1, famName), CoreMatchers.equalTo(NB_ROWS_IN_BATCH));
 
     t.join();
@@ -113,6 +124,9 @@ public class TestRemoteBackup extends TestBackupBase {
     Assert.assertThat(TEST_UTIL.countRows(hTable, famName), CoreMatchers.equalTo(NB_ROWS_IN_BATCH));
     int cnt3 = TEST_UTIL.countRows(hTable, fam3Name);
     Assert.assertTrue(cnt3 >= 0 && cnt3 <= NB_ROWS_IN_FAM3);
+
+    int rows1 = MobSnapshotTestingUtils.countMobRows(t1, fam2Name);
+    Assert.assertEquals(rows0, rows1);
     hTable.close();
 
     hAdmin.close();
