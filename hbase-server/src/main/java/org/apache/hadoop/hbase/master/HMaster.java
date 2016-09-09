@@ -1093,8 +1093,10 @@ public class HMaster extends HRegionServer implements MasterServices {
 
    //start the hfile archive cleaner thread
     Path archiveDir = HFileArchiveUtil.getArchivePath(conf);
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put(MASTER, this);
     this.hfileCleaner = new HFileCleaner(cleanerInterval, this, conf, getMasterFileSystem()
-        .getFileSystem(), archiveDir);
+        .getFileSystem(), archiveDir, params);
     getChoreService().scheduleChore(hfileCleaner);
     serviceStarted = true;
     if (LOG.isTraceEnabled()) {
