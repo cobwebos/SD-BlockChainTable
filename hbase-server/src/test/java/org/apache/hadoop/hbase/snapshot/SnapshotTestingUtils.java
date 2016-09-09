@@ -34,6 +34,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
@@ -526,6 +527,18 @@ public class SnapshotTestingUtils {
         SnapshotManifest manifest = SnapshotManifest.create(conf, fs, snapshotDir, desc, monitor);
         manifest.addRegion(regionData.tableDir, regionData.hri);
         return regionData.files;
+      }
+
+      public void missOneRegionSnapshotFile() throws IOException {
+        FileStatus[] manifestFiles = FSUtils.listStatus(fs, snapshotDir);
+        for (FileStatus fileStatus : manifestFiles) {
+          String fileName = fileStatus.getPath().getName();
+          if (fileName.endsWith(SnapshotDescriptionUtils.SNAPSHOTINFO_FILE)
+            || fileName.endsWith(".tabledesc")
+            || fileName.endsWith(SnapshotDescriptionUtils.SNAPSHOT_TMP_DIR_NAME)) {
+              fs.delete(fileStatus.getPath(), true);
+          }
+        }
       }
 
       public Path commit() throws IOException {
