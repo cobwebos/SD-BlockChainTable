@@ -50,7 +50,8 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.ClusterConnection;
+import org.apache.hadoop.hbase.master.MasterServices;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -221,8 +222,8 @@ public class BackupManager implements Closeable {
       // list with all user tables from meta. It no table available, throw the request exception.
 
       HTableDescriptor[] htds = null;
-      try (Admin hbadmin = conn.getAdmin()) {
-        htds = hbadmin.listTables();
+      try {
+        htds = ((ClusterConnection)conn).listTables();
       } catch (Exception e) {
         throw new BackupException(e);
       }

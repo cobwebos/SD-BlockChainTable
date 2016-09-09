@@ -102,8 +102,8 @@ public class FullTableBackupProcedure
     this.tableList = tableList;
     this.targetRootDir = targetRootDir;
     backupContext =
-        backupManager.createBackupContext(backupId, BackupType.FULL, tableList, targetRootDir,
-          workers, bandwidth);
+        backupManager.createBackupContext(backupId, BackupType.FULL,
+            tableList, targetRootDir, workers, bandwidth);
     if (tableList == null || tableList.isEmpty()) {
       this.tableList = new ArrayList<>(backupContext.getTables());
     }

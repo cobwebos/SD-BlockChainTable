@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,6 +42,9 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.master.MasterServices;
+import org.apache.hadoop.hbase.master.procedure.MasterProcedureUtil;
+import org.apache.hadoop.hbase.procedure.MasterProcedureManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.wal.DefaultWALProvider;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable.WALItem;
@@ -70,11 +74,12 @@ public class IncrementalBackupManager {
   /**
    * Obtain the list of logs that need to be copied out for this incremental backup. The list is set
    * in BackupContext.
+   * @param svc MasterServices
    * @param backupContext backup context
    * @return The new HashMap of RS log timestamps after the log roll for this incremental backup.
    * @throws IOException exception
    */
-  public HashMap<String, Long> getIncrBackupLogFileList(BackupInfo backupContext)
+  public HashMap<String, Long> getIncrBackupLogFileList(MasterServices svc,BackupInfo backupContext)
       throws IOException {
     List<String> logList;
     HashMap<String, Long> newTimestamps;
@@ -100,13 +105,21 @@ public class IncrementalBackupManager {
           + "In order to create an incremental backup, at least one full backup is needed.");
     }
 
-    try (Admin admin = conn.getAdmin()) {
-      LOG.info("Execute roll log procedure for incremental backup ...");
-      HashMap<String, String> props = new HashMap<String, String>();
-      props.put("backupRoot", backupContext.getTargetRootDir());
-      admin.execProcedure(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
+    LOG.info("Execute roll log procedure for incremental backup ...");
+    HashMap<String, String> props = new HashMap<String, String>();
+    props.put("backupRoot", backupContext.getTargetRootDir());
+    MasterProcedureManager mpm = svc.getMasterProcedureManagerHost()
+        .getProcedureManager(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE);
+    long waitTime = MasterProcedureUtil.execProcedure(mpm,
+        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
         LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props);
-    }
+    MasterProcedureUtil.waitForProcedure(mpm,
+        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
+        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props, waitTime,
+        conf.getInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER,
+            HConstants.DEFAULT_HBASE_CLIENT_RETRIES_NUMBER),
+            conf.getLong(HConstants.HBASE_CLIENT_PAUSE,
+                HConstants.DEFAULT_HBASE_CLIENT_PAUSE));
 
     newTimestamps = backupManager.readRegionServerLastLogRollResult();
 

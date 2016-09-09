@@ -222,7 +222,8 @@ public class IncrementalTableBackupProcedure
           try {
             IncrementalBackupManager incrBackupManager =new IncrementalBackupManager(backupManager);
 
-            newTimestamps = incrBackupManager.getIncrBackupLogFileList(backupContext);
+            newTimestamps = incrBackupManager.getIncrBackupLogFileList(env.getMasterServices(),
+                backupContext);
           } catch (Exception e) {
             setFailure("Failure in incremental-backup: preparation phase " + backupId, e);
             // fail the overall backup and return
@@ -235,8 +236,7 @@ public class IncrementalTableBackupProcedure
         case INCREMENTAL_COPY:
           try {
             // copy out the table and region info files for each table
-            BackupServerUtil.copyTableRegionInfo(env.getMasterServices().getConnection(),
-                backupContext, conf);
+            BackupServerUtil.copyTableRegionInfo(env.getMasterServices(), backupContext, conf);
             incrementalCopy(backupContext);
             // Save list of WAL files copied
             backupManager.recordWALFiles(backupContext.getIncrBackupFileList());

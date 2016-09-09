@@ -38,6 +38,7 @@ import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HRegionInfo;
+import org.apache.hadoop.hbase.MetaTableAccessor;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -51,6 +52,7 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.master.MasterServices;
 import org.apache.hadoop.hbase.master.snapshot.SnapshotManager;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.SnapshotDescription;
 import org.apache.hadoop.hbase.regionserver.HRegion;
@@ -150,53 +152,50 @@ public final class BackupServerUtil {
   /**
    * copy out Table RegionInfo into incremental backup image need to consider move this logic into
    * HBackupFileSystem
-   * @conn the Connection
+   * @param svc master service
    * @param backupContext backup context
    * @param conf configuration
    * @throws IOException exception
    * @throws InterruptedException exception
    */
-  public static void copyTableRegionInfo(Connection conn, BackupInfo backupContext,
+  public static void copyTableRegionInfo(MasterServices svc, BackupInfo backupContext,
       Configuration conf) throws IOException, InterruptedException {
     Path rootDir = FSUtils.getRootDir(conf);
     FileSystem fs = rootDir.getFileSystem(conf);
 
     // for each table in the table set, copy out the table info and region 
     // info files in the correct directory structure
-    try (Admin admin = conn.getAdmin()) {
-      for (TableName table : backupContext.getTables()) {
+    Connection conn = svc.getConnection();
+    for (TableName table : backupContext.getTables()) {
 
-        if(!admin.tableExists(table)) {
-          LOG.warn("Table "+ table+" does not exists, skipping it.");
-          continue;
-        }
-        TableDescriptor orig = FSTableDescriptors.getTableDescriptorFromFs(fs, rootDir, table);
-
-        // write a copy of descriptor to the target directory
-        Path target = new Path(backupContext.getBackupStatus(table).getTargetDir());
-        FileSystem targetFs = target.getFileSystem(conf);
-        FSTableDescriptors descriptors =
-            new FSTableDescriptors(conf, targetFs, FSUtils.getRootDir(conf));
-        descriptors.createTableDescriptorForTableDirectory(target, orig, false);
-        LOG.debug("Attempting to copy table info for:" + table + " target: " + target +
-            " descriptor: " + orig);
-        LOG.debug("Finished copying tableinfo.");
-        List<HRegionInfo> regions = null;
-        regions = admin.getTableRegions(table);
-        // For each region, write the region info to disk
-        LOG.debug("Starting to write region info for table " + table);
-        for (HRegionInfo regionInfo : regions) {
-          Path regionDir =
-              HRegion.getRegionDir(new Path(backupContext.getBackupStatus(table).getTargetDir()),
-                regionInfo);
-          regionDir =
-              new Path(backupContext.getBackupStatus(table).getTargetDir(), regionDir.getName());
-          writeRegioninfoOnFilesystem(conf, targetFs, regionDir, regionInfo);
-        }
-        LOG.debug("Finished writing region info for table " + table);
+      if(!MetaTableAccessor.tableExists(conn, table)) {
+        LOG.warn("Table "+ table+" does not exists, skipping it.");
+        continue;
       }
-    } catch (IOException e) {
-      throw new BackupException(e);
+      TableDescriptor orig = FSTableDescriptors.getTableDescriptorFromFs(fs, rootDir, table);
+
+      // write a copy of descriptor to the target directory
+      Path target = new Path(backupContext.getBackupStatus(table).getTargetDir());
+      FileSystem targetFs = target.getFileSystem(conf);
+      FSTableDescriptors descriptors =
+          new FSTableDescriptors(conf, targetFs, FSUtils.getRootDir(conf));
+      descriptors.createTableDescriptorForTableDirectory(target, orig, false);
+      LOG.debug("Attempting to copy table info for:" + table + " target: " + target +
+          " descriptor: " + orig);
+      LOG.debug("Finished copying tableinfo.");
+      List<HRegionInfo> regions = null;
+      regions = MetaTableAccessor.getTableRegions(conn, table);
+      // For each region, write the region info to disk
+      LOG.debug("Starting to write region info for table " + table);
+      for (HRegionInfo regionInfo : regions) {
+        Path regionDir =
+            HRegion.getRegionDir(new Path(backupContext.getBackupStatus(table).getTargetDir()),
+                regionInfo);
+        regionDir =
+            new Path(backupContext.getBackupStatus(table).getTargetDir(), regionDir.getName());
+        writeRegioninfoOnFilesystem(conf, targetFs, regionDir, regionInfo);
+      }
+      LOG.debug("Finished writing region info for table " + table);
     }
   }
 

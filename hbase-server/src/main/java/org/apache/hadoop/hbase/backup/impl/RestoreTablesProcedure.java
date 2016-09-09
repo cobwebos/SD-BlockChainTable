@@ -45,6 +45,7 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.TableState;
+import org.apache.hadoop.hbase.master.MasterServices;
 import org.apache.hadoop.hbase.master.TableStateManager;
 import org.apache.hadoop.hbase.master.procedure.MasterProcedureEnv;
 import org.apache.hadoop.hbase.master.procedure.TableProcedureInterface;
@@ -146,7 +147,7 @@ public class RestoreTablesProcedure
    * @param truncateIfExists truncate table if it exists
    * @throws IOException exception
    */
-  private void restoreImages(Connection conn, Iterator<BackupImage> it, TableName sTable,
+  private void restoreImages(MasterServices svc, Iterator<BackupImage> it, TableName sTable,
       TableName tTable, boolean truncateIfExists) throws IOException {
 
     // First image MUST be image of a FULL backup
@@ -181,7 +182,7 @@ public class RestoreTablesProcedure
     if (manifest.getType() == BackupType.FULL || converted) {
       LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from "
           + (converted ? "converted" : "full") + " backup image " + tableBackupPath.toString());
-      restoreTool.fullRestoreTable(conn, tableBackupPath, sTable, tTable,
+      restoreTool.fullRestoreTable(svc, tableBackupPath, sTable, tTable,
         converted, truncateIfExists, lastIncrBackupId);
     } else { // incremental Backup
       throw new IOException("Unexpected backup type " + image.getType());
@@ -195,15 +196,15 @@ public class RestoreTablesProcedure
       String[] sarr = new String[logDirList.size()];
       logDirList.toArray(sarr);
       Path[] paths = org.apache.hadoop.util.StringUtils.stringToPath(sarr);
-      restoreTool.incrementalRestoreTable(conn, tableBackupPath, paths, new TableName[] { sTable },
-        new TableName[] { tTable }, lastIncrBackupId);
+      restoreTool.incrementalRestoreTable(svc, tableBackupPath, paths,
+          new TableName[] { sTable }, new TableName[] { tTable }, lastIncrBackupId);
     }
     LOG.info(sTable + " has been successfully restored to " + tTable);
   }
 
   /**
    * Restore operation. Stage 2: resolved Backup Image dependency
-   * @param conn the Connection
+   * @param svc MasterServices
    * @param backupManifestMap : tableName,  Manifest
    * @param sTableArray The array of tables to be restored
    * @param tTableArray The array of mapping tables to restore to
@@ -211,7 +212,7 @@ public class RestoreTablesProcedure
    * @return set of BackupImages restored
    * @throws IOException exception
    */
-  private void restoreStage(Connection conn, HashMap<TableName, BackupManifest> backupManifestMap,
+  private void restoreStage(MasterServices svc, HashMap<TableName, BackupManifest> backupManifestMap,
       TableName[] sTableArray, TableName[] tTableArray, boolean isOverwrite) throws IOException {
     TreeSet<BackupImage> restoreImageSet = new TreeSet<BackupImage>();
     boolean truncateIfExists = isOverwrite;
@@ -227,7 +228,7 @@ public class RestoreTablesProcedure
         list.addAll(depList);
         TreeSet<BackupImage> restoreList = new TreeSet<BackupImage>(list);
         LOG.debug("need to clear merged Image. to be implemented in future jira");
-        restoreImages(conn, restoreList.iterator(), table, tTableArray[i], truncateIfExists);
+        restoreImages(svc, restoreList.iterator(), table, tTableArray[i], truncateIfExists);
         restoreImageSet.addAll(restoreList);
 
         if (restoreImageSet != null && !restoreImageSet.isEmpty()) {
@@ -257,9 +258,8 @@ public class RestoreTablesProcedure
     if (LOG.isTraceEnabled()) {
       LOG.trace(this + " execute state=" + state);
     }
-    Connection conn = env.getMasterServices().getClusterConnection();
     TableName[] tTableArray = tTableList.toArray(new TableName[tTableList.size()]);
-    try (Admin admin = conn.getAdmin()) {
+    try {
       switch (state) {
         case VALIDATION:
 
@@ -276,7 +276,7 @@ public class RestoreTablesProcedure
           Path rootPath = new Path(targetRootDir);
           HBackupFileSystem.checkImageManifestExist(backupManifestMap, sTableArray, conf, rootPath,
             backupId);
-          restoreStage(env.getMasterServices().getConnection(), backupManifestMap, sTableArray,
+          restoreStage(env.getMasterServices(), backupManifestMap, sTableArray,
               tTableArray, isOverwrite);
 
           return Flow.NO_MORE_STATE;
