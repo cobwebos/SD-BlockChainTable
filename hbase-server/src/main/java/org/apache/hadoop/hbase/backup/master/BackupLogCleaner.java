@@ -28,6 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -64,8 +65,13 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
     try (final Connection conn = ConnectionFactory.createConnection(getConf());
         final BackupSystemTable table = new BackupSystemTable(conn)) {
       // If we do not have recorded backup sessions
-      if (!table.hasBackupSessions()) {
-        LOG.debug("BackupLogCleaner has no backup sessions");
+      try {
+        if (!table.hasBackupSessions()) {
+          LOG.debug("BackupLogCleaner has no backup sessions");
+          return files;
+        }
+      } catch (TableNotFoundException tnfe) {
+        LOG.warn("hbase:backup is not available" + tnfe.getMessage());
         return files;
       }
       
