@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.backup;
+package org.apache.hadoop.hbase.backup.master;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -35,6 +35,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupType;
+import org.apache.hadoop.hbase.backup.TestBackupBase;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.backup.master.BackupLogCleaner;
 import org.apache.hadoop.hbase.client.Connection;
@@ -72,6 +74,8 @@ public class TestBackupLogCleaner extends TestBackupBase {
       List<FileStatus> walFiles = getListOfWALFiles(TEST_UTIL.getConfiguration());
       List<String> swalFiles = convert(walFiles);
       BackupLogCleaner cleaner = new BackupLogCleaner();
+      cleaner.setConf(TEST_UTIL.getConfiguration());
+      cleaner.init(null);
       cleaner.setConf(TEST_UTIL.getConfiguration());
 
       Iterable<FileStatus> deletable = cleaner.getDeletableFiles(walFiles);

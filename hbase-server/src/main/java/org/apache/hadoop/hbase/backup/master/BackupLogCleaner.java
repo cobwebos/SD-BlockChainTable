@@ -21,6 +21,7 @@ package org.apache.hadoop.hbase.backup.master;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,7 +35,11 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.master.HMaster;
+import org.apache.hadoop.hbase.master.MasterServices;
 import org.apache.hadoop.hbase.master.cleaner.BaseLogCleanerDelegate;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Implementation of a log cleaner that checks if a log is still scheduled for
@@ -46,8 +51,27 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
   private static final Log LOG = LogFactory.getLog(BackupLogCleaner.class);
 
   private boolean stopped = false;
+  private Connection conn;
 
   public BackupLogCleaner() {
+  }
+
+  @Override
+  public void init(Map<String, Object> params) {
+    if (params != null && params.containsKey(HMaster.MASTER)) {
+      MasterServices master = (MasterServices) params.get(HMaster.MASTER);
+      conn = master.getConnection();
+      if (getConf() == null) {
+        super.setConf(conn.getConfiguration());
+      }
+    }
+    if (conn == null) {
+      try {
+        conn = ConnectionFactory.createConnection(getConf());
+      } catch (IOException ioe) {
+        throw new RuntimeException("Failed to create connection", ioe);
+      }
+    }
   }
 
   @Override
@@ -59,11 +83,7 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
     }
     
     List<FileStatus> list = new ArrayList<FileStatus>();
-    // TODO: LogCleaners do not have a way to get the Connection from Master. We should find a
-    // way to pass it down here, so that this connection is not re-created every time.
-    // It is expensive
-    try (final Connection conn = ConnectionFactory.createConnection(getConf());
-        final BackupSystemTable table = new BackupSystemTable(conn)) {
+    try (final BackupSystemTable table = new BackupSystemTable(conn)) {
       // If we do not have recorded backup sessions
       try {
         if (!table.hasBackupSessions()) {
