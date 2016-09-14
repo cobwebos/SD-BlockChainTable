@@ -161,6 +161,10 @@ public final class BackupCommands {
     return cmd;
   }
 
+  static int numOfArgs(String[] args) {
+    if (args == null) return 0;
+    return args.length;
+  }
 
   public static class CreateCommand extends Command {
 
@@ -583,7 +587,8 @@ public final class BackupCommands {
 
     private void processSetDescribe(String[] args) throws IOException {
       if (args == null || args.length != 3) {
-        System.err.println("ERROR: Wrong number of args for 'set describe' command: "+args.length);
+        System.err.println("ERROR: Wrong number of args for 'set describe' command: "
+            + numOfArgs(args));
         printUsage();
         System.exit(-1);        
       }
@@ -602,7 +607,8 @@ public final class BackupCommands {
 
     private void processSetDelete(String[] args) throws IOException {
       if (args == null || args.length != 3) {
-        System.err.println("ERROR: Wrong number of args for 'set delete' command: "+args.length);
+        System.err.println("ERROR: Wrong number of args for 'set delete' command: "
+            + numOfArgs(args));
         printUsage();
         System.exit(-1);
       }
@@ -621,7 +627,8 @@ public final class BackupCommands {
 
     private void processSetRemove(String[] args) throws IOException {
       if (args == null || args.length != 4) {
-        System.err.println("ERROR: Wrong number of args for 'set remove' command: "+args.length);
+        System.err.println("ERROR: Wrong number of args for 'set remove' command: "
+            + numOfArgs(args));
         printUsage();
         System.exit(-1); 
       }
@@ -637,7 +644,8 @@ public final class BackupCommands {
 
     private void processSetAdd(String[] args) throws IOException {
       if (args == null || args.length != 4) {
-        System.err.println("ERROR: Wrong number of args for 'set add' command: "+args.length);
+        System.err.println("ERROR: Wrong number of args for 'set add' command: "
+            + numOfArgs(args));
         printUsage();
         System.exit(-1); 
       }
