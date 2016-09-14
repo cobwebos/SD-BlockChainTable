@@ -47,14 +47,13 @@ public class RestoreDriver extends AbstractHBaseTool {
 
   private static final String OPTION_OVERWRITE = "overwrite";
   private static final String OPTION_CHECK = "check";
-  private static final String OPTION_AUTOMATIC = "automatic";
   private static final String OPTION_SET = "set";
   private static final String OPTION_DEBUG = "debug";
 
 
   private static final String USAGE =
       "Usage: hbase restore [-set set_name] <backup_root_path> <backup_id> <tables> [tableMapping] \n"
-          + "       [-overwrite] [-check] [-automatic]\n"
+          + "       [-overwrite] [-check]\n"
           + " backup_root_path  The parent location where the backup images are stored\n"
           + " backup_id         The id identifying the backup image\n"
           + " table(s)          Table(s) from the backup image to be restored.\n"
@@ -65,8 +64,8 @@ public class RestoreDriver extends AbstractHBaseTool {
           + "   -overwrite      With this option, restore overwrites to the existing table "
           + "if there's any in\n"
           + "                   restore target. The existing table must be online before restore.\n"
-          + "   -check          With this option, restore sequence and dependencies are checked\n"
-          + "                   and verified without executing the restore\n"
+          + "   -check          With this option, sequence and dependencies are checked\n"
+          + "                   and verified without executing the restore command\n"
           + "   -set set_name   Backup set to restore, mutually exclusive with table list <tables>.";
 
     
@@ -80,7 +79,6 @@ public class RestoreDriver extends AbstractHBaseTool {
     addOptNoArg(OPTION_OVERWRITE,
         "Overwrite the data if any of the restore target tables exists");
     addOptNoArg(OPTION_CHECK, "Check restore sequence and dependencies");
-    addOptNoArg(OPTION_AUTOMATIC, "Restore all dependencies");
     addOptNoArg(OPTION_DEBUG,  "Enable debug logging");
     addOptWithArg(OPTION_SET, "Backup set name");
 
@@ -88,7 +86,7 @@ public class RestoreDriver extends AbstractHBaseTool {
     LogUtils.disableUselessLoggers(LOG);
   }
 
-  private int parseAndRun(String[] args) {
+  private int parseAndRun(String[] args) throws IOException{
 
     // enable debug logging
     Logger backupClientLogger = Logger.getLogger("org.apache.hadoop.hbase.backup");
@@ -116,8 +114,8 @@ public class RestoreDriver extends AbstractHBaseTool {
     String[] remainArgs = cmd.getArgs();
     if (remainArgs.length < 3 && !cmd.hasOption(OPTION_SET) ||
         (cmd.hasOption(OPTION_SET) && remainArgs.length < 2)) {
-      System.out.println("ERROR: remain args length="+ remainArgs.length);
-      System.out.println(USAGE);
+      System.err.println("ERROR: remain args length="+ remainArgs.length);
+      printToolUsage();
       return -1;
     } 
 
@@ -133,12 +131,14 @@ public class RestoreDriver extends AbstractHBaseTool {
         try{
           tables = getTablesForSet(conn, setName, conf);
         } catch(IOException e){
-          System.out.println("ERROR: "+ e.getMessage()+" for setName="+setName);
+          System.err.println("ERROR: "+ e.getMessage()+" for setName="+setName);
+          printToolUsage();
           return -2;
         }
         if (tables == null) {
-          System.out.println("ERROR: Backup set '" + setName
+          System.err.println("ERROR: Backup set '" + setName
               + "' is either empty or does not exist");
+          printToolUsage();
           return -3;
         }
         tableMapping = (remainArgs.length > 2) ? remainArgs[2] : null;
@@ -151,8 +151,8 @@ public class RestoreDriver extends AbstractHBaseTool {
       TableName[] tTableArray = BackupServerUtil.parseTableNames(tableMapping);
 
       if (sTableArray != null && tTableArray != null && (sTableArray.length != tTableArray.length)){
-        System.out.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
-        System.out.println(USAGE);
+        System.err.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
+        printToolUsage();
         return -4;
       }
 
@@ -192,5 +192,56 @@ public class RestoreDriver extends AbstractHBaseTool {
     Configuration conf = HBaseConfiguration.create();
     int ret = ToolRunner.run(conf, new RestoreDriver(), args);
     System.exit(ret);
+  }
+  
+  @Override
+  public int run(String[] args) throws IOException {
+    if (conf == null) {
+      LOG.error("Tool configuration is not initialized");
+      throw new NullPointerException("conf");
+    }
+
+    CommandLine cmd;
+    try {
+      // parse the command line arguments
+      cmd = parseArgs(args);
+      cmdLineArgs = args;
+    } catch (Exception e) {
+      System.err.println("Error when parsing command-line arguments: " + e.getMessage());
+      printToolUsage();
+      return EXIT_FAILURE;
+    }
+
+    if (!sanityCheckOptions(cmd) || cmd.hasOption(SHORT_HELP_OPTION) ||
+        cmd.hasOption(LONG_HELP_OPTION)) {
+      printToolUsage();
+      return EXIT_FAILURE;
+    }
+
+    processOptions(cmd);
+
+    int ret = EXIT_FAILURE;
+    try {
+      ret = doWork();
+    } catch (Exception e) {
+      LOG.error("Error running command-line tool", e);
+      return EXIT_FAILURE;
+    }
+    return ret;
+  }
+  
+  protected boolean sanityCheckOptions(CommandLine cmd) {
+    boolean success = true;
+    for (String reqOpt : requiredOptions) {
+      if (!cmd.hasOption(reqOpt)) {
+        System.err.println("Required option -" + reqOpt + " is missing");
+        success = false;
+      }
+    }
+    return success;
+  }
+  
+  protected void printToolUsage() throws IOException {
+    System.err.println(USAGE);
   }
 }

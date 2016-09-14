@@ -91,7 +91,7 @@ public class TestFullBackupSet extends TestBackupBase {
   @Test
   public void testFullBackupSetDoesNotExist() throws Exception {
 
-    LOG.info("TFBSE test full backup, backup set does not exist");    
+    LOG.info("test full backup, backup set does not exist");    
     String name = "name1";    
     String[] args = new String[]{"create", "full", BACKUP_ROOT_DIR, "-set", name }; 
     // Run backup

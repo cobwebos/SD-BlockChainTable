@@ -25,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.backup.impl.BackupCommands;
-import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants.BackupCommand;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -52,9 +51,9 @@ public class BackupDriver extends AbstractHBaseTool {
     addOptNoArg("debug", "Enable debug loggings");
     addOptNoArg("all", "All tables");
     addOptWithArg("t", "Table name");
-    addOptWithArg("b", "Bandwidth (MB/s)");
-    addOptWithArg("w", "Number of workers");
-    addOptWithArg("n", "History length");
+    addOptWithArg("b", "Bandwidth per worker (M/R task) in MB/s");
+    addOptWithArg("w", "Number of workers (M/R tasks)");
+    addOptWithArg("n", "History of backup length");
     addOptWithArg("set", "Backup set name");
     addOptWithArg("path", "Backup destination root directory path");
     
@@ -67,8 +66,8 @@ public class BackupDriver extends AbstractHBaseTool {
     String cmd = null;
     String[] remainArgs = null;
     if (args == null || args.length == 0) {
-      BackupCommands.createCommand(getConf(),
-        BackupRestoreConstants.BackupCommand.HELP, null).execute();
+      printToolUsage();
+      return -1;
     } else {
       cmd = args[0];
       remainArgs = new String[args.length - 1];
@@ -93,7 +92,8 @@ public class BackupDriver extends AbstractHBaseTool {
     } else if (BackupCommand.SET.name().equalsIgnoreCase(cmd)) {
       type = BackupCommand.SET;
     } else {
-      System.out.println("Unsupported command for backup: " + cmd);
+      System.err.println("Unsupported command for backup: " + cmd);
+      printToolUsage();
       return -1;
     }
 
@@ -110,7 +110,14 @@ public class BackupDriver extends AbstractHBaseTool {
     if( type == BackupCommand.CREATE && conf != null) {
       ((BackupCommands.CreateCommand) command).setConf(conf);
     }   
-    command.execute();
+    try {
+      command.execute();
+    } catch(IOException e) {
+      if(e.getMessage().equals(BackupCommands.IGNORE)){
+        return -1;
+      }
+      throw e;
+    }
     return 0;
   }
 
@@ -134,5 +141,53 @@ public class BackupDriver extends AbstractHBaseTool {
     System.exit(ret);    
   }
   
+  @Override
+  public int run(String[] args) throws IOException {
+    if (conf == null) {
+      LOG.error("Tool configuration is not initialized");
+      throw new NullPointerException("conf");
+    }
 
+    CommandLine cmd;
+    try {
+      // parse the command line arguments
+      cmd = parseArgs(args);
+      cmdLineArgs = args;
+    } catch (Exception e) {
+      System.err.println("Error when parsing command-line arguments: "+e.getMessage());
+      printToolUsage();
+      return EXIT_FAILURE;
+    }
+
+    if (!sanityCheckOptions(cmd)) {
+      printToolUsage();
+      return EXIT_FAILURE;
+    }
+
+    processOptions(cmd);
+
+    int ret = EXIT_FAILURE;
+    try {
+      ret = doWork();
+    } catch (Exception e) {
+      LOG.error("Error running command-line tool", e);
+      return EXIT_FAILURE;
+    }
+    return ret;
+  }
+  
+  protected boolean sanityCheckOptions(CommandLine cmd) {
+    boolean success = true;
+    for (String reqOpt : requiredOptions) {
+      if (!cmd.hasOption(reqOpt)) {
+        System.err.println("Required option -" + reqOpt + " is missing");
+        success = false;
+      }
+    }
+    return success;
+  }
+  
+  protected void printToolUsage() throws IOException {
+    System.err.println(BackupCommands.USAGE); 
+  }
 }
