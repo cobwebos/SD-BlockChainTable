@@ -112,8 +112,8 @@ public class BackupDriver extends AbstractHBaseTool {
     }   
     try {
       command.execute();
-    } catch(IOException e) {
-      if(e.getMessage().equals(BackupCommands.IGNORE)){
+    } catch (IOException e) {
+      if (e.getMessage().equals(BackupCommands.INCORRECT_USAGE)){
         return -1;
       }
       throw e;
