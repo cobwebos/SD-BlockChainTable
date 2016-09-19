@@ -43,8 +43,7 @@ public class TestBackupDescribe extends TestBackupBase {
   private static final Log LOG = LogFactory.getLog(TestBackupDescribe.class);
 
   /**
-   * Verify that full backup is created on a single table with data correctly. Verify that describe
-   * works as expected
+   * Verify that describe works as expected if incorrect backup Id is supplied
    * @throws Exception
    */
   @Test
@@ -52,16 +51,9 @@ public class TestBackupDescribe extends TestBackupBase {
 
     LOG.info("test backup describe on a single table with data");
     
-    List<TableName> tableList = Lists.newArrayList(table1);
-    String backupId = fullTableBackup(tableList);
-    
-    LOG.info("backup complete");
-    assertTrue(checkSucceeded(backupId));
-
-
-    BackupInfo info = getBackupAdmin().getBackupInfo(backupId);
-    assertTrue(info.getState() == BackupState.COMPLETE);
-
+    String[] args = new String[]{"describe",  "backup_2" }; 
+    int ret = ToolRunner.run(conf1, new BackupDriver(), args);
+    assertTrue(ret < 0);
   }
 
   @Test
@@ -83,13 +75,16 @@ public class TestBackupDescribe extends TestBackupBase {
     LOG.info("backup complete");
     assertTrue(checkSucceeded(backupId));
 
+    BackupInfo info = getBackupAdmin().getBackupInfo(backupId);
+    assertTrue(info.getState() == BackupState.COMPLETE);
+
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
 
     String[] args = new String[]{"describe",  backupId }; 
     // Run backup
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
-    assertTrue(ret == 0);    
+    assertTrue(ret == 0);
     String response = baos.toString();
     assertTrue(response.indexOf(backupId) > 0);
     assertTrue(response.indexOf("COMPLETE") > 0);

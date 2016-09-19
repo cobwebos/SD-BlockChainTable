@@ -326,13 +326,18 @@ public final class BackupCommands {
       try (final Connection conn = ConnectionFactory.createConnection(conf);
           final BackupAdmin admin = conn.getAdmin().getBackupAdmin();) {
         BackupInfo info = admin.getBackupInfo(backupId);
+        if (info == null) {
+          System.err.println("ERROR: " + backupId + " does not exist");
+          printUsage();
+          throw new IOException(INCORRECT_USAGE);
+        }
         System.out.println(info.getShortDescription());
       }
     }
 
     @Override
     protected void printUsage() {
-      System.err.println(DESCRIBE_CMD_USAGE);      
+      System.err.println(DESCRIBE_CMD_USAGE);
     }
   }
 
@@ -349,17 +354,16 @@ public final class BackupCommands {
       
       if (cmdline == null || cmdline.getArgs() == null ||
           cmdline.getArgs().length != 2) {
-        System.out.println("No backup id was specified, "
+        System.err.println("No backup id was specified, "
             + "will retrieve the most recent (ongoing) sessions");
       }
       String[] args = cmdline.getArgs();
-      if (args.length > 2) {
+      if (args.length != 2) {
         System.err.println("ERROR: wrong number of arguments: " + args.length);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-      
-      
+
       String backupId = args == null ? null : args[1];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 

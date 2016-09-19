@@ -56,7 +56,16 @@ public class TestBackupCommandLineTool {
     
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: hbase backup decsribe <backupId>") >= 0);        
+    assertTrue(output.indexOf("Usage: hbase backup decsribe <backupId>") >= 0);     
+    
+    baos = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(baos));
+    args = new String[]{"describe" }; 
+    ToolRunner.run(conf, new BackupDriver(), args);
+
+    output = baos.toString();
+    System.out.println(baos.toString());
+    assertTrue(output.indexOf("Usage: hbase backup decsribe <backupId>") >= 0);
   }
 
   @Test
@@ -78,6 +87,15 @@ public class TestBackupCommandLineTool {
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: hbase backup create") >= 0);
+    
+    baos = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(baos));
+    args = new String[]{"create"}; 
+    ToolRunner.run(conf, new BackupDriver(), args);
+    
+    output = baos.toString();
+    System.out.println(baos.toString());
+    assertTrue(output.indexOf("Usage: hbase backup create") >= 0);    
   }
 
   @Test
@@ -99,6 +117,7 @@ public class TestBackupCommandLineTool {
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: hbase backup history") >= 0);
+    
   }
 
   @Test
@@ -120,10 +139,19 @@ public class TestBackupCommandLineTool {
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: hbase backup delete") >= 0);
+    
+    baos = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(baos));
+    args = new String[]{"delete" }; 
+    ToolRunner.run(conf, new BackupDriver(), args);
+
+    output = baos.toString();
+    System.out.println(baos.toString());
+    assertTrue(output.indexOf("Usage: hbase backup delete") >= 0);    
   }
 
   @Test
-  public void testBackupDriverProgressHelp () throws Exception {
+  public void testBackupDriverProgressHelp() throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setErr(new PrintStream(baos));
     String[] args = new String[]{"progress", "-help" }; 
@@ -138,6 +166,15 @@ public class TestBackupCommandLineTool {
     args = new String[]{"progress", "-h" }; 
     ToolRunner.run(conf, new BackupDriver(), args);
     
+    output = baos.toString();
+    System.out.println(baos.toString());
+    assertTrue(output.indexOf("Usage: hbase backup progress") >= 0);
+
+    baos = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(baos));
+    args = new String[]{"progress" };
+    ToolRunner.run(conf, new BackupDriver(), args);
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: hbase backup progress") >= 0);
@@ -162,6 +199,16 @@ public class TestBackupCommandLineTool {
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: hbase backup set") >= 0);
+
+    baos = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(baos));
+    args = new String[]{"set"}; 
+    ToolRunner.run(conf, new BackupDriver(), args);
+    
+    output = baos.toString();
+    System.out.println(baos.toString());
+    assertTrue(output.indexOf("Usage: hbase backup set") >= 0);
+    
   }
   
   @Test
