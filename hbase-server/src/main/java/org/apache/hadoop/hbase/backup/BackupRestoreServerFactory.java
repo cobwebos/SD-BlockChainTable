@@ -36,15 +36,15 @@ public final class BackupRestoreServerFactory {
   }
   
   /**
-   * Gets incremental restore service
+   * Gets backup restore service
    * @param conf - configuration
-   * @return incremental backup service instance
+   * @return backup restore service instance
    */
-  public static IncrementalRestoreService getIncrementalRestoreService(Configuration conf) {
-    Class<? extends IncrementalRestoreService> cls =
+  public static RestoreService getRestoreService(Configuration conf) {
+    Class<? extends RestoreService> cls =
         conf.getClass(HBASE_INCR_RESTORE_IMPL_CLASS, MapReduceRestoreService.class,
-          IncrementalRestoreService.class);
-    IncrementalRestoreService service =  ReflectionUtils.newInstance(cls, conf);
+          RestoreService.class);
+    RestoreService service =  ReflectionUtils.newInstance(cls, conf);
     service.setConf(conf);
     return service;
   }

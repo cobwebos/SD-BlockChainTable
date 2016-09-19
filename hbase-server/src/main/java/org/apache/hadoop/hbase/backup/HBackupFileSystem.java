@@ -20,18 +20,25 @@
 package org.apache.hadoop.hbase.backup;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
+import org.apache.hadoop.hbase.regionserver.HRegionFileSystem;
 
 /**
  * View to an on-disk Backup Image FileSytem
@@ -77,6 +84,27 @@ public class HBackupFileSystem {
     return new Path(getTableBackupDir(backupRootPath.toString(), backupId, tableName));
   }
 
+  
+  public static List<HRegionInfo> loadRegionInfos(TableName tableName, 
+    Path backupRootPath, String backupId, Configuration conf) throws IOException
+  {
+    Path backupTableRoot = getTableBackupPath(tableName, backupRootPath, backupId);
+    FileSystem fs = backupTableRoot.getFileSystem(conf);
+    RemoteIterator<LocatedFileStatus> it = fs.listFiles(backupTableRoot, true);
+    List<HRegionInfo> infos = new ArrayList<HRegionInfo>();
+    while(it.hasNext()) {
+      LocatedFileStatus lfs = it.next();
+      if(lfs.isFile() && lfs.getPath().toString().endsWith(HRegionFileSystem.REGION_INFO_FILE)) {
+        Path regionDir = lfs.getPath().getParent();
+        HRegionInfo info = HRegionFileSystem.loadRegionInfoFileContent(fs, regionDir);
+        infos.add(info);
+      }
+    }
+    
+    Collections.sort(infos);
+    return infos;
+  }
+  
   /**
    * Given the backup root dir and the backup id, return the log file location for an incremental
    * backup.

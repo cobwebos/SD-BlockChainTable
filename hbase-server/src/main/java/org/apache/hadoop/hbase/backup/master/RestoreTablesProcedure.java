@@ -16,14 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.backup.impl;
+package org.apache.hadoop.hbase.backup.master;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,13 +36,12 @@ import org.apache.hadoop.hbase.MetaTableAccessor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
+import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.TableState;
 import org.apache.hadoop.hbase.master.MasterServices;
 import org.apache.hadoop.hbase.master.TableStateManager;
@@ -54,7 +52,6 @@ import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreTablesState;
-import org.apache.hadoop.security.UserGroupInformation;
 
 @InterfaceAudience.Private
 public class RestoreTablesProcedure
@@ -139,80 +136,71 @@ public class RestoreTablesProcedure
   }
 
   /**
-   * Restore operation handle each backupImage in iterator
-   * @param conn the Connection
-   * @param it: backupImage iterator - ascending
+   * Restore operation handle each backupImage in array
+   * @param svc: master services
+   * @param images: array BackupImage
    * @param sTable: table to be restored
    * @param tTable: table to be restored to
-   * @param truncateIfExists truncate table if it exists
+   * @param truncateIfExists: truncate table
    * @throws IOException exception
    */
-  private void restoreImages(MasterServices svc, Iterator<BackupImage> it, TableName sTable,
-      TableName tTable, boolean truncateIfExists) throws IOException {
+
+  private void restoreImages(MasterServices svc, BackupImage[] images, TableName sTable, TableName tTable,
+      boolean truncateIfExists) throws IOException {
 
     // First image MUST be image of a FULL backup
-    BackupImage image = it.next();
-
+    BackupImage image = images[0];
     String rootDir = image.getRootDir();
     String backupId = image.getBackupId();
     Path backupRoot = new Path(rootDir);
-
-    // We need hFS only for full restore (see the code)
     RestoreServerUtil restoreTool = new RestoreServerUtil(conf, backupRoot, backupId);
-    BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, backupRoot, backupId);
-
     Path tableBackupPath = HBackupFileSystem.getTableBackupPath(sTable, backupRoot, backupId);
-
-    // TODO: convert feature will be provided in a future JIRA
-    boolean converted = false;
-    String lastIncrBackupId = null;
-    List<String> logDirList = null;
-
-    // Scan incremental backups
-    if (it.hasNext()) {
-      // obtain the backupId for most recent incremental
-      logDirList = new ArrayList<String>();
-      while (it.hasNext()) {
-        BackupImage im = it.next();
-        String logBackupDir = HBackupFileSystem.getLogBackupDir(im.getRootDir(), im.getBackupId());
-        logDirList.add(logBackupDir);
-        lastIncrBackupId = im.getBackupId();
-      }
-    }
-    if (manifest.getType() == BackupType.FULL || converted) {
-      LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from "
-          + (converted ? "converted" : "full") + " backup image " + tableBackupPath.toString());
-      restoreTool.fullRestoreTable(svc, tableBackupPath, sTable, tTable,
-        converted, truncateIfExists, lastIncrBackupId);
+    String lastIncrBackupId = images.length == 1 ? null : images[images.length - 1].getBackupId();
+    // We need hFS only for full restore (see the code)
+    BackupManifest manifest = HBackupFileSystem.getManifest(sTable, conf, backupRoot, backupId);
+    if (manifest.getType() == BackupType.FULL) {
+      LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from full"
+          + " backup image " + tableBackupPath.toString());
+      restoreTool.fullRestoreTable(svc, tableBackupPath, sTable, tTable, truncateIfExists,
+        lastIncrBackupId);
     } else { // incremental Backup
       throw new IOException("Unexpected backup type " + image.getType());
     }
 
-    // The rest one are incremental
-    if (logDirList != null) {
-      String logDirs = StringUtils.join(logDirList, ",");
-      LOG.info("Restoring '" + sTable + "' to '" + tTable
-          + "' from log dirs: " + logDirs);
-      String[] sarr = new String[logDirList.size()];
-      logDirList.toArray(sarr);
-      Path[] paths = org.apache.hadoop.util.StringUtils.stringToPath(sarr);
-      restoreTool.incrementalRestoreTable(svc, tableBackupPath, paths,
-          new TableName[] { sTable }, new TableName[] { tTable }, lastIncrBackupId);
+    if (images.length == 1) {
+      // full backup restore done
+      return;
     }
+
+    List<Path> dirList = new ArrayList<Path>();
+    // add full backup path
+    // full backup path comes first
+    for (int i = 1; i < images.length; i++) {
+      BackupImage im = images[i];
+      String logBackupDir = HBackupFileSystem.getLogBackupDir(im.getRootDir(), im.getBackupId());
+      dirList.add(new Path(logBackupDir));
+    }
+
+    String dirs = StringUtils.join(dirList, ",");
+    LOG.info("Restoring '" + sTable + "' to '" + tTable + "' from log dirs: " + dirs);
+    Path[] paths = new Path[dirList.size()];
+    dirList.toArray(paths);
+    restoreTool.incrementalRestoreTable(svc, tableBackupPath, paths, new TableName[] { sTable },
+      new TableName[] { tTable }, lastIncrBackupId);
     LOG.info(sTable + " has been successfully restored to " + tTable);
+
   }
 
   /**
    * Restore operation. Stage 2: resolved Backup Image dependency
-   * @param svc MasterServices
+   * @param svc: master services
    * @param backupManifestMap : tableName,  Manifest
    * @param sTableArray The array of tables to be restored
    * @param tTableArray The array of mapping tables to restore to
-   * @param isOverwrite overwrite
    * @return set of BackupImages restored
    * @throws IOException exception
    */
-  private void restoreStage(MasterServices svc, HashMap<TableName, BackupManifest> backupManifestMap,
+  private void restore(MasterServices svc, HashMap<TableName, BackupManifest> backupManifestMap,
       TableName[] sTableArray, TableName[] tTableArray, boolean isOverwrite) throws IOException {
     TreeSet<BackupImage> restoreImageSet = new TreeSet<BackupImage>();
     boolean truncateIfExists = isOverwrite;
@@ -224,13 +212,13 @@ public class RestoreTablesProcedure
         // to new.
         List<BackupImage> list = new ArrayList<BackupImage>();
         list.add(manifest.getBackupImage());
+        TreeSet<BackupImage> set = new TreeSet<BackupImage>(list);
         List<BackupImage> depList = manifest.getDependentListByTable(table);
-        list.addAll(depList);
-        TreeSet<BackupImage> restoreList = new TreeSet<BackupImage>(list);
-        LOG.debug("need to clear merged Image. to be implemented in future jira");
-        restoreImages(svc, restoreList.iterator(), table, tTableArray[i], truncateIfExists);
-        restoreImageSet.addAll(restoreList);
-
+        set.addAll(depList);
+        BackupImage[] arr = new BackupImage[set.size()];
+        set.toArray(arr);
+        restoreImages(svc, arr, table, tTableArray[i], truncateIfExists);
+        restoreImageSet.addAll(list);
         if (restoreImageSet != null && !restoreImageSet.isEmpty()) {
           LOG.info("Restore includes the following image(s):");
           for (BackupImage image : restoreImageSet) {
@@ -276,11 +264,8 @@ public class RestoreTablesProcedure
           Path rootPath = new Path(targetRootDir);
           HBackupFileSystem.checkImageManifestExist(backupManifestMap, sTableArray, conf, rootPath,
             backupId);
-          restoreStage(env.getMasterServices(), backupManifestMap, sTableArray,
-              tTableArray, isOverwrite);
-
+          restore(env.getMasterServices(), backupManifestMap, sTableArray, tTableArray, isOverwrite);
           return Flow.NO_MORE_STATE;
-
         default:
           throw new UnsupportedOperationException("unhandled state=" + state);
       }

@@ -41,10 +41,9 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.MetaTableAccessor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
-import org.apache.hadoop.hbase.backup.IncrementalRestoreService;
+import org.apache.hadoop.hbase.backup.RestoreService;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
@@ -115,6 +114,7 @@ public class RestoreServerUtil {
    */
   Path getTableArchivePath(TableName tableName)
       throws IOException {
+
     Path baseDir = new Path(HBackupFileSystem.getTableBackupPath(tableName, backupRootPath, 
       backupId), HConstants.HFILE_ARCHIVE_DIRECTORY);
     Path dataDir = new Path(baseDir, HConstants.BASE_NAMESPACE_DIR);
@@ -148,8 +148,33 @@ public class RestoreServerUtil {
     return regionDirList;
   }
 
+  /**
+   * Gets region list
+   * @param tableName table name
+   * @param backupId backup id
+   * @return RegionList region list
+   * @throws FileNotFoundException exception
+   * @throws IOException exception
+   */
+  ArrayList<Path> getRegionList(TableName tableName, String backupId) throws FileNotFoundException,
+      IOException {
+    Path tableArchivePath =
+        new Path(BackupClientUtil.getTableBackupDir(backupRootPath.toString(), 
+          backupId, tableName));
+
+    ArrayList<Path> regionDirList = new ArrayList<Path>();
+    FileStatus[] children = fs.listStatus(tableArchivePath);
+    for (FileStatus childStatus : children) {
+      // here child refer to each region(Name)
+      Path child = childStatus.getPath();
+      regionDirList.add(child);
+    }
+    return regionDirList;
+  }
+  
   static void modifyTableSync(MasterServices svc, HTableDescriptor desc) throws IOException {
     svc.modifyTable(desc.getTableName(), desc, HConstants.NO_NONCE, HConstants.NO_NONCE);
+    @SuppressWarnings("serial")
     Pair<Integer, Integer> status = new Pair<Integer, Integer>() {{
       setFirst(0);
       setSecond(0);
@@ -234,16 +259,16 @@ public class RestoreServerUtil {
         LOG.info("Changed " + newTableDescriptor.getTableName() + " to: " + newTableDescriptor);
       }
     }
-    IncrementalRestoreService restoreService =
-        BackupRestoreServerFactory.getIncrementalRestoreService(conf);
+    RestoreService restoreService =
+        BackupRestoreServerFactory.getRestoreService(conf);
 
-    restoreService.run(logDirs, tableNames, newTableNames);
+    restoreService.run(logDirs, tableNames, newTableNames, false);
   }
 
   public void fullRestoreTable(MasterServices svc, Path tableBackupPath, TableName tableName,
-      TableName newTableName, boolean converted, boolean truncateIfExists, String lastIncrBackupId)
+      TableName newTableName, boolean truncateIfExists, String lastIncrBackupId)
           throws IOException {
-    restoreTableAndCreate(svc, tableName, newTableName, tableBackupPath, converted, truncateIfExists,
+    restoreTableAndCreate(svc, tableName, newTableName, tableBackupPath, truncateIfExists,
         lastIncrBackupId);
   }
 
@@ -355,20 +380,19 @@ public class RestoreServerUtil {
     if (lastIncrBackupId != null) {
       String target = BackupClientUtil.getTableBackupDir(backupRootPath.toString(),
           lastIncrBackupId, tableName);
-      // Path target = new Path(info.getBackupStatus(tableName).getTargetDir());
       return FSTableDescriptors.getTableDescriptorFromFs(fileSys,
           new Path(target)).getHTableDescriptor();
     }
     return null;
   }
 
-  private void restoreTableAndCreate(MasterServices svc, TableName tableName, TableName newTableName,
-      Path tableBackupPath, boolean converted, boolean truncateIfExists, String lastIncrBackupId)
-          throws IOException {
+  private void restoreTableAndCreate(MasterServices svc, TableName tableName,
+      TableName newTableName, Path tableBackupPath, boolean truncateIfExists,
+      String lastIncrBackupId) throws IOException {
     if (newTableName == null || newTableName.equals("")) {
       newTableName = tableName;
     }
-
+    boolean fullBackupRestoreOnly = lastIncrBackupId == null;
     FileSystem fileSys = tableBackupPath.getFileSystem(this.conf);
 
     HTableDescriptor tableDescriptor = getTableDescriptor(fileSys, tableName, lastIncrBackupId);
@@ -384,7 +408,7 @@ public class RestoreServerUtil {
         if (snapshotMap.get(tableName) != null) {
           SnapshotDescription desc =
               SnapshotDescriptionUtils.readSnapshotInfo(fileSys, tableSnapshotPath);
-          SnapshotManifest manifest = SnapshotManifest.open(conf,fileSys,tableSnapshotPath,desc);
+          SnapshotManifest manifest = SnapshotManifest.open(conf, fileSys, tableSnapshotPath, desc);
           tableDescriptor = manifest.getTableDescriptor();
           LOG.debug("obtained descriptor from " + manifest);
         } else {
@@ -395,9 +419,9 @@ public class RestoreServerUtil {
         if (tableDescriptor == null) {
           LOG.debug("Found no table descriptor in the snapshot dir, previous schema was lost");
         }
-      } else if (converted) {
-        // first check if this is a converted backup image
-        LOG.error("convert will be supported in a future jira");
+      } else {
+        throw new IOException("Table snapshot directory: " + tableSnapshotPath
+            + " does not exist.");
       }
     }
 
@@ -405,13 +429,13 @@ public class RestoreServerUtil {
     if (tableArchivePath == null) {
       if (tableDescriptor != null) {
         // find table descriptor but no archive dir => the table is empty, create table and exit
-        if(LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
           LOG.debug("find table descriptor but no archive dir for table " + tableName
               + ", will only create table");
         }
         tableDescriptor.setName(newTableName);
-        checkAndCreateTable(svc, tableBackupPath, tableName, newTableName, null, 
-            tableDescriptor, truncateIfExists);
+        checkAndCreateTable(svc, tableBackupPath, tableName, newTableName, null, tableDescriptor,
+          truncateIfExists);
         return;
       } else {
         throw new IllegalStateException("Cannot restore hbase table because directory '"
@@ -426,50 +450,61 @@ public class RestoreServerUtil {
       tableDescriptor.setName(newTableName);
     }
 
-    if (!converted) {
-      // record all region dirs:
-      // load all files in dir
-      try {
-        ArrayList<Path> regionPathList = getRegionList(tableName);
+    // record all region dirs:
+    // load all files in dir
+    try {
+      // Region splits for last incremental backup id
+      // We use it to create table with pre-splits
+      ArrayList<Path> regionPathList =
+          fullBackupRestoreOnly ? getRegionList(tableName) : getRegionList(tableName,
+            lastIncrBackupId);
 
-        // should only try to create the table with all region informations, so we could pre-split
-        // the regions in fine grain
-        checkAndCreateTable(svc, tableBackupPath, tableName, newTableName, regionPathList,
-            tableDescriptor, truncateIfExists);
-        if (tableArchivePath != null) {
-          // start real restore through bulkload
-          // if the backup target is on local cluster, special action needed
-          Path tempTableArchivePath = checkLocalAndBackup(tableArchivePath);
-          if (tempTableArchivePath.equals(tableArchivePath)) {
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("TableArchivePath for bulkload using existPath: " + tableArchivePath);
-            }
-          } else {
-            regionPathList = getRegionList(tempTableArchivePath); // point to the tempDir
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("TableArchivePath for bulkload using tempPath: " + tempTableArchivePath);
-            }
-          }
+      // should only try to create the table with all region informations, so we could pre-split
+      // the regions in fine grain
+      checkAndCreateTable(svc, tableBackupPath, tableName, newTableName, regionPathList,
+        tableDescriptor, truncateIfExists);
 
-          LoadIncrementalHFiles loader = createLoader(tempTableArchivePath, false);
-          for (Path regionPath : regionPathList) {
-            String regionName = regionPath.toString();
-            if(LOG.isDebugEnabled()) {
-              LOG.debug("Restoring HFiles from directory " + regionName);
-            }
-            String[] args = { regionName, newTableName.getNameAsString() };
-            loader.run(args);
-          }
+      // Now get region splits from full backup
+      regionPathList = getRegionList(tableName);
+
+      // start real restore through bulkload
+      // if the backup target is on local cluster, special action needed
+      Path tempTableArchivePath = checkLocalAndBackup(tableArchivePath);
+      if (tempTableArchivePath.equals(tableArchivePath)) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("TableArchivePath for bulkload using existPath: " + tableArchivePath);
         }
-        // we do not recovered edits
-      } catch (Exception e) {
-        throw new IllegalStateException("Cannot restore hbase table", e);
+      } else {
+        regionPathList = getRegionList(tempTableArchivePath); // point to the tempDir
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("TableArchivePath for bulkload using tempPath: " + tempTableArchivePath);
+        }
       }
-    } else {
-      LOG.debug("convert will be supported in a future jira");
+
+      if (fullBackupRestoreOnly) {
+        LoadIncrementalHFiles loader = createLoader(tempTableArchivePath, false);
+        for (Path regionPath : regionPathList) {
+          String regionName = regionPath.toString();
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Restoring HFiles from directory " + regionName);
+          }
+          String[] args = { regionName, newTableName.getNameAsString() };
+          loader.run(args);
+        }
+      } else {
+        // Run restore service
+        Path[] dirs = new Path[regionPathList.size()];
+        regionPathList.toArray(dirs);
+        RestoreService restoreService =
+            BackupRestoreServerFactory.getRestoreService(conf);
+
+        restoreService.run(dirs, new TableName[] { tableName }, new TableName[] { newTableName },
+          true);
+      }
+    } catch (Exception e) {
+      throw new IllegalStateException("Cannot restore hbase table", e);
     }
   }
-
   /**
    * Gets region list
    * @param tableArchivePath table archive path

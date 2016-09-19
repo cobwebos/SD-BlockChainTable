@@ -1,13 +1,13 @@
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
+ * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
+ * regarding copyright ownership. The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,54 +24,67 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.IncrementalRestoreService;
+import org.apache.hadoop.hbase.backup.RestoreService;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.mapreduce.WALPlayer;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
+import org.apache.hadoop.util.Tool;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class MapReduceRestoreService implements IncrementalRestoreService {
+public class MapReduceRestoreService implements RestoreService {
   public static final Log LOG = LogFactory.getLog(MapReduceRestoreService.class);
 
-  private WALPlayer player;
+  private Tool player;
+  private Configuration conf;
 
   public MapReduceRestoreService() {
-    this.player = new WALPlayer();
   }
 
   @Override
-  public void run(Path[] logDirPaths, TableName[] tableNames, TableName[] newTableNames)
-      throws IOException {
+  public void run(Path[] dirPaths, TableName[] tableNames, TableName[] newTableNames,
+      boolean fullBackupRestore) throws IOException {
 
-    // WALPlayer reads all files in arbitrary directory structure and creates a Map task for each
-    // log file
-    String logDirs = StringUtils.join(logDirPaths, ",");
-    LOG.info("Restore incremental backup from directory " + logDirs + " from hbase tables "
-        + BackupServerUtil.join(tableNames) + " to tables " + BackupServerUtil.join(newTableNames));
+    String bulkOutputConfKey;
+
+    if (fullBackupRestore) {
+      player = new HFileSplitter();
+      bulkOutputConfKey = HFileSplitter.BULK_OUTPUT_CONF_KEY;
+    } else {
+      player = new WALPlayer();
+      bulkOutputConfKey = WALPlayer.BULK_OUTPUT_CONF_KEY;
+    }
+    // Player reads all files in arbitrary directory structure and creates 
+    // a Map task for each file
+    String dirs = StringUtils.join(dirPaths, ",");
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Restore " + (fullBackupRestore ? "full" : "incremental")
+          + " backup from directory " + dirs + " from hbase tables "
+          + BackupServerUtil.join(tableNames) + " to tables "
+          + BackupServerUtil.join(newTableNames));
+    }
 
     for (int i = 0; i < tableNames.length; i++) {
-      
-      LOG.info("Restore "+ tableNames[i] + " into "+ newTableNames[i]);
-      
+
+      LOG.info("Restore " + tableNames[i] + " into " + newTableNames[i]);
+
       Path bulkOutputPath = getBulkOutputDir(getFileNameCompatibleString(newTableNames[i]));
-      String[] playerArgs =
-        { logDirs, tableNames[i].getNameAsString() };
+      Configuration conf = getConf();
+      conf.set(bulkOutputConfKey, bulkOutputPath.toString());
+      String[] playerArgs = { dirs, tableNames[i].getNameAsString() };
 
       int result = 0;
       int loaderResult = 0;
       try {
-        Configuration conf = getConf();
-        conf.set(WALPlayer.BULK_OUTPUT_CONF_KEY, bulkOutputPath.toString());
-        player.setConf(getConf());        
+
+        player.setConf(getConf());
         result = player.run(playerArgs);
         if (succeeded(result)) {
           // do bulk load
@@ -81,38 +94,37 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
           }
           String[] args = { bulkOutputPath.toString(), newTableNames[i].getNameAsString() };
           loaderResult = loader.run(args);
-          if(failed(loaderResult)) {
-            throw new IOException("Can not restore from backup directory " + logDirs
-              + " (check Hadoop and HBase logs). Bulk loader return code =" + loaderResult);
+
+          if (failed(loaderResult)) {
+            throw new IOException("Can not restore from backup directory " + dirs
+                + " (check Hadoop and HBase logs). Bulk loader return code =" + loaderResult);
           }
         } else {
-            throw new IOException("Can not restore from backup directory " + logDirs
-                + " (check Hadoop/MR and HBase logs). WALPlayer return code =" + result);
+          throw new IOException("Can not restore from backup directory " + dirs
+              + " (check Hadoop/MR and HBase logs). Player return code =" + result);
         }
         LOG.debug("Restore Job finished:" + result);
       } catch (Exception e) {
-        throw new IOException("Can not restore from backup directory " + logDirs
+        throw new IOException("Can not restore from backup directory " + dirs
             + " (check Hadoop and HBase logs) ", e);
       }
 
     }
   }
 
-  private String getFileNameCompatibleString(TableName table)
-  {
-    return table.getNamespaceAsString() +"-"+ table.getQualifierAsString();
+  private String getFileNameCompatibleString(TableName table) {
+    return table.getNamespaceAsString() + "-" + table.getQualifierAsString();
   }
-  
+
   private boolean failed(int result) {
     return result != 0;
   }
-  
+
   private boolean succeeded(int result) {
     return result == 0;
   }
 
-  private LoadIncrementalHFiles createLoader()
-      throws IOException {
+  private LoadIncrementalHFiles createLoader() throws IOException {
     // set configuration for restore:
     // LoadIncrementalHFile needs more time
     // <name>hbase.rpc.timeout</name> <value>600000</value>
@@ -120,10 +132,11 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
     Integer milliSecInHour = 3600000;
     Configuration conf = new Configuration(getConf());
     conf.setInt(HConstants.HBASE_RPC_TIMEOUT_KEY, milliSecInHour);
-    
+
     // By default, it is 32 and loader will fail if # of files in any region exceed this
     // limit. Bad for snapshot restore.
     conf.setInt(LoadIncrementalHFiles.MAX_FILES_PER_REGION_PER_FAMILY, Integer.MAX_VALUE);
+    conf.set(LoadIncrementalHFiles.IGNORE_UNMATCHED_CF_CONF_KEY, "yes");
     LoadIncrementalHFiles loader = null;
     try {
       loader = new LoadIncrementalHFiles(conf);
@@ -133,27 +146,26 @@ public class MapReduceRestoreService implements IncrementalRestoreService {
     return loader;
   }
 
-  private Path getBulkOutputDir(String tableName) throws IOException
-  {
+  private Path getBulkOutputDir(String tableName) throws IOException {
     Configuration conf = getConf();
     FileSystem fs = FileSystem.get(conf);
-    String tmp = conf.get(HConstants.TEMPORARY_FS_DIRECTORY_KEY,
-        HConstants.DEFAULT_TEMPORARY_HDFS_DIRECTORY);
-    Path path =  new Path(tmp + Path.SEPARATOR + "bulk_output-"+tableName + "-"
-        + EnvironmentEdgeManager.currentTime());
+    String tmp =
+        conf.get(HConstants.TEMPORARY_FS_DIRECTORY_KEY, HConstants.DEFAULT_TEMPORARY_HDFS_DIRECTORY);
+    Path path =
+        new Path(tmp + Path.SEPARATOR + "bulk_output-" + tableName + "-"
+            + EnvironmentEdgeManager.currentTime());
     fs.deleteOnExit(path);
     return path;
   }
-  
 
   @Override
   public Configuration getConf() {
-    return player.getConf();
+    return conf;
   }
 
   @Override
   public void setConf(Configuration conf) {
-    this.player.setConf(conf);
+    this.conf = conf;
   }
 
 }

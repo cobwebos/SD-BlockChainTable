@@ -28,15 +28,23 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public interface IncrementalRestoreService extends Configurable{
+
+/**
+ * Backup restore service interface
+ * Concrete implementation is provided by backup provider.
+ */
+
+public interface RestoreService extends Configurable{
 
   /**
    * Run restore operation
-   * @param logDirectoryPaths - path array of WAL log directories
+   * @param dirPaths - path array of WAL log directories
    * @param fromTables - from tables
    * @param toTables - to tables
+   * @param fullBackupRestore - full backup restore
    * @throws IOException
    */
-  public void run(Path[] logDirectoryPaths, TableName[] fromTables, TableName[] toTables)
+  public void run(Path[] dirPaths, TableName[] fromTables, 
+      TableName[] toTables, boolean fullBackupRestore)
     throws IOException;
 }

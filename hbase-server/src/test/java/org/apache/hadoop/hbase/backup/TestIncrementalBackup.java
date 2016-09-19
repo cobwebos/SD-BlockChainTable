@@ -20,7 +20,6 @@ package org.apache.hadoop.hbase.backup;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -29,6 +28,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.BackupAdmin;
@@ -37,14 +37,16 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.regionserver.HRegion;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.Lists;
 
@@ -66,6 +68,8 @@ public class TestIncrementalBackup extends TestBackupBase {
   //implement all test cases in 1 test since incremental backup/restore has dependencies
   @Test
   public void TestIncBackupRestore() throws Exception {
+    
+    int ADD_ROWS = 99;
     // #1 - create full backup for all tables
     LOG.info("create full backup image for all tables");
 
@@ -88,13 +92,13 @@ public class TestIncrementalBackup extends TestBackupBase {
     assertTrue(checkSucceeded(backupIdFull));
 
     // #2 - insert some data to table
-    HTable t1 = insertIntoTable(conn, table1, famName, 1, NB_ROWS_IN_BATCH);
-    LOG.debug("writing " + NB_ROWS_IN_BATCH + " rows to " + table1);
+    HTable t1 = insertIntoTable(conn, table1, famName, 1, ADD_ROWS);
+    LOG.debug("writing " + ADD_ROWS + " rows to " + table1);
 
     Assert.assertThat(TEST_UTIL.countRows(t1), CoreMatchers.equalTo(
-        NB_ROWS_IN_BATCH * 2 + NB_ROWS_FAM3));
+        NB_ROWS_IN_BATCH + ADD_ROWS + NB_ROWS_FAM3));
     t1.close();
-    LOG.debug("written " + NB_ROWS_IN_BATCH + " rows to " + table1);
+    LOG.debug("written " + ADD_ROWS + " rows to " + table1);
 
     HTable t2 =  (HTable) conn.getTable(table2);
     Put p2;
@@ -107,7 +111,23 @@ public class TestIncrementalBackup extends TestBackupBase {
     Assert.assertThat(TEST_UTIL.countRows(t2), CoreMatchers.equalTo(NB_ROWS_IN_BATCH + 5));
     t2.close();
     LOG.debug("written " + 5 + " rows to " + table2);
+    // split table1 
+    MiniHBaseCluster cluster = TEST_UTIL.getHBaseCluster();
+    List<HRegion> regions = cluster.getRegions(table1);
 
+    byte[] name = regions.get(0).getRegionInfo().getRegionName();    
+    long startSplitTime = EnvironmentEdgeManager.currentTime();
+    admin.splitRegion(name);
+
+    while (!admin.isTableAvailable(table1)) {
+      Thread.sleep(100);
+    }
+    
+    long endSplitTime = EnvironmentEdgeManager.currentTime();
+
+    // split finished 
+    LOG.debug("split finished in ="+ (endSplitTime - startSplitTime));
+    
     // #3 - incremental backup for multiple tables
     tables = Lists.newArrayList(table1, table2);
     request = new BackupRequest();
@@ -176,7 +196,7 @@ public class TestIncrementalBackup extends TestBackupBase {
     LOG.debug("After incremental restore: " + hTable.getTableDescriptor());
     LOG.debug("f1 has " + TEST_UTIL.countRows(hTable, famName) + " rows");
     Assert.assertThat(TEST_UTIL.countRows(hTable, famName),
-        CoreMatchers.equalTo(NB_ROWS_IN_BATCH * 2));
+        CoreMatchers.equalTo(NB_ROWS_IN_BATCH + ADD_ROWS));
     LOG.debug("f2 has " + TEST_UTIL.countRows(hTable, fam2Name) + " rows");
     Assert.assertThat(TEST_UTIL.countRows(hTable, fam2Name), CoreMatchers.equalTo(NB_ROWS_FAM2));
     hTable.close();

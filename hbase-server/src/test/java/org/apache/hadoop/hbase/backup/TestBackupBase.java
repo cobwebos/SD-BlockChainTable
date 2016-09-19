@@ -284,7 +284,7 @@ public class TestBackupBase {
     FileSystem fs = FileSystem.get(conf1);
     RemoteIterator<LocatedFileStatus> it = fs.listFiles( new Path(BACKUP_ROOT_DIR), true);
     while(it.hasNext()){
-      LOG.debug("DDEBUG: "+it.next().getPath());
+      LOG.debug(it.next().getPath());
     }
 
   }
