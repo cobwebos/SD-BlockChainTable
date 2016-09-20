@@ -29,6 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
+import org.apache.hadoop.hbase.backup.impl.BackupCommands;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.util.ToolRunner;
@@ -54,6 +55,15 @@ public class TestBackupDescribe extends TestBackupBase {
     String[] args = new String[]{"describe",  "backup_2" }; 
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertTrue(ret < 0);
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    System.setErr(new PrintStream(baos));
+    args = new String[]{"progress" };
+    ToolRunner.run(TEST_UTIL.getConfiguration(), new BackupDriver(), args);
+
+    String output = baos.toString();
+    LOG.info("Output from progress: " + output);
+    assertTrue(output.indexOf(BackupCommands.NO_INFO_FOUND) >= 0);
   }
 
   @Test

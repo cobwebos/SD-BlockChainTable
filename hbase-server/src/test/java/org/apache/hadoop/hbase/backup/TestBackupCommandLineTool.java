@@ -169,15 +169,6 @@ public class TestBackupCommandLineTool {
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: hbase backup progress") >= 0);
-
-    baos = new ByteArrayOutputStream();
-    System.setErr(new PrintStream(baos));
-    args = new String[]{"progress" };
-    ToolRunner.run(conf, new BackupDriver(), args);
-
-    output = baos.toString();
-    System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: hbase backup progress") >= 0);
   }
 
   @Test

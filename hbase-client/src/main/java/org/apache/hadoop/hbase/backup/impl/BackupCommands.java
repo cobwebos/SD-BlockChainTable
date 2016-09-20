@@ -78,6 +78,7 @@ public final class BackupCommands {
 
   public static final String PROGRESS_CMD_USAGE = "Usage: hbase backup progress <backupId>\n"
           + " backupId        backup image id\n";
+  public static final String NO_INFO_FOUND = "No info was found for backup id: ";
 
   public static final String DESCRIBE_CMD_USAGE = "Usage: hbase backup decsribe <backupId>\n"
           + " backupId        backup image id\n";
@@ -353,24 +354,24 @@ public final class BackupCommands {
       super.execute();
       
       if (cmdline == null || cmdline.getArgs() == null ||
-          cmdline.getArgs().length != 2) {
+          cmdline.getArgs().length == 1) {
         System.err.println("No backup id was specified, "
             + "will retrieve the most recent (ongoing) sessions");
       }
       String[] args = cmdline.getArgs();
-      if (args.length != 2) {
+      if (args.length > 2) {
         System.err.println("ERROR: wrong number of arguments: " + args.length);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
 
-      String backupId = args == null ? null : args[1];
+      String backupId = (args == null || args.length <= 1) ? null : args[1];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
           final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
         int progress = admin.getProgress(backupId);
         if(progress < 0){
-          System.out.println("No info was found for backup id: "+backupId);
+          System.err.println(NO_INFO_FOUND + backupId);
         } else{
           System.out.println(backupId+" progress=" + progress+"%");
         }
