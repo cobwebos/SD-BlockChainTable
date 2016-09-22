@@ -1571,7 +1571,6 @@ public class HBaseAdmin implements Admin {
     ProtobufUtil.split(admin, hri, splitPoint);
   }
 
-  
   Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException {
     BackupClientUtil.checkTargetDir(userRequest.getTargetRootDir(), conf);
     if (userRequest.getTableList() != null) {
@@ -1641,7 +1640,6 @@ public class HBaseAdmin implements Admin {
    * @param request RestoreRequest instance
    * @throws IOException
    */
-  @Override
   public Future<Void> restoreTablesAsync(final RestoreRequest userRequest) throws IOException {
     RestoreTablesResponse response = executeCallable(
       new MasterCallable<RestoreTablesResponse>(getConnection()) {
@@ -1661,7 +1659,6 @@ public class HBaseAdmin implements Admin {
     return new TableRestoreFuture(this, TableName.BACKUP_TABLE_NAME, response);
   }
 
-  @Override
   public void restoreTables(final RestoreRequest userRequest) throws IOException {
     get(restoreTablesAsync(userRequest),
         restoreWaitTimeout, TimeUnit.SECONDS);

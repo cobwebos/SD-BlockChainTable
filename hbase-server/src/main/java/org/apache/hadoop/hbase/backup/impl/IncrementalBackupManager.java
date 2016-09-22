@@ -45,6 +45,7 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.master.MasterServices;
 import org.apache.hadoop.hbase.master.procedure.MasterProcedureUtil;
 import org.apache.hadoop.hbase.procedure.MasterProcedureManager;
+import org.apache.hadoop.hbase.procedure.ProcedureUtil;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.wal.DefaultWALProvider;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable.WALItem;
@@ -110,10 +111,10 @@ public class IncrementalBackupManager {
     props.put("backupRoot", backupContext.getTargetRootDir());
     MasterProcedureManager mpm = svc.getMasterProcedureManagerHost()
         .getProcedureManager(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE);
-    long waitTime = MasterProcedureUtil.execProcedure(mpm,
+    long waitTime = ProcedureUtil.execProcedure(mpm,
         LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
         LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props);
-    MasterProcedureUtil.waitForProcedure(mpm,
+    ProcedureUtil.waitForProcedure(mpm,
         LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
         LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props, waitTime,
         conf.getInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER,

@@ -369,7 +369,7 @@ public class RestoreTablesProcedure
 
   @Override
   public TableOperationType getTableOperationType() {
-    return TableOperationType.RESTORE;
+    return TableOperationType.EDIT;
   }
 
   @Override

@@ -18,9 +18,11 @@
 package org.apache.hadoop.hbase.util;
 
 import org.apache.commons.logging.Log;
+import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+@InterfaceAudience.Private
 public final class LogUtils {
 
   private LogUtils() {    

@@ -382,7 +382,7 @@ public class IncrementalTableBackupProcedure
 
   @Override
   public TableOperationType getTableOperationType() {
-    return TableOperationType.BACKUP;
+    return TableOperationType.EDIT;
   }
 
   @Override

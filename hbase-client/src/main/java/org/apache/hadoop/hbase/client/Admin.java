@@ -914,21 +914,6 @@ public interface Admin extends Abortable, Closeable {
   void splitRegion(final byte[] regionName, final byte[] splitPoint)
     throws IOException;
 
-
-  /**
-   * Restore operation. Asynchronous version.
-   * @param request RestoreRequest instance
-   * @throws IOException
-   */
-  public Future<Void> restoreTablesAsync(final RestoreRequest request) throws IOException;
-
-  /**
-   * Restore operation. Synchronous version.
-   * @param request RestoreRequest instance
-   * @throws IOException
-   */
-  public void restoreTables(final RestoreRequest userRequest) throws IOException;
-
   /**
    * Modify an existing table, more IRB friendly version. Asynchronous operation.  This means that
    * it may be a while before your schema change is updated across all of the table.
