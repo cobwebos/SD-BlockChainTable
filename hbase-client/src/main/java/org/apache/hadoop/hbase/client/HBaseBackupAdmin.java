@@ -333,12 +333,25 @@ public class HBaseBackupAdmin implements BackupAdmin {
   }
 
   @Override
-  public List<BackupInfo> getHistory(int n, TableName name) throws IOException {
-    if (name == null) return getHistory(n);
+  public List<BackupInfo> getHistory(int n, BackupInfo.Filter ... filters) throws IOException {
+    if (filters.length == 0) return getHistory(n);
     try (final BackupSystemTable table = new BackupSystemTable(conn)) {
-      List<BackupInfo> history = table.getBackupHistoryForTable(name);
-      n = Math.min(n, history.size());
-      return history.subList(0, n);
+      List<BackupInfo> history = table.getBackupHistory();
+      List<BackupInfo> result = new ArrayList<BackupInfo>();
+      for(BackupInfo bi: history) {
+        if(result.size() == n) break;
+        boolean passed = true;
+        for(int i=0; i < filters.length; i++) {
+          if(!filters[i].apply(bi)) {
+            passed = false; 
+            break;
+          }
+        }        
+        if(passed) {
+          result.add(bi);
+        }
+      }
+      return result;
     }
   }
 

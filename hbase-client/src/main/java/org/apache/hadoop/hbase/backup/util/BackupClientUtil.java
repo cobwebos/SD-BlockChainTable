@@ -359,7 +359,7 @@ public final class BackupClientUtil {
         + HConstants.HREGION_LOGDIR_NAME;
   }
 
-  public static List<BackupInfo> getHistory(Configuration conf, Path backupRootPath)
+  private static List<BackupInfo> getHistory(Configuration conf, Path backupRootPath)
       throws IOException {
     // Get all (n) history from backup root destination
     FileSystem fs = FileSystem.get(conf);
@@ -396,28 +396,28 @@ public final class BackupClientUtil {
     return infos;
   }
 
-  public static List<BackupInfo> getHistory(Configuration conf, int n, TableName name,
-      Path backupRootPath) throws IOException {
+  public static List<BackupInfo> getHistory(Configuration conf, int n, Path backupRootPath,
+      BackupInfo.Filter... filters) throws IOException {
     List<BackupInfo> infos = getHistory(conf, backupRootPath);
-    if (name == null) {
-      if (infos.size() <= n) return infos;
-      return infos.subList(0, n);
-    } else {
-      List<BackupInfo> ret = new ArrayList<BackupInfo>();
-      int count = 0;
-      for (BackupInfo info : infos) {
-        List<TableName> names = info.getTableNames();
-        if (names.contains(name)) {
-          ret.add(info);
-          if (++count == n) {
-            break;
-          }
+    List<BackupInfo> ret = new ArrayList<BackupInfo>();
+    for (BackupInfo info : infos) {
+      if (ret.size() == n) {
+        break;
+      }
+      boolean passed = true;
+      for (int i = 0; i < filters.length; i++) {
+        if (!filters[i].apply(info)) {
+          passed = false;
+          break;
         }
       }
-      return ret;
+      if (passed) {
+        ret.add(info);
+      }
     }
+    return ret;
   }
-
+  
   public static BackupInfo loadBackupInfo(Path backupRootPath, String backupId, FileSystem fs)
       throws IOException {
     Path backupPath = new Path(backupRootPath, backupId);

@@ -51,6 +51,15 @@ import org.apache.hadoop.hbase.util.Bytes;
 public class BackupInfo implements Comparable<BackupInfo> {
   private static final Log LOG = LogFactory.getLog(BackupInfo.class);
 
+  public static interface Filter {
+    
+    /**
+     * Filter interface
+     * @param info: backup info
+     * @return true if info passes filter, false otherwise 
+     */
+    public boolean apply(BackupInfo info);
+  }
   // backup status flag
   public static enum BackupState {
     WAITING, RUNNING, COMPLETE, FAILED, ANY;

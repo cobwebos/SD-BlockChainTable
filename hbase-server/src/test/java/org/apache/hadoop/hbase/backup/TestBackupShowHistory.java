@@ -70,7 +70,13 @@ public class TestBackupShowHistory extends TestBackupBase {
 
     List<BackupInfo> history = getBackupAdmin().getHistory(10);
     assertTrue(findBackup(history, backupId));
-    history = BackupClientUtil.getHistory(conf1, 10, null, new Path(BACKUP_ROOT_DIR));
+    BackupInfo.Filter nullFilter = new BackupInfo.Filter() {
+      @Override
+      public boolean apply(BackupInfo info) {
+         return true;
+      }
+    };
+    history = BackupClientUtil.getHistory(conf1, 10, new Path(BACKUP_ROOT_DIR), nullFilter);
     assertTrue(findBackup(history, backupId));
     
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -90,8 +96,23 @@ public class TestBackupShowHistory extends TestBackupBase {
     String backupId2 = fullTableBackup(tableList);
     assertTrue(checkSucceeded(backupId2));
     LOG.info("backup complete: "+ table2);
+    BackupInfo.Filter tableNameFilter = new BackupInfo.Filter() {
+      @Override
+      public boolean apply(BackupInfo image) {
+        if (table1 == null) return true;
+        List<TableName> names = image.getTableNames();
+        return names.contains(table1);
+      }
+    };
+    BackupInfo.Filter tableSetFilter = new BackupInfo.Filter() {
+      @Override
+      public boolean apply(BackupInfo info) {
+        String backupId = info.getBackupId();
+        return backupId.startsWith("backup");
+      }
+    };
     
-    history = getBackupAdmin().getHistory(10, table1);
+    history = getBackupAdmin().getHistory(10, tableNameFilter, tableSetFilter);
     assertTrue(history.size() > 0);
     boolean success = true;
     for (BackupInfo info: history){
@@ -101,7 +122,9 @@ public class TestBackupShowHistory extends TestBackupBase {
       }
     }
     assertTrue(success);
-    history = BackupClientUtil.getHistory(conf1, 10, table1, new Path(BACKUP_ROOT_DIR));
+
+    history = BackupClientUtil.getHistory(conf1, 10, new Path(BACKUP_ROOT_DIR), 
+      tableNameFilter, tableSetFilter);
     assertTrue(history.size() > 0);
     success = true;
     for (BackupInfo info: history){
@@ -111,7 +134,12 @@ public class TestBackupShowHistory extends TestBackupBase {
       }
     }
     assertTrue(success);
-
+    
+    args = new String[]{"history",  "-n", "10", "-path", BACKUP_ROOT_DIR,
+        "-t", "table1", "-set", "backup"}; 
+    // Run backup
+    ret = ToolRunner.run(conf1, new BackupDriver(), args);
+    assertTrue(ret == 0);
     LOG.info("show_history");
   }
 

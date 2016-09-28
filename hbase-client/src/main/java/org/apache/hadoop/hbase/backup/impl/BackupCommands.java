@@ -463,25 +463,44 @@ public final class BackupCommands {
     public void execute() throws IOException {
 
       super.execute();
-      
+
       int n = parseHistoryLength();
-      TableName tableName = getTableName();
+      final TableName tableName = getTableName();
+      final String setName = getTableSetName();
+      BackupInfo.Filter tableNameFilter = new BackupInfo.Filter() {
+        @Override
+        public boolean apply(BackupInfo info) {
+          if (tableName == null) return true;
+          List<TableName> names = info.getTableNames();
+          return names.contains(tableName);
+        }
+      };
+      BackupInfo.Filter tableSetFilter = new BackupInfo.Filter() {
+        @Override
+        public boolean apply(BackupInfo info) {
+          if (setName == null) return true;
+          String backupId = info.getBackupId();
+          return backupId.startsWith(setName);
+        }
+      };                
       Path backupRootPath = getBackupRootPath();
       List<BackupInfo> history = null;
-      Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
-      if(backupRootPath == null) {
+      Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
+      if (backupRootPath == null) {
         // Load from hbase:backup
-        try(final Connection conn = ConnectionFactory.createConnection(conf); 
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
-          history = admin.getHistory(n, tableName);
-        } 
+        try (final Connection conn = ConnectionFactory.createConnection(conf);
+            final BackupAdmin admin = conn.getAdmin().getBackupAdmin();) {
+ 
+          history = admin.getHistory(n, tableNameFilter, tableSetFilter);
+        }
       } else {
         // load from backup FS
-        history = BackupClientUtil.getHistory(conf, n, tableName, backupRootPath);        
-      }      
-      for(BackupInfo info: history){
+        history = BackupClientUtil.getHistory(conf, n, backupRootPath, 
+          tableNameFilter, tableSetFilter);
+      }
+      for (BackupInfo info : history) {
         System.out.println(info.getShortDescription());
-      }      
+      }
     }
     
     private Path getBackupRootPath() throws IOException {
@@ -509,6 +528,11 @@ public final class BackupCommands {
       }
     }
 
+    private String getTableSetName() throws IOException {
+      String value = cmdline.getOptionValue("set"); 
+      return value;
+    }
+    
     private int parseHistoryLength() throws IOException {
       String value = cmdline.getOptionValue("n");
       try{

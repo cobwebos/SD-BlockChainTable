@@ -122,13 +122,13 @@ public interface BackupAdmin extends Closeable{
 
 
   /**
-   * Show backup history command for a table
+   * Show backup history command with filters
    * @param n - last n backup sessions
-   * @param name - table's name
+   * @param f - list of filters
    * @return list of backup infos
    * @throws IOException exception
    */
-  public List<BackupInfo> getHistory(int n, TableName name) throws IOException;
+  public List<BackupInfo> getHistory(int n, BackupInfo.Filter ... f) throws IOException;
 
   
   /**
