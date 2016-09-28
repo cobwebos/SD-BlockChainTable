@@ -200,8 +200,9 @@ public final class BackupCommands {
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
 
       // Check backup set
+      String setName = null;
       if (cmdline.hasOption("set")) {
-        String setName = cmdline.getOptionValue("set");
+        setName = cmdline.getOptionValue("set");
         tables = getTablesForSet(setName, conf);
 
         if (tables == null) {
@@ -221,7 +222,8 @@ public final class BackupCommands {
         BackupRequest request = new BackupRequest();
         request.setBackupType(BackupType.valueOf(args[1].toUpperCase()))
         .setTableList(tables != null?Lists.newArrayList(BackupClientUtil.parseTableNames(tables)): null)
-        .setTargetRootDir(args[2]).setWorkers(workers).setBandwidth(bandwidth);
+        .setTargetRootDir(args[2]).setWorkers(workers).setBandwidth(bandwidth)
+        .setBackupSetName(setName);
         String backupId = backupAdmin.backupTables(request);
         System.out.println("Backup session "+ backupId+" finished. Status: SUCCESS");
       } catch (IOException e) {

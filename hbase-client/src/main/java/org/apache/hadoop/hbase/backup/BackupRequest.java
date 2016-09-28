@@ -36,6 +36,7 @@ public final class BackupRequest {
   private String targetRootDir;
   private int workers = -1;
   private long bandwidth = -1L;
+  private String backupSetName;
 
   public BackupRequest() {
   }
@@ -78,5 +79,13 @@ public final class BackupRequest {
   }
   public long getBandwidth() {
     return this.bandwidth;
+  }
+
+  public String getBackupSetName() {
+    return backupSetName;
+  }
+
+  public void setBackupSetName(String backupSetName) {
+    this.backupSetName = backupSetName;
   }
 }

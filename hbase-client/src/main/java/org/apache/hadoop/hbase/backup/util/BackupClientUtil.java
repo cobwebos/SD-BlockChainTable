@@ -369,9 +369,13 @@ public final class BackupClientUtil {
     while (it.hasNext()) {
       LocatedFileStatus lfs = it.next();
       if (!lfs.isDirectory()) continue;
-      if (!isBackupDirectory(lfs)) continue;
       String backupId = lfs.getPath().getName();
-      infos.add(loadBackupInfo(backupRootPath, backupId, fs));
+      try {
+        BackupInfo info = loadBackupInfo(backupRootPath, backupId, fs);
+        infos.add(info);
+      } catch(IOException e) {
+        LOG.error("Can not load backup info from: "+ lfs.getPath(), e);
+      }
     }
     // Sort
     Collections.sort(infos, new Comparator<BackupInfo>() {
@@ -412,10 +416,6 @@ public final class BackupClientUtil {
       }
       return ret;
     }
-  }
-
-  private static boolean isBackupDirectory(LocatedFileStatus lfs) {
-    return lfs.getPath().getName().startsWith(BackupRestoreConstants.BACKUPID_PREFIX);
   }
 
   public static BackupInfo loadBackupInfo(Path backupRootPath, String backupId, FileSystem fs)

@@ -223,9 +223,17 @@ public class BackupManifest {
     public int compareTo(BackupImage other) {
       String thisBackupId = this.getBackupId();
       String otherBackupId = other.getBackupId();
-      Long thisTS = new Long(thisBackupId.substring(thisBackupId.lastIndexOf("_") + 1));
-      Long otherTS = new Long(otherBackupId.substring(otherBackupId.lastIndexOf("_") + 1));
-      return thisTS.compareTo(otherTS);
+      int index1 = thisBackupId.lastIndexOf("_");
+      int index2 = otherBackupId.lastIndexOf("_");
+      String name1 = thisBackupId.substring(0, index1);
+      String name2 = otherBackupId.substring(0, index2);
+      if(name1.equals(name2)) {
+        Long thisTS = new Long(thisBackupId.substring(index1 + 1));
+        Long otherTS = new Long(otherBackupId.substring(index2 + 1));
+        return thisTS.compareTo(otherTS);
+      } else {
+        return name1.compareTo(name2);
+      }
     }
   }
 

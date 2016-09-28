@@ -1586,7 +1586,8 @@ public class HBaseAdmin implements Admin {
         public BackupTablesResponse call(int callTimeout) throws ServiceException {
           BackupTablesRequest request = RequestConverter.buildBackupTablesRequest(
             userRequest.getBackupType(), userRequest.getTableList(), userRequest.getTargetRootDir(),
-            userRequest.getWorkers(), userRequest.getBandwidth(), ng.getNonceGroup(),ng.newNonce());
+            userRequest.getWorkers(), userRequest.getBandwidth(), 
+            userRequest.getBackupSetName(), ng.getNonceGroup(),ng.newNonce());
           return master.backupTables(null, request);
         }
       }, (int) backupWaitTimeout);

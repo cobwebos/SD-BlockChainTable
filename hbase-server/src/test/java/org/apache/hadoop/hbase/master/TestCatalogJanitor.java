@@ -436,7 +436,7 @@ public class TestCatalogJanitor {
         final BackupType type,
         final List<TableName> tableList,
         final String targetRootDir, final int workers,
-        final long bandwidth,
+        final long bandwidth, final String setName,
         final long nonceGroup, final long nonce) throws IOException {
       return null;
     }

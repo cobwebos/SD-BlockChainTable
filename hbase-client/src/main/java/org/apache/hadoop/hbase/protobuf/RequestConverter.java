@@ -1273,12 +1273,15 @@ public final class RequestConverter {
 
   public static BackupTablesRequest buildBackupTablesRequest(
       final BackupType type, List<TableName> tableList, String targetRootDir, final int workers,
-      final long bandwidth, final long nonceGroup, final long nonce) {
+      final long bandwidth, String setName, final long nonceGroup, final long nonce) {
     BackupTablesRequest.Builder builder = BackupTablesRequest.newBuilder();
     builder.setType(ProtobufUtil.toProtoBackupType(type));
     builder.setTargetRootDir(targetRootDir);
     builder.setWorkers(workers);
     builder.setBandwidth(bandwidth);
+    if(setName != null) {
+      builder.setBackupSetName(setName);
+    }
     if (tableList != null) {
       for (TableName table : tableList) {
         builder.addTables(ProtobufUtil.toProtoTableName(table));

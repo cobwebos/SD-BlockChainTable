@@ -2620,9 +2620,11 @@ public class HMaster extends HRegionServer implements MasterServices {
   @Override
   public Pair<Long, String> backupTables(final BackupType type,
         List<TableName> tableList, final String targetRootDir, final int workers,
-        final long bandwidth, final long nonceGroup, final long nonce) throws IOException {
+        final long bandwidth, final String setName,
+        final long nonceGroup, final long nonce) throws IOException {
     long procId;
-    String backupId = BackupRestoreConstants.BACKUPID_PREFIX + 
+    String backupId = (setName == null || setName.length() == 0? 
+        BackupRestoreConstants.BACKUPID_PREFIX: setName + "_") + 
         EnvironmentEdgeManager.currentTime();
     if (type == BackupType.INCREMENTAL) {
       Set<TableName> incrTableSet = null;

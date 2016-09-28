@@ -1064,8 +1064,8 @@ public class MasterRpcServices extends RSRpcServices
       }
       Pair<Long, String> pair = master.backupTables(
         BackupType.valueOf(request.getType().name()), tablesList, request.getTargetRootDir(),
-        (int)request.getWorkers(), request.getBandwidth(), request.getNonceGroup(),
-        request.getNonce());
+        (int)request.getWorkers(), request.getBandwidth(), request.getBackupSetName(), 
+        request.getNonceGroup(), request.getNonce());
       return response.setProcId(pair.getFirst()).setBackupId(pair.getSecond()).build();
     } catch (IOException e) {
       throw new ServiceException(e);

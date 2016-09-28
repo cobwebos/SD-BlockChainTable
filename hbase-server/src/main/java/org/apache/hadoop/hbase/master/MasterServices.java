@@ -188,6 +188,7 @@ public interface MasterServices extends Server {
    * @param targetRootDir root dir for saving the backup
    * @param workers number of paralle workers. -1 - system defined
    * @param bandwidth bandwidth per worker in MB per sec. -1 - unlimited
+   * @param setName - backup set name
    * @param nonceGroup nonce group
    * @param nonce nonce
    * @return pair of procedure Id and backupId
@@ -199,6 +200,7 @@ public interface MasterServices extends Server {
       final String targetRootDir,
       final int workers,
       final long bandwidth,
+      final String setName,
       final long nonceGroup,
       final long nonce) throws IOException;
 

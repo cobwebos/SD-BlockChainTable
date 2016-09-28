@@ -18,9 +18,10 @@
 
 package org.apache.hadoop.hbase.backup;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -66,6 +67,7 @@ public class TestFullBackupSet extends TestBackupBase {
       assertTrue(backups.size() == 1);
       String backupId = backups.get(0).getBackupId();
       assertTrue(checkSucceeded(backupId));
+      assertTrue(backupId.startsWith(name));
       
       LOG.info("backup complete");
       
