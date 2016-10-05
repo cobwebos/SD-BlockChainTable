@@ -61,9 +61,6 @@ import org.apache.hadoop.hbase.TableNotDisabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.UnknownRegionException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.apache.hadoop.hbase.backup.BackupRequest;
-import org.apache.hadoop.hbase.backup.RestoreRequest;
-import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.security.SecurityCapability;
@@ -86,8 +83,6 @@ import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.RollWALWriterReque
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.RollWALWriterResponse;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.StopServerRequest;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.UpdateConfigurationRequest;
-import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.BackupTablesRequest;
-import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.BackupTablesResponse;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.NameStringPair;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ProcedureDescription;
@@ -149,8 +144,6 @@ import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.ModifyTableRespon
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.MoveRegionRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreSnapshotRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreSnapshotResponse;
-import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreTablesRequest;
-import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreTablesResponse;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SecurityCapabilitiesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetBalancerRunningRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetNormalizerRunningRequest;
@@ -219,9 +212,7 @@ public class HBaseAdmin implements Admin {
   // numRetries is for 'normal' stuff... Multiply by this factor when
   // want to wait a long time.
   private final int retryLongerMultiplier;
-  private final int syncWaitTimeout;
-  private final long backupWaitTimeout;
-  private final long restoreWaitTimeout;
+  private final int syncWaitTimeout; 
   private boolean aborted;
   private int operationTimeout;
 
@@ -248,10 +239,6 @@ public class HBaseAdmin implements Admin {
         HConstants.DEFAULT_HBASE_CLIENT_OPERATION_TIMEOUT);
     this.syncWaitTimeout = this.conf.getInt(
       "hbase.client.sync.wait.timeout.msec", 10 * 60000); // 10min
-    this.backupWaitTimeout = this.conf.getInt(
-      "hbase.client.backup.wait.timeout.sec", 24 * 3600); // 24 h
-    this.restoreWaitTimeout = this.conf.getInt(
-        "hbase.client.restore.wait.timeout.sec", 24 * 3600); // 24 h
     this.rpcCallerFactory = RpcRetryingCallerFactory.instantiate(this.conf);
 
     this.ng = this.connection.getNonceGenerator();
@@ -1571,112 +1558,112 @@ public class HBaseAdmin implements Admin {
     ProtobufUtil.split(admin, hri, splitPoint);
   }
 
-  Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException {
-    BackupClientUtil.checkTargetDir(userRequest.getTargetRootDir(), conf);
-    if (userRequest.getTableList() != null) {
-      for (TableName table : userRequest.getTableList()) {
-        if (!tableExists(table)) {
-          throw new DoNotRetryIOException(table + "does not exist");
-        }
-      }
-    }
-    BackupTablesResponse response = executeCallable(
-      new MasterCallable<BackupTablesResponse>(getConnection()) {
-        @Override
-        public BackupTablesResponse call(int callTimeout) throws ServiceException {
-          BackupTablesRequest request = RequestConverter.buildBackupTablesRequest(
-            userRequest.getBackupType(), userRequest.getTableList(), userRequest.getTargetRootDir(),
-            userRequest.getWorkers(), userRequest.getBandwidth(), 
-            userRequest.getBackupSetName(), ng.getNonceGroup(),ng.newNonce());
-          return master.backupTables(null, request);
-        }
-      }, (int) backupWaitTimeout);
-    return new TableBackupFuture(this, TableName.BACKUP_TABLE_NAME, response);
-  }
-
-  String backupTables(final BackupRequest userRequest) throws IOException {
-    return get(
-      backupTablesAsync(userRequest),
-      backupWaitTimeout,
-      TimeUnit.SECONDS);
-  }
-
-  public static class TableBackupFuture extends TableFuture<String> {
-    String backupId;
-    public TableBackupFuture(final HBaseAdmin admin, final TableName tableName,
-        final BackupTablesResponse response) {
-      super(admin, tableName,
-          (response != null && response.hasProcId()) ? response.getProcId() : null);
-      backupId = response.getBackupId();
-    }
-
-    String getBackupId() {
-      return backupId;
-    }
-
-    @Override
-    public String getOperationType() {
-      return "BACKUP";
-    }
-
-    @Override
-    protected String convertResult(final GetProcedureResultResponse response) throws IOException {
-      if (response.hasException()) {
-        throw ForeignExceptionUtil.toIOException(response.getException());
-      }
-      ByteString result = response.getResult();
-      if (result == null) return null;
-      return Bytes.toStringBinary(result.toByteArray());
-    }
-
-    @Override
-    protected String postOperationResult(final String result,
-      final long deadlineTs) throws IOException, TimeoutException {
-      return result;
-    }
-  }
-
-  /**
-   * Restore operation.
-   * @param request RestoreRequest instance
-   * @throws IOException
-   */
-  public Future<Void> restoreTablesAsync(final RestoreRequest userRequest) throws IOException {
-    RestoreTablesResponse response = executeCallable(
-      new MasterCallable<RestoreTablesResponse>(getConnection()) {
-        @Override
-        public RestoreTablesResponse call(int callTimeout) throws ServiceException {
-          try {
-            RestoreTablesRequest request = RequestConverter.buildRestoreTablesRequest(
-                userRequest.getBackupRootDir(), userRequest.getBackupId(),
-                userRequest.isCheck(), userRequest.getFromTables(), userRequest.getToTables(),
-                userRequest.isOverwrite(), ng.getNonceGroup(), ng.newNonce());
-            return master.restoreTables(null, request);
-          } catch (IOException ioe) {
-            throw new ServiceException(ioe);
-          }
-        }
-      });
-    return new TableRestoreFuture(this, TableName.BACKUP_TABLE_NAME, response);
-  }
-
-  public void restoreTables(final RestoreRequest userRequest) throws IOException {
-    get(restoreTablesAsync(userRequest),
-        restoreWaitTimeout, TimeUnit.SECONDS);
-  }
-
-  private static class TableRestoreFuture extends TableFuture<Void> {
-    public TableRestoreFuture(final HBaseAdmin admin, final TableName tableName,
-        final RestoreTablesResponse response) {
-      super(admin, tableName,
-          (response != null) ? response.getProcId() : null);
-    }
-
-    @Override
-    public String getOperationType() {
-      return "RESTORE";
-    }
-  }
+//  Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException {
+//    BackupClientUtil.checkTargetDir(userRequest.getTargetRootDir(), conf);
+//    if (userRequest.getTableList() != null) {
+//      for (TableName table : userRequest.getTableList()) {
+//        if (!tableExists(table)) {
+//          throw new DoNotRetryIOException(table + "does not exist");
+//        }
+//      }
+//    }
+//    BackupTablesResponse response = executeCallable(
+//      new MasterCallable<BackupTablesResponse>(getConnection()) {
+//        @Override
+//        public BackupTablesResponse call(int callTimeout) throws ServiceException {
+//          BackupTablesRequest request = RequestConverter.buildBackupTablesRequest(
+//            userRequest.getBackupType(), userRequest.getTableList(), userRequest.getTargetRootDir(),
+//            userRequest.getWorkers(), userRequest.getBandwidth(), 
+//            userRequest.getBackupSetName(), ng.getNonceGroup(),ng.newNonce());
+//          return master.backupTables(null, request);
+//        }
+//      }, (int) backupWaitTimeout);
+//    return new TableBackupFuture(this, TableName.BACKUP_TABLE_NAME, response);
+//  }
+//
+//  String backupTables(final BackupRequest userRequest) throws IOException {
+//    return get(
+//      backupTablesAsync(userRequest),
+//      backupWaitTimeout,
+//      TimeUnit.SECONDS);
+//  }
+//
+//  public static class TableBackupFuture extends TableFuture<String> {
+//    String backupId;
+//    public TableBackupFuture(final HBaseAdmin admin, final TableName tableName,
+//        final BackupTablesResponse response) {
+//      super(admin, tableName,
+//          (response != null && response.hasProcId()) ? response.getProcId() : null);
+//      backupId = response.getBackupId();
+//    }
+//
+//    String getBackupId() {
+//      return backupId;
+//    }
+//
+//    @Override
+//    public String getOperationType() {
+//      return "BACKUP";
+//    }
+//
+//    @Override
+//    protected String convertResult(final GetProcedureResultResponse response) throws IOException {
+//      if (response.hasException()) {
+//        throw ForeignExceptionUtil.toIOException(response.getException());
+//      }
+//      ByteString result = response.getResult();
+//      if (result == null) return null;
+//      return Bytes.toStringBinary(result.toByteArray());
+//    }
+//
+//    @Override
+//    protected String postOperationResult(final String result,
+//      final long deadlineTs) throws IOException, TimeoutException {
+//      return result;
+//    }
+//  }
+//
+//  /**
+//   * Restore operation.
+//   * @param request RestoreRequest instance
+//   * @throws IOException
+//   */
+//  public Future<Void> restoreTablesAsync(final RestoreRequest userRequest) throws IOException {
+//    RestoreTablesResponse response = executeCallable(
+//      new MasterCallable<RestoreTablesResponse>(getConnection()) {
+//        @Override
+//        public RestoreTablesResponse call(int callTimeout) throws ServiceException {
+//          try {
+//            RestoreTablesRequest request = RequestConverter.buildRestoreTablesRequest(
+//                userRequest.getBackupRootDir(), userRequest.getBackupId(),
+//                userRequest.isCheck(), userRequest.getFromTables(), userRequest.getToTables(),
+//                userRequest.isOverwrite(), ng.getNonceGroup(), ng.newNonce());
+//            return master.restoreTables(null, request);
+//          } catch (IOException ioe) {
+//            throw new ServiceException(ioe);
+//          }
+//        }
+//      });
+//    return new TableRestoreFuture(this, TableName.BACKUP_TABLE_NAME, response);
+//  }
+//
+//  public void restoreTables(final RestoreRequest userRequest) throws IOException {
+//    get(restoreTablesAsync(userRequest),
+//        restoreWaitTimeout, TimeUnit.SECONDS);
+//  }
+//
+//  private static class TableRestoreFuture extends TableFuture<Void> {
+//    public TableRestoreFuture(final HBaseAdmin admin, final TableName tableName,
+//        final RestoreTablesResponse response) {
+//      super(admin, tableName,
+//          (response != null) ? response.getProcId() : null);
+//    }
+//
+//    @Override
+//    public String getOperationType() {
+//      return "RESTORE";
+//    }
+//  }
 
   @Override
   public Future<Void> modifyTable(final TableName tableName, final HTableDescriptor htd)
@@ -3544,9 +3531,5 @@ public class HBaseAdmin implements Admin {
             HConstants.EMPTY_END_ROW, false, 0);
   }
 
-  @Override
-  public BackupAdmin getBackupAdmin() throws IOException {
-    return new HBaseBackupAdmin(this);
-  }
 
 }

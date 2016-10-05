@@ -16,21 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.client;
+package org.apache.hadoop.hbase.backup;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupInfo;
-import org.apache.hadoop.hbase.backup.BackupRequest;
-import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.backup.util.BackupSet;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
+import org.apache.hadoop.hbase.client.Admin;
 /**
  * The administrative API for HBase Backup. Obtain an instance from 
  * an {@link Admin#getBackupAdmin()} and call {@link #close()} afterwards.

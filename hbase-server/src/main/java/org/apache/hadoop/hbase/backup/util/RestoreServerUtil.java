@@ -20,7 +20,6 @@ package org.apache.hadoop.hbase.backup.util;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,26 +38,21 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.MetaTableAccessor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
-import org.apache.hadoop.hbase.backup.RestoreService;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
+import org.apache.hadoop.hbase.backup.RestoreService;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.ClusterConnection;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.io.HFileLink;
 import org.apache.hadoop.hbase.io.hfile.CacheConfig;
 import org.apache.hadoop.hbase.io.hfile.HFile;
 import org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles;
-import org.apache.hadoop.hbase.master.MasterServices;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.SnapshotDescription;
 import org.apache.hadoop.hbase.regionserver.HRegionFileSystem;
 import org.apache.hadoop.hbase.regionserver.HStore;
@@ -68,7 +62,6 @@ import org.apache.hadoop.hbase.snapshot.SnapshotManifest;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSTableDescriptors;
-import org.apache.hadoop.hbase.util.Pair;
 
 /**
  * A collection for methods used by multiple classes to restore HBase tables.
@@ -172,33 +165,21 @@ public class RestoreServerUtil {
     return regionDirList;
   }
   
-  static void modifyTableSync(MasterServices svc, HTableDescriptor desc) throws IOException {
-    svc.modifyTable(desc.getTableName(), desc, HConstants.NO_NONCE, HConstants.NO_NONCE);
-    @SuppressWarnings("serial")
-    Pair<Integer, Integer> status = new Pair<Integer, Integer>() {{
-      setFirst(0);
-      setSecond(0);
-    }};
-    int i = 0;
-    do {
-      status = svc.getAssignmentManager().getReopenStatus(desc.getTableName());
-      if (status.getSecond() != 0) {
-        LOG.debug(status.getSecond() - status.getFirst() + "/" + status.getSecond()
-          + " regions updated.");
-        try {
-          Thread.sleep(1 * 1000l);
-        } catch (InterruptedException ie) {
-          InterruptedIOException iie = new InterruptedIOException();
-          iie.initCause(ie);
-          throw iie;
+  static void modifyTableSync(Connection conn, HTableDescriptor desc) throws IOException {
+    
+    try (Admin admin = conn.getAdmin();) {
+      admin.modifyTable(desc.getTableName(), desc);
+      int attempt = 0;
+      int maxAttempts = 600;
+      while( !admin.isTableAvailable(desc.getTableName())) {
+        Thread.sleep(100); 
+        attempt++;
+        if( attempt++ > maxAttempts) {
+          throw new IOException("Timeout expired "+(maxAttempts * 100)+"ms");
         }
-      } else {
-        LOG.debug("All regions updated.");
-        break;
       }
-    } while (status.getFirst() != 0 && i++ < 500);
-    if (status.getFirst() != 0) {
-      throw new IOException("Failed to update all regions even after 500 seconds.");
+    } catch (Exception e) {
+      throw new IOException(e);
     }
   }
 
@@ -206,7 +187,7 @@ public class RestoreServerUtil {
    * During incremental backup operation. Call WalPlayer to replay WAL in backup image Currently
    * tableNames and newTablesNames only contain single table, will be expanded to multiple tables in
    * the future
-   * @param svc MasterServices
+   * @param conn HBase connection
    * @param tableBackupPath backup path
    * @param logDirs : incremental backup folders, which contains WAL
    * @param tableNames : source tableNames(table names were backuped)
@@ -214,9 +195,10 @@ public class RestoreServerUtil {
    * @param incrBackupId incremental backup Id
    * @throws IOException exception
    */
-  public void incrementalRestoreTable(MasterServices svc, Path tableBackupPath, Path[] logDirs,
+  public void incrementalRestoreTable(Connection conn, Path tableBackupPath, Path[] logDirs,
       TableName[] tableNames, TableName[] newTableNames, String incrBackupId) throws IOException {
 
+    try (Admin admin = conn.getAdmin();) {
     if (tableNames.length != newTableNames.length) {
       throw new IOException("Number of source tables and target tables does not match!");
     }
@@ -225,7 +207,7 @@ public class RestoreServerUtil {
     // for incremental backup image, expect the table already created either by user or previous
     // full backup. Here, check that all new tables exists
     for (TableName tableName : newTableNames) {
-      if (!MetaTableAccessor.tableExists(svc.getConnection(), tableName)) {
+      if (!admin.tableExists(tableName)) {
         throw new IOException("HBase table " + tableName
             + " does not exist. Create the table first, e.g. by restoring a full backup.");
       }
@@ -237,7 +219,7 @@ public class RestoreServerUtil {
       LOG.debug("Found descriptor " + tableDescriptor + " through " + incrBackupId);
 
       TableName newTableName = newTableNames[i];
-      HTableDescriptor newTableDescriptor = svc.getTableDescriptors().get(newTableName);
+      HTableDescriptor newTableDescriptor = admin.getTableDescriptor(newTableName);
       List<HColumnDescriptor> families = Arrays.asList(tableDescriptor.getColumnFamilies());
       List<HColumnDescriptor> existingFamilies =
           Arrays.asList(newTableDescriptor.getColumnFamilies());
@@ -255,7 +237,7 @@ public class RestoreServerUtil {
         }
       }
       if (schemaChangeNeeded) {
-        RestoreServerUtil.modifyTableSync(svc, newTableDescriptor);
+        RestoreServerUtil.modifyTableSync(conn, newTableDescriptor);
         LOG.info("Changed " + newTableDescriptor.getTableName() + " to: " + newTableDescriptor);
       }
     }
@@ -263,12 +245,13 @@ public class RestoreServerUtil {
         BackupRestoreServerFactory.getRestoreService(conf);
 
     restoreService.run(logDirs, tableNames, newTableNames, false);
+    }
   }
 
-  public void fullRestoreTable(MasterServices svc, Path tableBackupPath, TableName tableName,
+  public void fullRestoreTable(Connection conn, Path tableBackupPath, TableName tableName,
       TableName newTableName, boolean truncateIfExists, String lastIncrBackupId)
           throws IOException {
-    restoreTableAndCreate(svc, tableName, newTableName, tableBackupPath, truncateIfExists,
+    restoreTableAndCreate(conn, tableName, newTableName, tableBackupPath, truncateIfExists,
         lastIncrBackupId);
   }
 
@@ -386,7 +369,7 @@ public class RestoreServerUtil {
     return null;
   }
 
-  private void restoreTableAndCreate(MasterServices svc, TableName tableName,
+  private void restoreTableAndCreate(Connection conn, TableName tableName,
       TableName newTableName, Path tableBackupPath, boolean truncateIfExists,
       String lastIncrBackupId) throws IOException {
     if (newTableName == null || newTableName.equals("")) {
@@ -434,7 +417,7 @@ public class RestoreServerUtil {
               + ", will only create table");
         }
         tableDescriptor.setName(newTableName);
-        checkAndCreateTable(svc, tableBackupPath, tableName, newTableName, null, tableDescriptor,
+        checkAndCreateTable(conn, tableBackupPath, tableName, newTableName, null, tableDescriptor,
           truncateIfExists);
         return;
       } else {
@@ -461,7 +444,7 @@ public class RestoreServerUtil {
 
       // should only try to create the table with all region informations, so we could pre-split
       // the regions in fine grain
-      checkAndCreateTable(svc, tableBackupPath, tableName, newTableName, regionPathList,
+      checkAndCreateTable(conn, tableBackupPath, tableName, newTableName, regionPathList,
         tableDescriptor, truncateIfExists);
 
       // Now get region splits from full backup
@@ -702,18 +685,18 @@ public class RestoreServerUtil {
    * @param htd table descriptor
    * @throws IOException exception
    */
-  private void checkAndCreateTable(MasterServices svc, Path tableBackupPath, TableName tableName,
+  private void checkAndCreateTable(Connection conn, Path tableBackupPath, TableName tableName,
       TableName targetTableName, ArrayList<Path> regionDirList, 
       HTableDescriptor htd, boolean truncateIfExists)
           throws IOException {
-    try {
+    try (Admin admin = conn.getAdmin();){
       boolean createNew = false;
-      if (MetaTableAccessor.tableExists(svc.getConnection(), targetTableName)) {
+      if (admin.tableExists(targetTableName)) {
         if(truncateIfExists) {
           LOG.info("Truncating exising target table '" + targetTableName +
             "', preserving region splits");
-          svc.disableTable(targetTableName, HConstants.NO_NONCE, HConstants.NO_NONCE);
-          svc.truncateTable(targetTableName, true, HConstants.NO_NONCE, HConstants.NO_NONCE);
+          admin.disableTable(targetTableName);
+          admin.truncateTable(targetTableName, true);
         } else{
           LOG.info("Using exising target table '" + targetTableName + "'");
         }
@@ -724,14 +707,14 @@ public class RestoreServerUtil {
         LOG.info("Creating target table '" + targetTableName + "'");
         byte[][] keys = null;
         if (regionDirList == null || regionDirList.size() == 0) {
-          svc.createTable(htd, null, HConstants.NO_NONCE, HConstants.NO_NONCE);
+          admin.createTable(htd, null);
         } else {
           keys = generateBoundaryKeys(regionDirList);
           // create table using table descriptor and region boundaries
-          svc.createTable(htd, keys, HConstants.NO_NONCE, HConstants.NO_NONCE);
+          admin.createTable(htd, keys);
         }
         long startTime = EnvironmentEdgeManager.currentTime();
-        while (!((ClusterConnection)svc.getConnection()).isTableAvailable(targetTableName, keys)) {
+        while (!admin.isTableAvailable(targetTableName, keys)) {
           Thread.sleep(100);
           if (EnvironmentEdgeManager.currentTime() - startTime > TABLE_AVAILABILITY_WAIT_TIME) {
             throw new IOException("Time out "+TABLE_AVAILABILITY_WAIT_TIME+

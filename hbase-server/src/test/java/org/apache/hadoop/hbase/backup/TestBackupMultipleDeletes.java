@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -59,9 +60,10 @@ public class TestBackupMultipleDeletes extends TestBackupBase {
     HBaseAdmin admin = null;
     Connection conn = ConnectionFactory.createConnection(conf1);
     admin = (HBaseAdmin) conn.getAdmin();
+    BackupAdmin client = new HBaseBackupAdmin(conn);
     BackupRequest request = new BackupRequest();
     request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdFull = admin.getBackupAdmin().backupTables(request);
+    String backupIdFull = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdFull));
     // #2 - insert some data to table table1
     HTable t1 = (HTable) conn.getTable(table1);
@@ -78,7 +80,7 @@ public class TestBackupMultipleDeletes extends TestBackupBase {
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
         .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdInc1 = admin.getBackupAdmin().backupTables(request);
+    String backupIdInc1 = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdInc1));
     // #4 - insert some data to table table2
     HTable t2 = (HTable) conn.getTable(table2);
@@ -93,7 +95,7 @@ public class TestBackupMultipleDeletes extends TestBackupBase {
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
         .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdInc2 = admin.getBackupAdmin().backupTables(request);
+    String backupIdInc2 = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdInc2));
     // #6 - insert some data to table table1
     t1 = (HTable) conn.getTable(table1);
@@ -107,7 +109,7 @@ public class TestBackupMultipleDeletes extends TestBackupBase {
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
         .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdInc3 = admin.getBackupAdmin().backupTables(request);
+    String backupIdInc3 = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdInc3));
     // #8 - insert some data to table table2
     t2 = (HTable) conn.getTable(table2);
@@ -121,25 +123,25 @@ public class TestBackupMultipleDeletes extends TestBackupBase {
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
         .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdInc4 = admin.getBackupAdmin().backupTables(request);
+    String backupIdInc4 = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdInc4));
     // #10 full backup for table3
     tables = Lists.newArrayList(table3);
     request = new BackupRequest();
     request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdFull2 = admin.getBackupAdmin().backupTables(request);
+    String backupIdFull2 = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdFull2));
     // #11 - incremental backup for table3
     tables = Lists.newArrayList(table3);
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
         .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdInc5 = admin.getBackupAdmin().backupTables(request);
+    String backupIdInc5 = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdInc5));
     LOG.error("Delete backupIdInc2");
-    admin.getBackupAdmin().deleteBackups(new String[] { backupIdInc2 });
+    client.deleteBackups(new String[] { backupIdInc2 });
     LOG.error("Delete backupIdInc2 done");
-    List<BackupInfo> list = admin.getBackupAdmin().getHistory(100);
+    List<BackupInfo> list = client.getHistory(100);
     // First check number of backup images before and after
     assertEquals(4, list.size());
     // then verify that no backupIdInc2,3,4

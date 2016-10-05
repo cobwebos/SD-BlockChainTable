@@ -32,12 +32,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
+import org.apache.hadoop.hbase.backup.BackupAdmin;
 import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
+import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
@@ -160,9 +161,11 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     List<TableName> tables = Lists.newArrayList(TABLE_NAME1, TABLE_NAME2);
     HBaseAdmin admin = null;
     admin = (HBaseAdmin) conn.getAdmin();
+    BackupAdmin client = new HBaseBackupAdmin(util.getConnection());
+
     BackupRequest request = new BackupRequest();
     request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdFull = admin.getBackupAdmin().backupTables(request);
+    String backupIdFull = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdFull));
     // #2 - insert some data to table
     loadData(TABLE_NAME1, rowsInBatch);
@@ -178,11 +181,10 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
         .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdIncMultiple = admin.getBackupAdmin().backupTables(request);
+    String backupIdIncMultiple = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdIncMultiple));
     // #4 - restore full backup for all tables, without overwrite
     TableName[] tablesRestoreFull = new TableName[] { TABLE_NAME1, TABLE_NAME2 };
-    BackupAdmin client = util.getAdmin().getBackupAdmin();
     client.restore(createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false, tablesRestoreFull,
       null, true));
     // #5.1 - check tables for full restore

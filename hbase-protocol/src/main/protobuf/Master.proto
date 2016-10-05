@@ -27,7 +27,6 @@ option java_generate_equals_and_hash = true;
 option optimize_for = SPEED;
 
 import "HBase.proto";
-import "Backup.proto";
 import "Client.proto";
 import "ClusterStatus.proto";
 import "ErrorHandling.proto";
@@ -541,42 +540,6 @@ message SecurityCapabilitiesResponse {
   repeated Capability capabilities = 1;
 }
 
-message BackupTablesRequest {
-  required BackupType type = 1;
-  repeated TableName tables = 2;
-  required string target_root_dir = 3;
-  optional int64 workers = 4;
-  optional int64 bandwidth = 5;
-  optional string backup_set_name = 6;
-  optional uint64 nonce_group = 7 [default = 0];
-  optional uint64 nonce = 8 [default = 0];
-}
-
-message BackupTablesResponse {
-  optional uint64 proc_id = 1;
-  optional string backup_id = 2;
-}
-
-enum RestoreTablesState {
-  VALIDATION = 1;
-  RESTORE_IMAGES = 2;
-}
-
-message RestoreTablesRequest {
-  required string backup_id = 1;
-  repeated TableName tables = 2;
-  repeated TableName target_tables = 3;
-  required string backup_root_dir = 4;
-  optional bool dependency_check_only = 5;
-  optional bool overwrite = 6;
-  optional uint64 nonce_group = 7 [default = 0];
-  optional uint64 nonce = 8 [default = 0];
-}
-
-message RestoreTablesResponse {
-  optional uint64 proc_id = 1;
-}
-
 service MasterService {
   /** Used by the client to get the number of regions that have received the updated schema */
   rpc GetSchemaAlterStatus(GetSchemaAlterStatusRequest)
@@ -852,11 +815,4 @@ service MasterService {
   rpc ListProcedures(ListProceduresRequest)
     returns(ListProceduresResponse);
 
-  /** backup table set */
-  rpc backupTables(BackupTablesRequest)
-    returns(BackupTablesResponse);
-
-  /** restore table set */
-  rpc restoreTables(RestoreTablesRequest)
-    returns(RestoreTablesResponse);
 }

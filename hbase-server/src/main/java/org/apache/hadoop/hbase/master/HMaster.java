@@ -83,9 +83,9 @@ import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
-import org.apache.hadoop.hbase.backup.master.FullTableBackupProcedure;
-import org.apache.hadoop.hbase.backup.master.IncrementalTableBackupProcedure;
-import org.apache.hadoop.hbase.backup.master.RestoreTablesProcedure;
+import org.apache.hadoop.hbase.backup.impl.FullTableBackupClient;
+import org.apache.hadoop.hbase.backup.impl.IncrementalTableBackupClient;
+import org.apache.hadoop.hbase.backup.impl.RestoreTablesClient;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Admin;
@@ -2617,120 +2617,7 @@ public class HMaster extends HRegionServer implements MasterServices {
     return procInfoList;
   }
 
-  @Override
-  public Pair<Long, String> backupTables(final BackupType type,
-        List<TableName> tableList, final String targetRootDir, final int workers,
-        final long bandwidth, final String setName,
-        final long nonceGroup, final long nonce) throws IOException {
-    long procId;
-    String backupId = (setName == null || setName.length() == 0? 
-        BackupRestoreConstants.BACKUPID_PREFIX: setName + "_") + 
-        EnvironmentEdgeManager.currentTime();
-    if (type == BackupType.INCREMENTAL) {
-      Set<TableName> incrTableSet = null;
-      try (BackupSystemTable table = new BackupSystemTable(getConnection())) {
-        incrTableSet = table.getIncrementalBackupTableSet(targetRootDir);
-      }
-         
-      if (incrTableSet.isEmpty()) {
-        LOG.warn("Incremental backup table set contains no table.\n"
-            + "Use 'backup create full' or 'backup stop' to \n "
-            + "change the tables covered by incremental backup.");
-        throw new DoNotRetryIOException("No table covered by incremental backup.");
-      }
 
-      tableList.removeAll(incrTableSet);
-      if (!tableList.isEmpty()) {
-        String extraTables = StringUtils.join(",", tableList);
-        LOG.error("Some tables (" + extraTables + ") haven't gone through full backup");
-        throw new DoNotRetryIOException("Perform full backup on " + extraTables + " first, "
-            + "then retry the command");
-      }
-      LOG.info("Incremental backup for the following table set: " + incrTableSet);
-      tableList = Lists.newArrayList(incrTableSet);
-    }
-    if (tableList != null && !tableList.isEmpty()) {
-      for (TableName table : tableList) {
-        String targetTableBackupDir =
-            HBackupFileSystem.getTableBackupDir(targetRootDir, backupId, table);
-        Path targetTableBackupDirPath = new Path(targetTableBackupDir);
-        FileSystem outputFs = FileSystem.get(targetTableBackupDirPath.toUri(), conf);
-        if (outputFs.exists(targetTableBackupDirPath)) {
-          throw new DoNotRetryIOException("Target backup directory " + targetTableBackupDir
-            + " exists already.");
-        }
-      }
-      ArrayList<TableName> nonExistingTableList = null;
-      for (TableName tableName : tableList) {
-        if (!MetaTableAccessor.tableExists(getConnection(), tableName)) {
-          if (nonExistingTableList == null) {
-            nonExistingTableList = new ArrayList<>();
-          }
-          nonExistingTableList.add(tableName);
-        }
-      }
-      if (nonExistingTableList != null) {
-        if (type == BackupType.INCREMENTAL ) {
-          LOG.warn("Incremental backup table set contains non-exising table: "
-              + nonExistingTableList);
-          // Update incremental backup set 
-          tableList = excludeNonExistingTables(tableList, nonExistingTableList);
-        } else {
-          // Throw exception only in full mode - we try to backup non-existing table
-          throw new DoNotRetryIOException("Non-existing tables found in the table list: "
-              + nonExistingTableList);
-        }
-      }
-    }
-    if (type == BackupType.FULL) {
-      procId = this.procedureExecutor.submitProcedure(
-        new FullTableBackupProcedure(procedureExecutor.getEnvironment(), backupId,
-          tableList, targetRootDir, workers, bandwidth), nonceGroup, nonce);
-    } else {
-      procId = this.procedureExecutor.submitProcedure(
-        new IncrementalTableBackupProcedure(procedureExecutor.getEnvironment(), backupId,
-          tableList, targetRootDir, workers, bandwidth), nonceGroup, nonce);
-    }
-    return new Pair<>(procId, backupId);
-  }
-
-  private List<TableName> excludeNonExistingTables(List<TableName> tableList,
-      List<TableName> nonExistingTableList) {
-    
-    for(TableName table: nonExistingTableList) {
-      tableList.remove(table);
-    }
-    return tableList;
-  }
-
-  @Override
-  public long restoreTables(String backupRootDir, String backupId, boolean check,
-      List<TableName> sTableList, List<TableName> tTableList, boolean isOverwrite,
-      final long nonceGroup, final long nonce) throws IOException {
-    if (check) {
-      HashMap<TableName, BackupManifest> backupManifestMap = new HashMap<>();
-      // check and load backup image manifest for the tables
-      Path rootPath = new Path(backupRootDir);
-      HBackupFileSystem.checkImageManifestExist(backupManifestMap,
-        sTableList.toArray(new TableName[sTableList.size()]),
-        conf, rootPath, backupId);
-
-      // Check and validate the backup image and its dependencies
-      if (check) {
-        if (RestoreServerUtil.validate(backupManifestMap, conf)) {
-          LOG.info("Checking backup images: ok");
-        } else {
-          String errMsg = "Some dependencies are missing for restore";
-          LOG.error(errMsg);
-          throw new IOException(errMsg);
-        }
-      }
-    }
-    long procId = this.procedureExecutor.submitProcedure(
-      new RestoreTablesProcedure(procedureExecutor.getEnvironment(), backupRootDir, backupId,
-        sTableList, tTableList, isOverwrite), nonceGroup, nonce);
-    return procId;
-  }
 
   /**
    * Returns the list of table descriptors that match the specified request

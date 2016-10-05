@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,6 +34,7 @@ import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.impl.BackupSystemTable.WALItem;
 import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
@@ -42,13 +42,8 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.master.MasterServices;
-import org.apache.hadoop.hbase.master.procedure.MasterProcedureUtil;
-import org.apache.hadoop.hbase.procedure.MasterProcedureManager;
-import org.apache.hadoop.hbase.procedure.ProcedureUtil;
 import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.wal.DefaultWALProvider;
-import org.apache.hadoop.hbase.backup.impl.BackupSystemTable.WALItem;
 
 /**
  * After a full backup was created, the incremental backup will only store the changes made
@@ -64,12 +59,10 @@ public class IncrementalBackupManager {
   // parent manager
   private final BackupManager backupManager;
   private final Configuration conf;
-  private final Connection conn;
 
   public IncrementalBackupManager(BackupManager bm) {
     this.backupManager = bm;
     this.conf = bm.getConf();
-    this.conn = bm.getConnection();
   }
 
   /**
@@ -80,7 +73,7 @@ public class IncrementalBackupManager {
    * @return The new HashMap of RS log timestamps after the log roll for this incremental backup.
    * @throws IOException exception
    */
-  public HashMap<String, Long> getIncrBackupLogFileList(MasterServices svc,BackupInfo backupContext)
+  public HashMap<String, Long> getIncrBackupLogFileList(Connection conn,BackupInfo backupContext)
       throws IOException {
     List<String> logList;
     HashMap<String, Long> newTimestamps;
@@ -109,19 +102,13 @@ public class IncrementalBackupManager {
     LOG.info("Execute roll log procedure for incremental backup ...");
     HashMap<String, String> props = new HashMap<String, String>();
     props.put("backupRoot", backupContext.getTargetRootDir());
-    MasterProcedureManager mpm = svc.getMasterProcedureManagerHost()
-        .getProcedureManager(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE);
-    long waitTime = ProcedureUtil.execProcedure(mpm,
-        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
+    
+    try(Admin admin = conn.getAdmin();) {
+    
+      admin.execProcedure(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE, 
         LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props);
-    ProcedureUtil.waitForProcedure(mpm,
-        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
-        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props, waitTime,
-        conf.getInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER,
-            HConstants.DEFAULT_HBASE_CLIENT_RETRIES_NUMBER),
-            conf.getLong(HConstants.HBASE_CLIENT_PAUSE,
-                HConstants.DEFAULT_HBASE_CLIENT_PAUSE));
 
+    }
     newTimestamps = backupManager.readRegionServerLastLogRollResult();
 
     logList = getLogFilesForNewBackup(previousTimestampMins, newTimestamps, conf, savedStartCode);

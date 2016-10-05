@@ -21,7 +21,9 @@ package org.apache.hadoop.hbase.backup;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,8 +41,8 @@ import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
+import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Durability;
@@ -116,6 +118,15 @@ public class TestBackupBase {
     LOG.info("REMOTE ROOTDIR " + BACKUP_REMOTE_ROOT_DIR);
     waitForSystemTable();
     createTables();
+    populateFromMasterConfig(TEST_UTIL.getHBaseCluster().getMaster().getConfiguration(), conf1);
+  }
+  
+  private static void populateFromMasterConfig(Configuration masterConf, Configuration conf) {
+    Iterator<Entry<String,String>> it = masterConf.iterator();  
+    while(it.hasNext()) {
+      Entry<String,String> e = it.next();
+      conf.set(e.getKey(), e.getValue());
+    }
   }
   
   public static void waitForSystemTable() throws Exception
@@ -157,22 +168,17 @@ public class TestBackupBase {
   protected String backupTables(BackupType type, List<TableName> tables, String path)
       throws IOException {
     Connection conn = null;
-    HBaseAdmin admin = null;
     BackupAdmin badmin = null;
     String backupId;
     try {
       conn = ConnectionFactory.createConnection(conf1);
-      admin = (HBaseAdmin) conn.getAdmin();
-      BackupRequest request = new BackupRequest();
+      badmin = new HBaseBackupAdmin(conn);
+      BackupRequest request = new BackupRequest();      
       request.setBackupType(type).setTableList(tables).setTargetRootDir(path);
-      badmin = admin.getBackupAdmin();
       backupId = badmin.backupTables(request);
     } finally {
       if(badmin != null){
         badmin.close();
-      }
-      if (admin != null) {
-        admin.close();
       }
       if (conn != null) {
         conn.close();
@@ -264,7 +270,7 @@ public class TestBackupBase {
   }
 
   protected BackupAdmin getBackupAdmin() throws IOException {
-    return TEST_UTIL.getAdmin().getBackupAdmin();
+    return new HBaseBackupAdmin(TEST_UTIL.getConnection());
   }
 
   /**

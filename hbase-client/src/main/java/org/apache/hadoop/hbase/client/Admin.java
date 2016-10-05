@@ -37,8 +37,6 @@ import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotFoundException;
-import org.apache.hadoop.hbase.backup.BackupRequest;
-import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.security.SecurityCapability;
@@ -1696,13 +1694,6 @@ public interface Admin extends Abortable, Closeable {
    * @return true if the switch is enabled, false otherwise.
    */
   boolean isSplitOrMergeEnabled(final MasterSwitchType switchType) throws IOException;
-
-  /**
-   * Get Backup Admin interface 
-   * @return backup admin object
-   * @throws IOException exception
-   */
-  BackupAdmin getBackupAdmin() throws IOException;
   
   /**
    * Currently, there are only two compact types:

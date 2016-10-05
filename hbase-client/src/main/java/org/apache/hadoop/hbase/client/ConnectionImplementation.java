@@ -1400,19 +1400,6 @@ class ConnectionImplementation implements ClusterConnection, Closeable {
         return stub.listProcedures(controller, request);
       }
 
-      @Override
-      public MasterProtos.BackupTablesResponse backupTables(
-          RpcController controller,
-          MasterProtos.BackupTablesRequest request)  throws ServiceException {
-        return stub.backupTables(controller, request);
-      }
-
-      @Override
-      public MasterProtos.RestoreTablesResponse restoreTables(
-          RpcController controller,
-          MasterProtos.RestoreTablesRequest request)  throws ServiceException {
-        return stub.restoreTables(controller, request);
-      }
 
       @Override
       public MasterProtos.AddColumnResponse addColumn(

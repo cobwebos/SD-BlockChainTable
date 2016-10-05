@@ -29,9 +29,9 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
+import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
-import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.util.AbstractHBaseTool;
@@ -124,7 +124,7 @@ public class RestoreDriver extends AbstractHBaseTool {
     String tables = null;
     String tableMapping = null;
     try (final Connection conn = ConnectionFactory.createConnection(conf);
-        BackupAdmin client = conn.getAdmin().getBackupAdmin();) {
+        BackupAdmin client = new HBaseBackupAdmin(conn);) {
       // Check backup set
       if (cmd.hasOption(OPTION_SET)) {
         String setName = cmd.getOptionValue(OPTION_SET);

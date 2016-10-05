@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hbase.client;
+package org.apache.hadoop.hbase.backup.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,14 +35,22 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
+import org.apache.hadoop.hbase.backup.BackupAdmin;
 import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupType;
+import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
-import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.util.BackupSet;
+import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
+
+import com.google.common.collect.Lists;
 
 /**
  * The administrative API implementation for HBase Backup . Obtain an instance from 
@@ -59,12 +67,10 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
 public class HBaseBackupAdmin implements BackupAdmin {
   private static final Log LOG = LogFactory.getLog(HBaseBackupAdmin.class);
 
-  private final HBaseAdmin admin;
   private final Connection conn;
 
-  HBaseBackupAdmin(HBaseAdmin admin) {
-    this.admin = admin;
-    this.conn = admin.getConnection();
+  public HBaseBackupAdmin(Connection conn) {
+    this.conn = conn;
   }
 
   @Override
@@ -189,7 +195,7 @@ public class HBaseBackupAdmin implements BackupAdmin {
     int totalDeleted = 0;
     if (backupInfo != null) {
       LOG.info("Deleting backup " + backupInfo.getBackupId() + " ...");
-      BackupClientUtil.cleanupBackupData(backupInfo, admin.getConfiguration());
+      BackupClientUtil.cleanupBackupData(backupInfo, conn.getConfiguration());
       // List of tables in this backup;
       List<TableName> tables = backupInfo.getTableNames();
       long startTime = backupInfo.getStartTs();
@@ -393,13 +399,14 @@ public class HBaseBackupAdmin implements BackupAdmin {
   @Override
   public void addToBackupSet(String name, TableName[] tables) throws IOException {
     String[] tableNames = new String[tables.length];
-    for (int i = 0; i < tables.length; i++) {
-      tableNames[i] = tables[i].getNameAsString();
-      if (!admin.tableExists(TableName.valueOf(tableNames[i]))) {
-        throw new IOException("Cannot add " + tableNames[i] + " because it doesn't exist");
+    try (final BackupSystemTable table = new BackupSystemTable(conn);
+         final Admin admin = conn.getAdmin();) {
+      for (int i = 0; i < tables.length; i++) {
+        tableNames[i] = tables[i].getNameAsString();
+        if (!admin.tableExists(TableName.valueOf(tableNames[i]))) {
+          throw new IOException("Cannot add " + tableNames[i] + " because it doesn't exist");
+        }
       }
-    }
-    try (final BackupSystemTable table = new BackupSystemTable(conn)) {
       table.addToBackupSet(name, tableNames);
       LOG.info("Added tables [" + StringUtils.join(tableNames, " ") + "] to '" + name
           + "' backup set");
@@ -418,22 +425,131 @@ public class HBaseBackupAdmin implements BackupAdmin {
 
   @Override
   public void restore(RestoreRequest request) throws IOException {
-    admin.restoreTables(request);
+    if (request.isCheck()) {
+      HashMap<TableName, BackupManifest> backupManifestMap = new HashMap<>();
+      // check and load backup image manifest for the tables
+      Path rootPath = new Path(request.getBackupRootDir());
+      String backupId = request.getBackupId();
+      TableName[] sTableArray = request.getFromTables();
+      HBackupFileSystem.checkImageManifestExist(backupManifestMap,
+        sTableArray, conn.getConfiguration(), rootPath, backupId);
+
+      // Check and validate the backup image and its dependencies
+     
+        if (RestoreServerUtil.validate(backupManifestMap, conn.getConfiguration())) {
+          LOG.info("Checking backup images: ok");
+        } else {
+          String errMsg = "Some dependencies are missing for restore";
+          LOG.error(errMsg);
+          throw new IOException(errMsg);
+        }
+      
+    }
+    // Execute restore request
+    new RestoreTablesClient(conn, request).execute();
   }
 
   @Override
   public Future<Void> restoreAsync(RestoreRequest request) throws IOException {
-    return admin.restoreTablesAsync(request);
+    // TBI
+    return null;
   }
 
   @Override
-  public String backupTables(final BackupRequest userRequest) throws IOException {
-    return admin.backupTables(userRequest);
+  public String backupTables(final BackupRequest request) throws IOException {
+    String setName = request.getBackupSetName();
+    BackupType type = request.getBackupType();
+    String targetRootDir = request.getTargetRootDir();
+    List<TableName> tableList = request.getTableList();
+
+    String backupId =
+        (setName == null || setName.length() == 0 ? BackupRestoreConstants.BACKUPID_PREFIX
+            : setName + "_") + EnvironmentEdgeManager.currentTime();
+    if (type == BackupType.INCREMENTAL) {
+      Set<TableName> incrTableSet = null;
+      try (BackupSystemTable table = new BackupSystemTable(conn)) {
+        incrTableSet = table.getIncrementalBackupTableSet(targetRootDir);
+      }
+
+      if (incrTableSet.isEmpty()) {
+        System.err.println("Incremental backup table set contains no table.\n"
+            + "Use 'backup create full' or 'backup stop' to \n "
+            + "change the tables covered by incremental backup.");
+        throw new IOException("No table covered by incremental backup.");
+      }
+
+      tableList.removeAll(incrTableSet);
+      if (!tableList.isEmpty()) {
+        String extraTables = StringUtils.join(tableList, ",");
+        System.err.println("Some tables (" + extraTables + ") haven't gone through full backup");
+        throw new IOException("Perform full backup on " + extraTables + " first, "
+            + "then retry the command");
+      }
+      System.out.println("Incremental backup for the following table set: " + incrTableSet);
+      tableList = Lists.newArrayList(incrTableSet);
+    }
+    if (tableList != null && !tableList.isEmpty()) {
+      for (TableName table : tableList) {
+        String targetTableBackupDir =
+            HBackupFileSystem.getTableBackupDir(targetRootDir, backupId, table);
+        Path targetTableBackupDirPath = new Path(targetTableBackupDir);
+        FileSystem outputFs =
+            FileSystem.get(targetTableBackupDirPath.toUri(), conn.getConfiguration());
+        if (outputFs.exists(targetTableBackupDirPath)) {
+          throw new IOException("Target backup directory " + targetTableBackupDir
+              + " exists already.");
+        }
+      }
+      ArrayList<TableName> nonExistingTableList = null;
+      try (Admin admin = conn.getAdmin();) {
+        for (TableName tableName : tableList) {
+          if (!admin.tableExists(tableName)) {
+            if (nonExistingTableList == null) {
+              nonExistingTableList = new ArrayList<>();
+            }
+            nonExistingTableList.add(tableName);
+          }
+        }
+      }
+      if (nonExistingTableList != null) {
+        if (type == BackupType.INCREMENTAL) {
+          System.err.println("Incremental backup table set contains non-exising table: "
+              + nonExistingTableList);
+          // Update incremental backup set
+          tableList = excludeNonExistingTables(tableList, nonExistingTableList);
+        } else {
+          // Throw exception only in full mode - we try to backup non-existing table
+          throw new IOException("Non-existing tables found in the table list: "
+              + nonExistingTableList);
+        }
+      }
+    }
+
+    // update table list
+    request.setTableList(tableList);
+
+    if (type == BackupType.FULL) {
+      new FullTableBackupClient(conn, backupId, request).execute();
+    } else {
+      new IncrementalTableBackupClient(conn, backupId, request).execute();
+    }
+    return backupId;
+  }
+
+
+  private List<TableName> excludeNonExistingTables(List<TableName> tableList,
+      List<TableName> nonExistingTableList) {
+
+    for (TableName table : nonExistingTableList) {
+      tableList.remove(table);
+    }
+    return tableList;
   }
 
   @Override
   public Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException {
-    return admin.backupTablesAsync(userRequest);
+    // TBI
+    return null;
   }
 
 }

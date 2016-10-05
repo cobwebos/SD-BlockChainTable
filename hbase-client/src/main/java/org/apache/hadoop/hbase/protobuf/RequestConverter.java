@@ -63,7 +63,6 @@ import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.StopServerRequest;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.UpdateFavoredNodesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.UpdateFavoredNodesRequest.RegionUpdateInfo;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos.WarmupRegionRequest;
-import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.BackupTablesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos.BulkLoadHFileRequest;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos.BulkLoadHFileRequest.FamilyPath;
@@ -105,7 +104,6 @@ import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.ModifyTableReques
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.MoveRegionRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.NormalizeRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.OfflineRegionRequest;
-import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RestoreTablesRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.RunCatalogScanRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetBalancerRunningRequest;
 import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.SetNormalizerRunningRequest;
@@ -1271,48 +1269,6 @@ public final class RequestConverter {
     return builder.build();
   }
 
-  public static BackupTablesRequest buildBackupTablesRequest(
-      final BackupType type, List<TableName> tableList, String targetRootDir, final int workers,
-      final long bandwidth, String setName, final long nonceGroup, final long nonce) {
-    BackupTablesRequest.Builder builder = BackupTablesRequest.newBuilder();
-    builder.setType(ProtobufUtil.toProtoBackupType(type));
-    builder.setTargetRootDir(targetRootDir);
-    builder.setWorkers(workers);
-    builder.setBandwidth(bandwidth);
-    if(setName != null) {
-      builder.setBackupSetName(setName);
-    }
-    if (tableList != null) {
-      for (TableName table : tableList) {
-        builder.addTables(ProtobufUtil.toProtoTableName(table));
-      }
-    }
-    builder.setNonceGroup(nonceGroup).setNonce(nonce);
-    return builder.build();
-  }
-
-  public static RestoreTablesRequest buildRestoreTablesRequest(String backupRootDir,
-      String backupId, boolean check, TableName[] sTableList,
-      TableName[] tTableList, boolean isOverwrite, final long nonceGroup, final long nonce)
-          throws IOException {
-    RestoreTablesRequest.Builder builder = RestoreTablesRequest.newBuilder();
-    builder.setBackupId(backupId).setBackupRootDir(backupRootDir);
-    builder.setDependencyCheckOnly(check).setOverwrite(isOverwrite);
-    if (sTableList != null) {
-      for (TableName table : sTableList) {
-        builder.addTables(ProtobufUtil.toProtoTableName(table));
-      }
-    } else {
-      throw new IOException("Source table list shouldn't be empty");
-    }
-    if (tTableList != null) {
-      for (TableName table : tTableList) {
-        builder.addTargetTables(ProtobufUtil.toProtoTableName(table));
-      }
-    }
-    builder.setNonceGroup(nonceGroup).setNonce(nonce);
-    return builder.build();
-  }
 
   /**
    * Creates a protocol buffer GetSchemaAlterStatusRequest

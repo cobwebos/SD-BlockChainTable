@@ -25,8 +25,8 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
-import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -63,10 +63,11 @@ public class TestIncrementalBackupDeleteTable extends TestBackupBase {
     HBaseAdmin admin = null;
     Connection conn = ConnectionFactory.createConnection(conf1);
     admin = (HBaseAdmin) conn.getAdmin();
+    HBaseBackupAdmin client = new HBaseBackupAdmin(conn);
 
     BackupRequest request = new BackupRequest();
     request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdFull = admin.getBackupAdmin().backupTables(request);
+    String backupIdFull = client.backupTables(request);
 
     assertTrue(checkSucceeded(backupIdFull));
 
@@ -91,7 +92,7 @@ public class TestIncrementalBackupDeleteTable extends TestBackupBase {
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
     .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdIncMultiple = admin.getBackupAdmin().backupTables(request);
+    String backupIdIncMultiple = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdIncMultiple));
 
     // #4 - restore full backup for all tables, without overwrite
@@ -101,7 +102,6 @@ public class TestIncrementalBackupDeleteTable extends TestBackupBase {
     TableName[] tablesMapFull =
         new TableName[] { table1_restore, table2_restore };
 
-    BackupAdmin client = getBackupAdmin();
     client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
       tablesRestoreFull,
       tablesMapFull, false));

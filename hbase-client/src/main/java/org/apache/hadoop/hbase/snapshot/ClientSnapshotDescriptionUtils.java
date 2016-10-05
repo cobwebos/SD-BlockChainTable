@@ -20,7 +20,6 @@
 package org.apache.hadoop.hbase.snapshot;
 
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -45,7 +44,7 @@ public class ClientSnapshotDescriptionUtils {
       // make sure the table name is valid, this will implicitly check validity
       TableName tableName = TableName.valueOf(snapshot.getTable());
 
-      if (tableName.isSystemTable() && !BackupSystemTable.getTableName().equals(tableName)) {
+      if (tableName.isSystemTable() && !tableName.toString().equals("hbase:backup")) {
         // allow hbase:backup table snapshot
         throw new IllegalArgumentException("System table snapshots are not allowed");
       }

@@ -22,16 +22,19 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
-import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -68,7 +71,7 @@ public class TestIncrementalBackup extends TestBackupBase {
   //implement all test cases in 1 test since incremental backup/restore has dependencies
   @Test
   public void TestIncBackupRestore() throws Exception {
-    
+
     int ADD_ROWS = 99;
     // #1 - create full backup for all tables
     LOG.info("create full backup image for all tables");
@@ -84,10 +87,11 @@ public class TestIncrementalBackup extends TestBackupBase {
 
     HBaseAdmin admin = null;
     admin = (HBaseAdmin) conn.getAdmin();
+    HBaseBackupAdmin client = new HBaseBackupAdmin(conn);
 
     BackupRequest request = new BackupRequest();
     request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdFull = admin.getBackupAdmin().backupTables(request);
+    String backupIdFull = client.backupTables(request);
 
     assertTrue(checkSucceeded(backupIdFull));
 
@@ -95,12 +99,12 @@ public class TestIncrementalBackup extends TestBackupBase {
     HTable t1 = insertIntoTable(conn, table1, famName, 1, ADD_ROWS);
     LOG.debug("writing " + ADD_ROWS + " rows to " + table1);
 
-    Assert.assertThat(TEST_UTIL.countRows(t1), CoreMatchers.equalTo(
-        NB_ROWS_IN_BATCH + ADD_ROWS + NB_ROWS_FAM3));
+    Assert.assertThat(TEST_UTIL.countRows(t1),
+      CoreMatchers.equalTo(NB_ROWS_IN_BATCH + ADD_ROWS + NB_ROWS_FAM3));
     t1.close();
     LOG.debug("written " + ADD_ROWS + " rows to " + table1);
 
-    HTable t2 =  (HTable) conn.getTable(table2);
+    HTable t2 = (HTable) conn.getTable(table2);
     Put p2;
     for (int i = 0; i < 5; i++) {
       p2 = new Put(Bytes.toBytes("row-t2" + i));
@@ -111,29 +115,29 @@ public class TestIncrementalBackup extends TestBackupBase {
     Assert.assertThat(TEST_UTIL.countRows(t2), CoreMatchers.equalTo(NB_ROWS_IN_BATCH + 5));
     t2.close();
     LOG.debug("written " + 5 + " rows to " + table2);
-    // split table1 
+    // split table1
     MiniHBaseCluster cluster = TEST_UTIL.getHBaseCluster();
     List<HRegion> regions = cluster.getRegions(table1);
 
-    byte[] name = regions.get(0).getRegionInfo().getRegionName();    
+    byte[] name = regions.get(0).getRegionInfo().getRegionName();
     long startSplitTime = EnvironmentEdgeManager.currentTime();
     admin.splitRegion(name);
 
     while (!admin.isTableAvailable(table1)) {
       Thread.sleep(100);
     }
-    
+
     long endSplitTime = EnvironmentEdgeManager.currentTime();
 
-    // split finished 
-    LOG.debug("split finished in ="+ (endSplitTime - startSplitTime));
-    
+    // split finished
+    LOG.debug("split finished in =" + (endSplitTime - startSplitTime));
+
     // #3 - incremental backup for multiple tables
     tables = Lists.newArrayList(table1, table2);
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
-    .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdIncMultiple = admin.getBackupAdmin().backupTables(request);
+        .setTargetRootDir(BACKUP_ROOT_DIR);
+    String backupIdIncMultiple = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdIncMultiple));
 
     // add column family f2 to table1
@@ -150,22 +154,18 @@ public class TestIncrementalBackup extends TestBackupBase {
     // #3 - incremental backup for multiple tables
     request = new BackupRequest();
     request.setBackupType(BackupType.INCREMENTAL).setTableList(tables)
-    .setTargetRootDir(BACKUP_ROOT_DIR);
-    String backupIdIncMultiple2 = admin.getBackupAdmin().backupTables(request);
+        .setTargetRootDir(BACKUP_ROOT_DIR);
+    String backupIdIncMultiple2 = client.backupTables(request);
     assertTrue(checkSucceeded(backupIdIncMultiple2));
 
     // #4 - restore full backup for all tables, without overwrite
-    TableName[] tablesRestoreFull =
-        new TableName[] { table1, table2 };
+    TableName[] tablesRestoreFull = new TableName[] { table1, table2 };
 
-    TableName[] tablesMapFull =
-        new TableName[] { table1_restore, table2_restore };
+    TableName[] tablesMapFull = new TableName[] { table1_restore, table2_restore };
 
-    BackupAdmin client = getBackupAdmin();
     LOG.debug("Restoring full " + backupIdFull);
     client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupIdFull, false,
-      tablesRestoreFull,
-      tablesMapFull, false));
+      tablesRestoreFull, tablesMapFull, false));
 
     // #5.1 - check tables for full restore
     HBaseAdmin hAdmin = TEST_UTIL.getHBaseAdmin();
@@ -176,8 +176,8 @@ public class TestIncrementalBackup extends TestBackupBase {
 
     // #5.2 - checking row count of tables for full restore
     HTable hTable = (HTable) conn.getTable(table1_restore);
-    Assert.assertThat(TEST_UTIL.countRows(hTable), CoreMatchers.equalTo(NB_ROWS_IN_BATCH +
-        NB_ROWS_FAM3));
+    Assert.assertThat(TEST_UTIL.countRows(hTable),
+      CoreMatchers.equalTo(NB_ROWS_IN_BATCH + NB_ROWS_FAM3));
     hTable.close();
 
     hTable = (HTable) conn.getTable(table2_restore);
@@ -185,18 +185,16 @@ public class TestIncrementalBackup extends TestBackupBase {
     hTable.close();
 
     // #6 - restore incremental backup for multiple tables, with overwrite
-    TableName[] tablesRestoreIncMultiple =
-        new TableName[] { table1, table2 };
-    TableName[] tablesMapIncMultiple =
-        new TableName[] { table1_restore, table2_restore };
+    TableName[] tablesRestoreIncMultiple = new TableName[] { table1, table2 };
+    TableName[] tablesMapIncMultiple = new TableName[] { table1_restore, table2_restore };
     client.restore(RestoreServerUtil.createRestoreRequest(BACKUP_ROOT_DIR, backupIdIncMultiple2,
-        false, tablesRestoreIncMultiple, tablesMapIncMultiple, true));
+      false, tablesRestoreIncMultiple, tablesMapIncMultiple, true));
 
     hTable = (HTable) conn.getTable(table1_restore);
     LOG.debug("After incremental restore: " + hTable.getTableDescriptor());
     LOG.debug("f1 has " + TEST_UTIL.countRows(hTable, famName) + " rows");
     Assert.assertThat(TEST_UTIL.countRows(hTable, famName),
-        CoreMatchers.equalTo(NB_ROWS_IN_BATCH + ADD_ROWS));
+      CoreMatchers.equalTo(NB_ROWS_IN_BATCH + ADD_ROWS));
     LOG.debug("f2 has " + TEST_UTIL.countRows(hTable, fam2Name) + " rows");
     Assert.assertThat(TEST_UTIL.countRows(hTable, fam2Name), CoreMatchers.equalTo(NB_ROWS_FAM2));
     hTable.close();
@@ -207,6 +205,7 @@ public class TestIncrementalBackup extends TestBackupBase {
 
     admin.close();
     conn.close();
+
   }
 
 }

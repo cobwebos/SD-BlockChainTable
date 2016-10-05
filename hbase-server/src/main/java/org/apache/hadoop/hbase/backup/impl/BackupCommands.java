@@ -36,8 +36,6 @@ import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.util.BackupSet;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.BackupAdmin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 
@@ -217,20 +215,23 @@ public final class BackupCommands {
       int workers = cmdline.hasOption('w') ? Integer.parseInt(cmdline.getOptionValue('w')) : -1;
 
       try (Connection conn = ConnectionFactory.createConnection(getConf());
-          Admin admin = conn.getAdmin();
-          BackupAdmin backupAdmin = admin.getBackupAdmin();) {
+          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {
         BackupRequest request = new BackupRequest();
         request.setBackupType(BackupType.valueOf(args[1].toUpperCase()))
         .setTableList(tables != null?Lists.newArrayList(BackupClientUtil.parseTableNames(tables)): null)
         .setTargetRootDir(args[2]).setWorkers(workers).setBandwidth(bandwidth)
         .setBackupSetName(setName);
-        String backupId = backupAdmin.backupTables(request);
+        
+        String backupId = admin.backupTables(request);
         System.out.println("Backup session "+ backupId+" finished. Status: SUCCESS");
       } catch (IOException e) {
         System.err.println("Backup session finished. Status: FAILURE");
         throw e;
       }
     }
+    
+
+
     private String getTablesForSet(String name, Configuration conf)
         throws IOException {
       try (final Connection conn = ConnectionFactory.createConnection(conf);
@@ -327,8 +328,8 @@ public final class BackupCommands {
       String backupId = args[1];
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
       try (final Connection conn = ConnectionFactory.createConnection(conf);
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();) {
-        BackupInfo info = admin.getBackupInfo(backupId);
+          final BackupSystemTable sysTable = new BackupSystemTable(conn);) {
+        BackupInfo info = sysTable.readBackupInfo(backupId);
         if (info == null) {
           System.err.println("ERROR: " + backupId + " does not exist");
           printUsage();
@@ -370,8 +371,9 @@ public final class BackupCommands {
       String backupId = (args == null || args.length <= 1) ? null : args[1];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
-        int progress = admin.getProgress(backupId);
+          final BackupSystemTable sysTable = new BackupSystemTable(conn);){
+        BackupInfo info = sysTable.readBackupInfo(backupId);
+        int progress = info == null? -1: info.getProgress();
         if(progress < 0){
           System.err.println(NO_INFO_FOUND + backupId);
         } else{
@@ -408,7 +410,7 @@ public final class BackupCommands {
       System.arraycopy(args, 1, backupIds, 0, backupIds.length);
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
       try (final Connection conn = ConnectionFactory.createConnection(conf);
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();) {
+          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {
         int deleted = admin.deleteBackups(args);
         System.out.println("Deleted " + deleted + " backups. Total requested: " + args.length);
       }
@@ -440,7 +442,7 @@ public final class BackupCommands {
       String backupId = args == null || args.length == 0 ? null : args[1];
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
       try (final Connection conn = ConnectionFactory.createConnection(conf);
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();) {
+          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {
         // TODO cancel backup
       }
     }
@@ -489,9 +491,9 @@ public final class BackupCommands {
       if (backupRootPath == null) {
         // Load from hbase:backup
         try (final Connection conn = ConnectionFactory.createConnection(conf);
-            final BackupAdmin admin = conn.getAdmin().getBackupAdmin();) {
+             final BackupSystemTable sysTable = new BackupSystemTable(conn);) {
  
-          history = admin.getHistory(n, tableNameFilter, tableSetFilter);
+          history = sysTable.getBackupHistory(n, tableNameFilter, tableSetFilter);
         }
       } else {
         // load from backup FS
@@ -604,7 +606,7 @@ public final class BackupCommands {
       // does not expect any args
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
+          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         List<BackupSet> list = admin.listBackupSets();
         for(BackupSet bs: list){
           System.out.println(bs);
@@ -622,8 +624,9 @@ public final class BackupCommands {
       String setName = args[2];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
-        BackupSet set = admin.getBackupSet(setName);
+          final BackupSystemTable sysTable = new BackupSystemTable(conn);){
+        List<TableName> tables = sysTable.describeBackupSet(setName);
+        BackupSet set = tables == null? null : new BackupSet(setName, tables);
         if(set == null) {
           System.out.println("Set '"+setName+"' does not exist.");
         } else{
@@ -642,7 +645,7 @@ public final class BackupCommands {
       String setName = args[2];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
+          final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         boolean result = admin.deleteBackupSet(setName);
         if(result){
           System.out.println("Delete set "+setName+" OK.");
@@ -664,7 +667,7 @@ public final class BackupCommands {
       String[] tables = args[3].split(",");
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
+          final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         admin.removeFromBackupSet(setName, tables);
       }
     }
@@ -684,7 +687,7 @@ public final class BackupCommands {
       }
       Configuration conf = getConf() != null? getConf():HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf); 
-          final BackupAdmin admin = conn.getAdmin().getBackupAdmin();){
+          final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         admin.addToBackupSet(setName, tableNames);
       }
       

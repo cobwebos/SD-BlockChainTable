@@ -18,11 +18,11 @@
 
 package org.apache.hadoop.hbase.backup;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hbase.DoNotRetryIOException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.junit.Test;
@@ -63,7 +63,7 @@ public class TestBackupBoundaryTests extends TestBackupBase {
    * Verify that full backup fails on a single table that does not exist.
    * @throws Exception
    */
-  @Test(expected = DoNotRetryIOException.class)
+  @Test(expected = IOException.class)
   public void testFullBackupSingleDNE() throws Exception {
 
     LOG.info("test full backup fails on a single table that does not exist");
@@ -75,7 +75,7 @@ public class TestBackupBoundaryTests extends TestBackupBase {
    * Verify that full backup fails on multiple tables that do not exist.
    * @throws Exception
    */
-  @Test(expected = DoNotRetryIOException.class)
+  @Test(expected = IOException.class)
   public void testFullBackupMultipleDNE() throws Exception {
 
     LOG.info("test full backup fails on multiple tables that do not exist");
@@ -87,7 +87,7 @@ public class TestBackupBoundaryTests extends TestBackupBase {
    * Verify that full backup fails on tableset containing real and fake tables.
    * @throws Exception
    */
-  @Test(expected = DoNotRetryIOException.class)
+  @Test(expected = IOException.class)
   public void testFullBackupMixExistAndDNE() throws Exception {
     LOG.info("create full backup fails on tableset containing real and fake table");
 

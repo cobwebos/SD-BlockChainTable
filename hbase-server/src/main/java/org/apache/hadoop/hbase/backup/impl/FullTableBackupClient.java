@@ -16,17 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.backup.master;
+package org.apache.hadoop.hbase.backup.impl;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,85 +30,62 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.NotServingRegionException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupCopyService;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupPhase;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
+import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.impl.BackupException;
-import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
+import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
-import org.apache.hadoop.hbase.master.procedure.MasterProcedureEnv;
-import org.apache.hadoop.hbase.master.procedure.MasterProcedureUtil;
-import org.apache.hadoop.hbase.master.procedure.TableProcedureInterface;
-import org.apache.hadoop.hbase.procedure.MasterProcedureManager;
-import org.apache.hadoop.hbase.procedure.ProcedureUtil;
-import org.apache.hadoop.hbase.procedure2.StateMachineProcedure;
-import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
-import org.apache.hadoop.hbase.protobuf.generated.BackupProtos.FullTableBackupState;
-import org.apache.hadoop.hbase.protobuf.generated.BackupProtos.ServerTimestamp;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.SnapshotDescription;
-import org.apache.hadoop.hbase.snapshot.SnapshotDescriptionUtils;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import org.apache.hadoop.hbase.util.FSUtils;
 
 @InterfaceAudience.Private
-public class FullTableBackupProcedure
-    extends StateMachineProcedure<MasterProcedureEnv, FullTableBackupState>
-    implements TableProcedureInterface {
-  private static final Log LOG = LogFactory.getLog(FullTableBackupProcedure.class);
-  
-  private static final String SNAPSHOT_BACKUP_MAX_ATTEMPTS_KEY = "hbase.backup.snapshot.attempts.max";
-  private static final int DEFAULT_SNAPSHOT_BACKUP_MAX_ATTEMPTS = 10;
-  
-  private static final String SNAPSHOT_BACKUP_ATTEMPTS_DELAY_KEY = "hbase.backup.snapshot.attempts.delay";
-  private static final int DEFAULT_SNAPSHOT_BACKUP_ATTEMPTS_DELAY = 10000;
-  
-  private final AtomicBoolean aborted = new AtomicBoolean(false);
+public class FullTableBackupClient {
+  private static final Log LOG = LogFactory.getLog(FullTableBackupClient.class);
+
   private Configuration conf;
+  private Connection conn;
   private String backupId;
   private List<TableName> tableList;
-  private String targetRootDir;
   HashMap<String, Long> newTimestamps = null;
 
   private BackupManager backupManager;
   private BackupInfo backupContext;
 
-  public FullTableBackupProcedure() {
+  public FullTableBackupClient() {
     // Required by the Procedure framework to create the procedure on replay
   }
 
-  public FullTableBackupProcedure(final MasterProcedureEnv env,
-      final String backupId, List<TableName> tableList, String targetRootDir, final int workers,
-      final long bandwidth) throws IOException {
-    backupManager = new BackupManager(env.getMasterServices().getConnection(),
-        env.getMasterConfiguration());
+  public FullTableBackupClient(final Connection conn, final String backupId,
+      BackupRequest request)
+      throws IOException {
+    backupManager = new BackupManager(conn, conn.getConfiguration());
     this.backupId = backupId;
-    this.tableList = tableList;
-    this.targetRootDir = targetRootDir;
+    this.tableList = request.getTableList();
+    this.conn = conn;
+    this.conf = conn.getConfiguration();
     backupContext =
-        backupManager.createBackupContext(backupId, BackupType.FULL,
-            tableList, targetRootDir, workers, bandwidth);
+        backupManager.createBackupContext(backupId, BackupType.FULL, tableList, 
+          request.getTargetRootDir(),
+          request.getWorkers(), request.getBandwidth());
     if (tableList == null || tableList.isEmpty()) {
       this.tableList = new ArrayList<>(backupContext.getTables());
     }
-    this.setOwner(env.getRequestUser().getUGI().getShortUserName());
-  }
-
-  @Override
-  public byte[] getResult() {
-    return backupId.getBytes();
   }
 
   /**
@@ -120,8 +93,7 @@ public class FullTableBackupProcedure
    * @param backupContext backup context
    * @throws IOException exception
    */
-  static void beginBackup(BackupManager backupManager, BackupInfo backupContext)
-      throws IOException {
+  static void beginBackup(BackupManager backupManager, BackupInfo backupContext) throws IOException {
     backupManager.setBackupContext(backupContext);
     // set the start timestamp of the overall backup
     long startTs = EnvironmentEdgeManager.currentTime();
@@ -135,7 +107,7 @@ public class FullTableBackupProcedure
       LOG.debug("Backup session " + backupContext.getBackupId() + " has been started.");
     }
   }
-  
+
   private static String getMessage(Exception e) {
     String msg = e.getMessage();
     if (msg == null || msg.equals("")) {
@@ -149,25 +121,23 @@ public class FullTableBackupProcedure
    * @param backupCtx backup context
    * @throws Exception exception
    */
-  private static void deleteSnapshot(final MasterProcedureEnv env,
-      BackupInfo backupCtx, Configuration conf)
-      throws IOException {
+  private static void
+      deleteSnapshot(final Connection conn, BackupInfo backupCtx, Configuration conf)
+          throws IOException {
     LOG.debug("Trying to delete snapshot for full backup.");
     for (String snapshotName : backupCtx.getSnapshotNames()) {
       if (snapshotName == null) {
         continue;
       }
       LOG.debug("Trying to delete snapshot: " + snapshotName);
-      HBaseProtos.SnapshotDescription.Builder builder =
-          HBaseProtos.SnapshotDescription.newBuilder();
-      builder.setName(snapshotName);
-      try {
-        env.getMasterServices().getSnapshotManager().deleteSnapshot(builder.build());
+
+      try (Admin admin = conn.getAdmin();) {
+        admin.deleteSnapshot(snapshotName);
       } catch (IOException ioe) {
         LOG.debug("when deleting snapshot " + snapshotName, ioe);
       }
-      LOG.debug("Deleting the snapshot " + snapshotName + " for backup "
-          + backupCtx.getBackupId() + " succeeded.");
+      LOG.debug("Deleting the snapshot " + snapshotName + " for backup " + backupCtx.getBackupId()
+          + " succeeded.");
     }
   }
 
@@ -180,7 +150,7 @@ public class FullTableBackupProcedure
     FileSystem fs = FSUtils.getCurrentFileSystem(conf);
     Path stagingDir =
         new Path(conf.get(BackupRestoreConstants.CONF_STAGING_ROOT, fs.getWorkingDirectory()
-          .toString()));
+            .toString()));
     FileStatus[] files = FSUtils.listStatus(fs, stagingDir);
     if (files == null) {
       return;
@@ -219,7 +189,7 @@ public class FullTableBackupProcedure
                 backupContext.getBackupId(), table));
           if (outputFs.delete(targetDirPath, true)) {
             LOG.info("Cleaning up uncompleted backup data at " + targetDirPath.toString()
-              + " done.");
+                + " done.");
           } else {
             LOG.info("No data has been copied to " + targetDirPath.toString() + ".");
           }
@@ -245,10 +215,9 @@ public class FullTableBackupProcedure
    * @param e exception
    * @throws Exception exception
    */
-  static void failBackup(final MasterProcedureEnv env, BackupInfo backupContext,
-      BackupManager backupManager, Exception e,
-      String msg, BackupType type, Configuration conf) throws IOException {
-    LOG.error(msg + getMessage(e));
+  static void failBackup(Connection conn, BackupInfo backupContext, BackupManager backupManager,
+      Exception e, String msg, BackupType type, Configuration conf) throws IOException {
+    LOG.error(msg + getMessage(e), e);
     // If this is a cancel exception, then we've already cleaned.
 
     // set the failure timestamp of the overall backup
@@ -263,8 +232,8 @@ public class FullTableBackupProcedure
     // compose the backup failed data
     String backupFailedData =
         "BackupId=" + backupContext.getBackupId() + ",startts=" + backupContext.getStartTs()
-        + ",failedts=" + backupContext.getEndTs() + ",failedphase=" + backupContext.getPhase()
-        + ",failedmessage=" + backupContext.getFailedMsg();
+            + ",failedts=" + backupContext.getEndTs() + ",failedphase=" + backupContext.getPhase()
+            + ",failedmessage=" + backupContext.getFailedMsg();
     LOG.error(backupFailedData);
 
     backupManager.updateBackupInfo(backupContext);
@@ -272,7 +241,7 @@ public class FullTableBackupProcedure
     // if full backup, then delete HBase snapshots if there already are snapshots taken
     // and also clean up export snapshot log files if exist
     if (type == BackupType.FULL) {
-      deleteSnapshot(env, backupContext, conf);
+      deleteSnapshot(conn, backupContext, conf);
       cleanupExportSnapshotLog(conf);
     }
 
@@ -324,13 +293,12 @@ public class FullTableBackupProcedure
         throw new IOException("Failed of exporting snapshot " + args[1] + " to " + args[3]
             + " with reason code " + res);
       }
-      LOG.info("Snapshot copy " + args[1] + " finished.");      
+      LOG.info("Snapshot copy " + args[1] + " finished.");
     }
   }
-  
+
   /**
-   * Add manifest for the current backup. The manifest is stored
-   * within the table backup directory.
+   * Add manifest for the current backup. The manifest is stored within the table backup directory.
    * @param backupContext The current backup context
    * @throws IOException exception
    * @throws BackupException exception
@@ -425,7 +393,7 @@ public class FullTableBackupProcedure
    * @param backupContext backup context
    * @throws Exception exception
    */
-  static void completeBackup(final MasterProcedureEnv env, BackupInfo backupContext,
+  static void completeBackup(final Connection conn, BackupInfo backupContext,
       BackupManager backupManager, BackupType type, Configuration conf) throws IOException {
     // set the complete timestamp of the overall backup
     backupContext.setEndTs(EnvironmentEdgeManager.currentTime());
@@ -442,8 +410,8 @@ public class FullTableBackupProcedure
     // compose the backup complete data
     String backupCompleteData =
         obtainBackupMetaDataStr(backupContext) + ",startts=" + backupContext.getStartTs()
-        + ",completets=" + backupContext.getEndTs() + ",bytescopied="
-        + backupContext.getTotalBytesCopied();
+            + ",completets=" + backupContext.getEndTs() + ",bytescopied="
+            + backupContext.getTotalBytesCopied();
     if (LOG.isDebugEnabled()) {
       LOG.debug("Backup " + backupContext.getBackupId() + " finished: " + backupCompleteData);
     }
@@ -454,7 +422,7 @@ public class FullTableBackupProcedure
     // - clean up directories with prefix "exportSnapshot-", which are generated when exporting
     // snapshots
     if (type == BackupType.FULL) {
-      deleteSnapshot(env, backupContext, conf);
+      deleteSnapshot(conn, backupContext, conf);
       cleanupExportSnapshotLog(conf);
     } else if (type == BackupType.INCREMENTAL) {
       cleanupDistCpLog(backupContext, conf);
@@ -477,301 +445,96 @@ public class FullTableBackupProcedure
     HBaseProtos.SnapshotDescription backupSnapshot = builder.build();
 
     LOG.debug("Wrapped a SnapshotDescription " + backupSnapshot.getName()
-      + " from backupContext to request snapshot for backup.");
+        + " from backupContext to request snapshot for backup.");
 
     return backupSnapshot;
   }
 
-  @Override
-  protected Flow executeFromState(final MasterProcedureEnv env, final FullTableBackupState state)
-      throws InterruptedException {
-    if (conf == null) {
-      conf = env.getMasterConfiguration();
-    }
-    if (backupManager == null) {
-      try {
-        backupManager = new BackupManager(env.getMasterServices().getConnection(),
-            env.getMasterConfiguration());
-      } catch (IOException ioe) {
-        setFailure("full backup", ioe);
-        return Flow.NO_MORE_STATE;
+  /**
+   * Backup request execution
+   * @throws IOException
+   */
+  public void execute() throws IOException {
+
+    try (Admin admin = conn.getAdmin();) {
+
+      // Begin BACKUP
+      beginBackup(backupManager, backupContext);
+      String savedStartCode = null;
+      boolean firstBackup = false;
+      // do snapshot for full table backup
+
+      savedStartCode = backupManager.readBackupStartCode();
+      firstBackup = savedStartCode == null || Long.parseLong(savedStartCode) == 0L;
+      if (firstBackup) {
+        // This is our first backup. Let's put some marker on ZK so that we can hold the logs
+        // while we do the backup.
+        backupManager.writeBackupStartCode(0L);
       }
-    }
-    if (LOG.isTraceEnabled()) {
-      LOG.trace(this + " execute state=" + state);
-    }
-    try {
-      switch (state) {
-        case PRE_SNAPSHOT_TABLE:
-          beginBackup(backupManager, backupContext);
-          String savedStartCode = null;
-          boolean firstBackup = false;
-          // do snapshot for full table backup
+      // We roll log here before we do the snapshot. It is possible there is duplicate data
+      // in the log that is already in the snapshot. But if we do it after the snapshot, we
+      // could have data loss.
+      // A better approach is to do the roll log on each RS in the same global procedure as
+      // the snapshot.
+      LOG.info("Execute roll log procedure for full backup ...");
 
-          try {
-            savedStartCode = backupManager.readBackupStartCode();
-            firstBackup = savedStartCode == null || Long.parseLong(savedStartCode) == 0L;
-            if (firstBackup) {
-              // This is our first backup. Let's put some marker on ZK so that we can hold the logs
-              // while we do the backup.
-              backupManager.writeBackupStartCode(0L);
-            }
-            // We roll log here before we do the snapshot. It is possible there is duplicate data
-            // in the log that is already in the snapshot. But if we do it after the snapshot, we
-            // could have data loss.
-            // A better approach is to do the roll log on each RS in the same global procedure as
-            // the snapshot.
-            LOG.info("Execute roll log procedure for full backup ...");
-            MasterProcedureManager mpm = env.getMasterServices().getMasterProcedureManagerHost()
-                .getProcedureManager(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE);
-            Map<String, String> props= new HashMap<String, String>();
-            props.put("backupRoot", backupContext.getTargetRootDir());
-            long waitTime = ProcedureUtil.execProcedure(mpm,
-              LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
-              LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props);
-            ProcedureUtil.waitForProcedure(mpm,
-              LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
-              LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props, waitTime,
-              conf.getInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER,
-                HConstants.DEFAULT_HBASE_CLIENT_RETRIES_NUMBER),
-              conf.getLong(HConstants.HBASE_CLIENT_PAUSE,
-                HConstants.DEFAULT_HBASE_CLIENT_PAUSE));
+      Map<String, String> props = new HashMap<String, String>();
+      props.put("backupRoot", backupContext.getTargetRootDir());
+      admin.execProcedure(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
+        LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props);
 
-            newTimestamps = backupManager.readRegionServerLastLogRollResult();
-            if (firstBackup) {
-              // Updates registered log files
-              // We record ALL old WAL files as registered, because
-              // this is a first full backup in the system and these
-              // files are not needed for next incremental backup
-              List<String> logFiles = BackupServerUtil.getWALFilesOlderThan(conf, newTimestamps);
-              backupManager.recordWALFiles(logFiles);
-            }
-          } catch (BackupException e) {
-            setFailure("Failure in full-backup: pre-snapshot phase", e);
-            // fail the overall backup and return
-            failBackup(env, backupContext, backupManager, e, "Unexpected BackupException : ",
-              BackupType.FULL, conf);
-            return Flow.NO_MORE_STATE;
-          }
-          setNextState(FullTableBackupState.SNAPSHOT_TABLES);
-          break;
-        case SNAPSHOT_TABLES:
-          for (TableName tableName : tableList) {
-            String snapshotName = "snapshot_" + Long.toString(EnvironmentEdgeManager.currentTime())
-                + "_" + tableName.getNamespaceAsString() + "_" + tableName.getQualifierAsString();
-            HBaseProtos.SnapshotDescription backupSnapshot;
-
-            // wrap a SnapshotDescription for offline/online snapshot
-            backupSnapshot = wrapSnapshotDescription(tableName,snapshotName);
-            try {
-              env.getMasterServices().getSnapshotManager().deleteSnapshot(backupSnapshot);
-            } catch (IOException e) {
-              LOG.debug("Unable to delete " + snapshotName, e);
-            }
-            // Kick off snapshot for backup
-            snapshotTable(env, backupSnapshot);  
-            backupContext.setSnapshotName(tableName, backupSnapshot.getName());
-          }
-          setNextState(FullTableBackupState.SNAPSHOT_COPY);
-          break;
-        case SNAPSHOT_COPY:
-          // do snapshot copy
-          LOG.debug("snapshot copy for " + backupId);
-          try {
-            this.snapshotCopy(backupContext);                        
-          } catch (Exception e) {
-            setFailure("Failure in full-backup: snapshot copy phase" + backupId, e);
-            // fail the overall backup and return
-            failBackup(env, backupContext, backupManager, e, "Unexpected BackupException : ",
-              BackupType.FULL, conf);
-            return Flow.NO_MORE_STATE;
-          }
-          // Updates incremental backup table set
-          backupManager.addIncrementalBackupTableSet(backupContext.getTables());
-          setNextState(FullTableBackupState.BACKUP_COMPLETE);
-          break;
-
-        case BACKUP_COMPLETE:
-          // set overall backup status: complete. Here we make sure to complete the backup.
-          // After this checkpoint, even if entering cancel process, will let the backup finished
-          backupContext.setState(BackupState.COMPLETE);
-          // The table list in backupContext is good for both full backup and incremental backup.
-          // For incremental backup, it contains the incremental backup table set.
-          backupManager.writeRegionServerLogTimestamp(backupContext.getTables(), newTimestamps);
-
-          HashMap<TableName, HashMap<String, Long>> newTableSetTimestampMap =
-              backupManager.readLogTimestampMap();
-
-          Long newStartCode =
-            BackupClientUtil.getMinValue(BackupServerUtil.getRSLogTimestampMins(newTableSetTimestampMap));
-          backupManager.writeBackupStartCode(newStartCode);
-
-          // backup complete
-          completeBackup(env, backupContext, backupManager, BackupType.FULL, conf);
-          return Flow.NO_MORE_STATE;
-
-        default:
-          throw new UnsupportedOperationException("unhandled state=" + state);
+      newTimestamps = backupManager.readRegionServerLastLogRollResult();
+      if (firstBackup) {
+        // Updates registered log files
+        // We record ALL old WAL files as registered, because
+        // this is a first full backup in the system and these
+        // files are not needed for next incremental backup
+        List<String> logFiles = BackupServerUtil.getWALFilesOlderThan(conf, newTimestamps);
+        backupManager.recordWALFiles(logFiles);
       }
-    } catch (IOException e) {
-      LOG.error("Backup failed in " + state);
-      setFailure("snapshot-table", e);
-    }
-    return Flow.HAS_MORE_STATE;
-  }
 
-  private void snapshotTable(final MasterProcedureEnv env, SnapshotDescription backupSnapshot)
-    throws IOException
-  {
-    
-    int maxAttempts = env.getMasterConfiguration().getInt(SNAPSHOT_BACKUP_MAX_ATTEMPTS_KEY, 
-      DEFAULT_SNAPSHOT_BACKUP_MAX_ATTEMPTS);
-    int delay = env.getMasterConfiguration().getInt(SNAPSHOT_BACKUP_ATTEMPTS_DELAY_KEY, 
-      DEFAULT_SNAPSHOT_BACKUP_ATTEMPTS_DELAY);    
-    int attempts = 0;
-    
-    while (attempts++ < maxAttempts) {
-      try {
-        env.getMasterServices().getSnapshotManager().takeSnapshot(backupSnapshot);
-        long waitTime = SnapshotDescriptionUtils.getMaxMasterTimeout(
-          env.getMasterConfiguration(),
-          backupSnapshot.getType(), SnapshotDescriptionUtils.DEFAULT_MAX_WAIT_TIME);
-        BackupServerUtil.waitForSnapshot(backupSnapshot, waitTime,
-          env.getMasterServices().getSnapshotManager(), env.getMasterConfiguration());
-        break;
-      } catch( NotServingRegionException ee) {
-        LOG.warn("Snapshot attempt "+attempts +" failed for table "+backupSnapshot.getTable() +
-          ", sleeping for " + delay+"ms", ee);        
-        if(attempts < maxAttempts) {
-          try {
-            Thread.sleep(delay);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-          }
-        }
-      } 
-    }    
-  }
-  @Override
-  protected void rollbackState(final MasterProcedureEnv env, final FullTableBackupState state)
-      throws IOException {
-    if (state != FullTableBackupState.PRE_SNAPSHOT_TABLE) {
-      deleteSnapshot(env, backupContext, conf);
-      cleanupExportSnapshotLog(conf);
-    }
+      // SNAPSHOT_TABLES:
+      for (TableName tableName : tableList) {
+        String snapshotName =
+            "snapshot_" + Long.toString(EnvironmentEdgeManager.currentTime()) + "_"
+                + tableName.getNamespaceAsString() + "_" + tableName.getQualifierAsString();
 
-    // clean up the uncompleted data at target directory if the ongoing backup has already entered
-    // the copy phase
-    // For incremental backup, DistCp logs will be cleaned with the targetDir.
-    if (state == FullTableBackupState.SNAPSHOT_COPY) {
-      cleanupTargetDir(backupContext, conf);
-    }
-  }
+        admin.snapshot(snapshotName, tableName);
 
-  @Override
-  protected FullTableBackupState getState(final int stateId) {
-    return FullTableBackupState.valueOf(stateId);
-  }
-
-  @Override
-  protected int getStateId(final FullTableBackupState state) {
-    return state.getNumber();
-  }
-
-  @Override
-  protected FullTableBackupState getInitialState() {
-    return FullTableBackupState.PRE_SNAPSHOT_TABLE;
-  }
-
-  @Override
-  protected void setNextState(final FullTableBackupState state) {
-    if (aborted.get()) {
-      setAbortFailure("backup-table", "abort requested");
-    } else {
-      super.setNextState(state);
-    }
-  }
-
-  @Override
-  public boolean abort(final MasterProcedureEnv env) {
-    aborted.set(true);
-    return true;
-  }
-
-  @Override
-  public void toStringClassDetails(StringBuilder sb) {
-    sb.append(getClass().getSimpleName());
-    sb.append(" (targetRootDir=");
-    sb.append(targetRootDir);
-    sb.append("; backupId=").append(backupId);
-    sb.append("; tables=");
-    int len = tableList.size();
-    for (int i = 0; i < len-1; i++) {
-      sb.append(tableList.get(i)).append(",");
-    }
-    sb.append(tableList.get(len-1));
-    sb.append(")");
-  }
-
-  BackupProtos.BackupProcContext toBackupContext() {
-    BackupProtos.BackupProcContext.Builder ctxBuilder = BackupProtos.BackupProcContext.newBuilder();
-    ctxBuilder.setCtx(backupContext.toProtosBackupInfo());
-    if (newTimestamps != null && !newTimestamps.isEmpty()) {
-      BackupProtos.ServerTimestamp.Builder tsBuilder = ServerTimestamp.newBuilder();
-      for (Entry<String, Long> entry : newTimestamps.entrySet()) {
-        tsBuilder.clear().setServer(entry.getKey()).setTimestamp(entry.getValue());
-        ctxBuilder.addServerTimestamp(tsBuilder.build());
+        backupContext.setSnapshotName(tableName, snapshotName);
       }
+
+      // SNAPSHOT_COPY:
+      // do snapshot copy
+      LOG.debug("snapshot copy for " + backupId);
+      snapshotCopy(backupContext);
+      // Updates incremental backup table set
+      backupManager.addIncrementalBackupTableSet(backupContext.getTables());
+
+      // BACKUP_COMPLETE:
+      // set overall backup status: complete. Here we make sure to complete the backup.
+      // After this checkpoint, even if entering cancel process, will let the backup finished
+      backupContext.setState(BackupState.COMPLETE);
+      // The table list in backupContext is good for both full backup and incremental backup.
+      // For incremental backup, it contains the incremental backup table set.
+      backupManager.writeRegionServerLogTimestamp(backupContext.getTables(), newTimestamps);
+
+      HashMap<TableName, HashMap<String, Long>> newTableSetTimestampMap =
+          backupManager.readLogTimestampMap();
+
+      Long newStartCode =
+          BackupClientUtil.getMinValue(BackupServerUtil
+              .getRSLogTimestampMins(newTableSetTimestampMap));
+      backupManager.writeBackupStartCode(newStartCode);
+
+      // backup complete
+      completeBackup(conn, backupContext, backupManager, BackupType.FULL, conf);
+    } catch (Exception e) {
+      failBackup(conn, backupContext, backupManager, e, "Unexpected BackupException : ",
+        BackupType.FULL, conf);
+      throw new IOException(e);
     }
-    return ctxBuilder.build();
+
   }
 
-  @Override
-  public void serializeStateData(final OutputStream stream) throws IOException {
-    super.serializeStateData(stream);
-
-    BackupProtos.BackupProcContext backupProcCtx = toBackupContext();
-    backupProcCtx.writeDelimitedTo(stream);
-  }
-
-  @Override
-  public void deserializeStateData(final InputStream stream) throws IOException {
-    super.deserializeStateData(stream);
-
-    BackupProtos.BackupProcContext proto =BackupProtos.BackupProcContext.parseDelimitedFrom(stream);
-    backupContext = BackupInfo.fromProto(proto.getCtx());
-    backupId = backupContext.getBackupId();
-    targetRootDir = backupContext.getTargetRootDir();
-    tableList = backupContext.getTableNames();
-    List<ServerTimestamp> svrTimestamps = proto.getServerTimestampList();
-    if (svrTimestamps != null && !svrTimestamps.isEmpty()) {
-      newTimestamps = new HashMap<>();
-      for (ServerTimestamp ts : svrTimestamps) {
-        newTimestamps.put(ts.getServer(), ts.getTimestamp());
-      }
-    }
-  }
-
-  @Override
-  public TableName getTableName() {
-    return TableName.BACKUP_TABLE_NAME; 
-  }
-
-  @Override
-  public TableOperationType getTableOperationType() {
-    return TableOperationType.EDIT;
-  }
-
-  @Override
-  protected boolean acquireLock(final MasterProcedureEnv env) {
-    if (env.waitInitialized(this)) {
-      return false;
-    }
-    return env.getProcedureQueue().tryAcquireTableExclusiveLock(this, TableName.BACKUP_TABLE_NAME);
-  }
-
-  @Override
-  protected void releaseLock(final MasterProcedureEnv env) {
-    env.getProcedureQueue().releaseTableExclusiveLock(this, TableName.BACKUP_TABLE_NAME);
-  }
 }

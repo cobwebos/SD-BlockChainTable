@@ -158,14 +158,13 @@ public final class BackupServerUtil {
    * @throws IOException exception
    * @throws InterruptedException exception
    */
-  public static void copyTableRegionInfo(MasterServices svc, BackupInfo backupContext,
+  public static void copyTableRegionInfo(Connection conn, BackupInfo backupContext,
       Configuration conf) throws IOException, InterruptedException {
     Path rootDir = FSUtils.getRootDir(conf);
     FileSystem fs = rootDir.getFileSystem(conf);
 
     // for each table in the table set, copy out the table info and region 
     // info files in the correct directory structure
-    Connection conn = svc.getConnection();
     for (TableName table : backupContext.getTables()) {
 
       if(!MetaTableAccessor.tableExists(conn, table)) {

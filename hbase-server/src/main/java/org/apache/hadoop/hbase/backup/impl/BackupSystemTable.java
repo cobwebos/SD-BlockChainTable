@@ -273,8 +273,61 @@ public final class BackupSystemTable implements Closeable {
     return BackupClientUtil.sortHistoryListDesc(list);
   }
 
+  /**
+   * Get all backups history
+   * @return list of backup info 
+   * @throws IOException
+   */
   public List<BackupInfo> getBackupHistory() throws IOException {
     return getBackupHistory(false);
+  }
+
+  /**
+   * Get first n backup history records
+   * @param n - number of records
+   * @return list of records
+   * @throws IOException
+   */
+  public List<BackupInfo> getHistory(int n) throws IOException {
+
+    List<BackupInfo> history = getBackupHistory();
+    if (history.size() <= n) return history;
+    List<BackupInfo> list = new ArrayList<BackupInfo>();
+    for (int i = 0; i < n; i++) {
+      list.add(history.get(i));
+    }
+    return list;
+
+  }
+  
+  /**
+   * Get backup history records filtered by list
+   * of filters.
+   * @param n - max number of records
+   * @param filters - list of filters
+   * @return backup records
+   * @throws IOException
+   */
+  public List<BackupInfo> getBackupHistory(int n, BackupInfo.Filter... filters) throws IOException {
+    if (filters.length == 0) return getHistory(n);
+
+    List<BackupInfo> history = getBackupHistory();
+    List<BackupInfo> result = new ArrayList<BackupInfo>();
+    for (BackupInfo bi : history) {
+      if (result.size() == n) break;
+      boolean passed = true;
+      for (int i = 0; i < filters.length; i++) {
+        if (!filters[i].apply(bi)) {
+          passed = false;
+          break;
+        }
+      }
+      if (passed) {
+        result.add(bi);
+      }
+    }
+    return result;
+
   }
 
   /**
