@@ -52,59 +52,58 @@ public final class BackupCommands {
 
   public static final String USAGE = "Usage: hbase backup COMMAND [command-specific arguments]\n"
       + "where COMMAND is one of:\n" 
-      + "  create     create a new backup image\n"
-      + "  delete     delete an existing backup image\n"
-      + "  describe   show the detailed information of a backup image\n"
-      + "  history    show history of all successful backups\n"
-      + "  progress   show the progress of the latest backup request\n"
-      + "  set        backup set management\n"
+      + "  create          Create a new backup image\n"
+      + "  delete          Delete an existing backup image\n"
+      + "  describe        Show detailed information of a backup image\n"
+      + "  history         Show history of all successful backups\n"
+      + "  progress        Show the progress of the latest backup request\n"
+      + "  set             Backup set management\n"
       + "Run \'hbase backup COMMAND -h\' to see help message for each command\n";
 
   public static final String CREATE_CMD_USAGE =
-      "Usage: hbase backup create <type> <BACKUP_ROOT> [tables] [-set name] "
-          + "[-w workers][-b bandwith]\n" 
-          + " type           \"full\" to create a full backup image\n"
-          + "                \"incremental\" to create an incremental backup image\n"
-          + " BACKUP_ROOT     The full root path to store the backup image,\n"
-          + "                 the prefix can be hdfs, webhdfs or gpfs\n" 
-          + "Options:\n"
-          + " tables          If no tables (\"\") are specified, all tables are backed up.\n"
-          + "                 Otherwise it is a comma separated list of tables.\n"
-          + " -w              number of parallel workers (MapReduce tasks).\n" 
-          + " -b              bandwith per one worker (MapReduce task) in MBs per sec\n" 
-          + " -set            name of backup set to use (mutually exclusive with [tables])" ;
+      "Usage: hbase backup create <type> <backup_root> [tables] [-set name] "
+      + "[-w workers][-b bandwith]\n" 
+      + "  type           \"full\" to create a full backup image\n"
+      + "                 \"incremental\" to create an incremental backup image\n"
+      + "  backup_root     Full path to store the backup image\n" 
+      + "Options:\n"
+      + "  tables          If no tables (\"\") are specified, all tables are backed up.\n"
+      + "                  otherwise it is a comma separated list of tables.\n"
+      + "  -w              Number of parallel workers (MapReduce tasks).\n" 
+      + "  -b              Bandwith per one worker (MapReduce task) in MBs per sec\n" 
+      + "  -set            Name of backup set to use (mutually exclusive with [tables])" ;
 
   public static final String PROGRESS_CMD_USAGE = "Usage: hbase backup progress <backupId>\n"
-          + " backupId        backup image id\n";
+      + "  backupId        Backup image id\n";
   public static final String NO_INFO_FOUND = "No info was found for backup id: ";
 
   public static final String DESCRIBE_CMD_USAGE = "Usage: hbase backup decsribe <backupId>\n"
-          + " backupId        backup image id\n";
+      + "  backupId        Backup image id\n";
 
   public static final String HISTORY_CMD_USAGE = 
       "Usage: hbase backup history [-path BACKUP_ROOT] [-n N] [-t table]\n"
-       + " -n N            show up to N last backup sessions, default - 10\n"
-       + " -path           backup root path\n"
-       + " -t table        table name. If specified, only backup images which contain this table\n"
-       + "                 will be listed."  ;
+      + "  -n N            Show up to N last backup sessions, default - 10\n"
+      + "  -path           Backup root path\n"
+      + "  -t table        Table name. If specified, only backup images which contain this table\n"
+      + "                  will be listed."  ;
   
 
   public static final String DELETE_CMD_USAGE = "Usage: hbase backup delete <backupId>\n"
-          + " backupId        backup image id\n";
+      + "  backupId        Backup image id\n";
 
   public static final String CANCEL_CMD_USAGE = "Usage: hbase backup cancel <backupId>\n"
-          + " backupId        backup image id\n";
+      + "  backupId        Backup image id\n";
 
   public static final String SET_CMD_USAGE = "Usage: hbase backup set COMMAND [name] [tables]\n"
-         + " name            Backup set name\n"
-         + " tables          If no tables (\"\") are specified, all tables will belong to the set.\n"
-         + "                 Otherwise it is a comma separated list of tables.\n"
-         + "COMMAND is one of:\n" 
-         + " add             add tables to a set, create a set if needed\n"
-         + " remove          remove tables from a set\n"
-         + " list            list all backup sets in the system\n"
-         + " describe        describe set\n"
-         + " delete          delete backup set\n";
+      + "  name            Backup set name\n"
+      + "  tables          If no tables (\"\") are specified, all tables will belong to the set.\n"
+      + "                  Otherwise it is a comma separated list of tables.\n"
+      + "COMMAND is one of:\n" 
+      + "  add             Add tables to a set, create a set if needed\n"
+      + "  remove          Remove tables from a set\n"
+      + "  list            List all backup sets in the system\n"
+      + "  describe        Describe backup set\n"
+      + "  delete          Delete backup set\n";
 
   public static abstract class Command extends Configured {
     CommandLine cmdline;

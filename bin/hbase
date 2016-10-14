@@ -101,8 +101,8 @@ if [ $# = 0 ]; then
   echo "  ltt             Run LoadTestTool"
   echo "  canary          Run the Canary tool"
   echo "  version         Print the version"
-  echo "  backup          backup tables for recovery"
-  echo "  restore         restore tables from existing backup image"
+  echo "  backup          Backup tables for recovery"
+  echo "  restore         Restore tables from existing backup image"
   echo "  CLASSNAME       Run the class named CLASSNAME"
   exit 1
 fi
