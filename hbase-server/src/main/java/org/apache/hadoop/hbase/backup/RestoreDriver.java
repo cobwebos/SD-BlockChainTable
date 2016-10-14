@@ -18,6 +18,7 @@
 package org.apache.hadoop.hbase.backup;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
@@ -25,6 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupRestoreConstants;
@@ -35,6 +37,7 @@ import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.util.AbstractHBaseTool;
+import org.apache.hadoop.hbase.util.FSUtils;
 import org.apache.hadoop.hbase.util.LogUtils;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
@@ -190,6 +193,9 @@ public class RestoreDriver extends AbstractHBaseTool {
 
   public static void main(String[] args) throws Exception {
     Configuration conf = HBaseConfiguration.create();
+    Path hbasedir = FSUtils.getRootDir(conf);
+    URI defaultFs = hbasedir.getFileSystem(conf).getUri();
+    FSUtils.setFsDefault(conf, new Path(defaultFs));
     int ret = ToolRunner.run(conf, new RestoreDriver(), args);
     System.exit(ret);
   }
