@@ -285,7 +285,7 @@ public class FullTableBackupClient {
       args[3] = backupContext.getBackupStatus(table).getTargetDir();
 
       LOG.debug("Copy snapshot " + args[1] + " to " + args[3]);
-      res = copyService.copy(backupContext, backupManager, conf, BackupCopyService.Type.FULL, args);
+      res = copyService.copy(backupContext, backupManager, conf, BackupType.FULL, args);
       // if one snapshot export failed, do not continue for remained snapshots
       if (res != 0) {
         LOG.error("Exporting Snapshot " + args[1] + " failed with return code: " + res + ".");

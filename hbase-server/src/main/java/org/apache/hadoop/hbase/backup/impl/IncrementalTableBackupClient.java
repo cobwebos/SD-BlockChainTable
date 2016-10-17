@@ -121,7 +121,7 @@ public class IncrementalTableBackupClient {
       // We run DistCp maximum 2 times
       // If it fails on a second time, we throw Exception
       int res =
-          copyService.copy(backupContext, backupManager, conf, BackupCopyService.Type.INCREMENTAL,
+          copyService.copy(backupContext, backupManager, conf, BackupType.INCREMENTAL,
             strArr);
 
       if (res != 0) {

@@ -29,9 +29,6 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public interface BackupCopyService extends Configurable {
-  static enum Type {
-    FULL, INCREMENTAL
-  }
 
   /**
    * Copy backup data
@@ -44,7 +41,7 @@ public interface BackupCopyService extends Configurable {
    * @throws IOException
    */
   public int copy(BackupInfo backupContext, BackupManager backupManager, Configuration conf,
-      BackupCopyService.Type copyType, String[] options) throws IOException;
+      BackupType copyType, String[] options) throws IOException;
   
 
    /**
