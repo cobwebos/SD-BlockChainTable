@@ -18,8 +18,8 @@
 package org.apache.hadoop.hbase.backup;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.backup.mapreduce.MapReduceBackupCopyService;
-import org.apache.hadoop.hbase.backup.mapreduce.MapReduceRestoreService;
+import org.apache.hadoop.hbase.backup.mapreduce.MapReduceBackupCopyTask;
+import org.apache.hadoop.hbase.backup.mapreduce.MapReduceRestoreTask;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -40,11 +40,11 @@ public final class BackupRestoreServerFactory {
    * @param conf - configuration
    * @return backup restore service instance
    */
-  public static RestoreService getRestoreService(Configuration conf) {
-    Class<? extends RestoreService> cls =
-        conf.getClass(HBASE_INCR_RESTORE_IMPL_CLASS, MapReduceRestoreService.class,
-          RestoreService.class);
-    RestoreService service =  ReflectionUtils.newInstance(cls, conf);
+  public static RestoreTask getRestoreService(Configuration conf) {
+    Class<? extends RestoreTask> cls =
+        conf.getClass(HBASE_INCR_RESTORE_IMPL_CLASS, MapReduceRestoreTask.class,
+          RestoreTask.class);
+    RestoreTask service =  ReflectionUtils.newInstance(cls, conf);
     service.setConf(conf);
     return service;
   }
@@ -54,11 +54,11 @@ public final class BackupRestoreServerFactory {
    * @param conf - configuration
    * @return backup copy service
    */
-  public static BackupCopyService getBackupCopyService(Configuration conf) {
-    Class<? extends BackupCopyService> cls =
-        conf.getClass(HBASE_BACKUP_COPY_IMPL_CLASS, MapReduceBackupCopyService.class,
-          BackupCopyService.class);
-    BackupCopyService service = ReflectionUtils.newInstance(cls, conf);;
+  public static BackupCopyTask getBackupCopyService(Configuration conf) {
+    Class<? extends BackupCopyTask> cls =
+        conf.getClass(HBASE_BACKUP_COPY_IMPL_CLASS, MapReduceBackupCopyTask.class,
+          BackupCopyTask.class);
+    BackupCopyTask service = ReflectionUtils.newInstance(cls, conf);;
     service.setConf(conf);
     return service;
   }

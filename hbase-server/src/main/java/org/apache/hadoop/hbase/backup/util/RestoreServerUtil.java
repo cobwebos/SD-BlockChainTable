@@ -42,7 +42,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupRestoreServerFactory;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
-import org.apache.hadoop.hbase.backup.RestoreService;
+import org.apache.hadoop.hbase.backup.RestoreTask;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
@@ -241,7 +241,7 @@ public class RestoreServerUtil {
         LOG.info("Changed " + newTableDescriptor.getTableName() + " to: " + newTableDescriptor);
       }
     }
-    RestoreService restoreService =
+    RestoreTask restoreService =
         BackupRestoreServerFactory.getRestoreService(conf);
 
     restoreService.run(logDirs, tableNames, newTableNames, false);
@@ -478,7 +478,7 @@ public class RestoreServerUtil {
         // Run restore service
         Path[] dirs = new Path[regionPathList.size()];
         regionPathList.toArray(dirs);
-        RestoreService restoreService =
+        RestoreTask restoreService =
             BackupRestoreServerFactory.getRestoreService(conf);
 
         restoreService.run(dirs, new TableName[] { tableName }, new TableName[] { newTableName },

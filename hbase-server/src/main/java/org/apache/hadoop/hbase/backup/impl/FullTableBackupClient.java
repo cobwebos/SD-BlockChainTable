@@ -31,7 +31,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupCopyService;
+import org.apache.hadoop.hbase.backup.BackupCopyTask;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupPhase;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
@@ -266,7 +266,7 @@ public class FullTableBackupClient {
 
     // call ExportSnapshot to copy files based on hbase snapshot for backup
     // ExportSnapshot only support single snapshot export, need loop for multiple tables case
-    BackupCopyService copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
+    BackupCopyTask copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
 
     // number of snapshots matches number of tables
     float numOfSnapshots = backupContext.getSnapshotNames().size();

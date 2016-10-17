@@ -31,7 +31,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupCopyService;
+import org.apache.hadoop.hbase.backup.BackupCopyTask;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupPhase;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
@@ -114,7 +114,7 @@ public class IncrementalTableBackupClient {
     String[] strArr = incrBackupFileList.toArray(new String[incrBackupFileList.size() + 1]);
     strArr[strArr.length - 1] = backupContext.getHLogTargetDir();
 
-    BackupCopyService copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
+    BackupCopyTask copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
     int counter = 0;
     int MAX_ITERAIONS = 2;
     while (counter++ < MAX_ITERAIONS) {

@@ -30,7 +30,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.BackupCopyService;
+import org.apache.hadoop.hbase.backup.BackupCopyTask;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.impl.BackupManager;
@@ -58,8 +58,8 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class MapReduceBackupCopyService implements BackupCopyService {
-  private static final Log LOG = LogFactory.getLog(MapReduceBackupCopyService.class);
+public class MapReduceBackupCopyTask implements BackupCopyTask {
+  private static final Log LOG = LogFactory.getLog(MapReduceBackupCopyTask.class);
 
   private Configuration conf;
   // private static final long BYTES_PER_MAP = 2 * 256 * 1024 * 1024;
@@ -73,7 +73,7 @@ public class MapReduceBackupCopyService implements BackupCopyService {
   // needed. The default value is 100%, which means only 1 copy task for the whole.
   private float subTaskPercntgInWholeTask = 1f;
 
-  public MapReduceBackupCopyService() {
+  public MapReduceBackupCopyTask() {
   }
 
   @Override

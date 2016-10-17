@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.RestoreService;
+import org.apache.hadoop.hbase.backup.RestoreTask;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -38,13 +38,13 @@ import org.apache.hadoop.util.Tool;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class MapReduceRestoreService implements RestoreService {
-  public static final Log LOG = LogFactory.getLog(MapReduceRestoreService.class);
+public class MapReduceRestoreTask implements RestoreTask {
+  public static final Log LOG = LogFactory.getLog(MapReduceRestoreTask.class);
 
   private Tool player;
   private Configuration conf;
 
-  public MapReduceRestoreService() {
+  public MapReduceRestoreTask() {
   }
 
   @Override

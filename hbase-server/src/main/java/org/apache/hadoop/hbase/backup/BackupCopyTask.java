@@ -21,30 +21,33 @@ package org.apache.hadoop.hbase.backup;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-
-/**
- * Backup restore service interface
- * Concrete implementation is provided by backup provider.
- */
-
-public interface RestoreService extends Configurable{
+public interface BackupCopyTask extends Configurable {
 
   /**
-   * Run restore operation
-   * @param dirPaths - path array of WAL log directories
-   * @param fromTables - from tables
-   * @param toTables - to tables
-   * @param fullBackupRestore - full backup restore
+   * Copy backup data task
+   * @param backupContext - context
+   * @param backupManager  - manager
+   * @param conf - configuration
+   * @param copyType - copy type
+   * @param options - array of options (implementation-specific)
+   * @return result (0 - success)
    * @throws IOException
    */
-  public void run(Path[] dirPaths, TableName[] fromTables, 
-      TableName[] toTables, boolean fullBackupRestore)
-    throws IOException;
+  public int copy(BackupInfo backupContext, BackupManager backupManager, Configuration conf,
+      BackupType copyType, String[] options) throws IOException;
+  
+
+   /**
+    * Cancel copy job
+    * @param jobHandler - copy job handler
+    * @throws IOException
+    */
+   public void cancelCopyJob(String jobHandler) throws IOException;  
 }
