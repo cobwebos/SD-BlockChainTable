@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.hbase.backup.impl;
+package org.apache.hadoop.hbase.backup;
 
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 
@@ -35,6 +36,14 @@ public final class BackupRestoreConstants {
   public static final String CONF_STAGING_ROOT = "snapshot.export.staging.root";
 
   public static final String BACKUPID_PREFIX = "backup_";
+  
+  /**
+   * Backup/Restore constants
+   */
+  public final static String BACKUP_ENABLE_KEY = "hbase.backup.enable";
+  public final static boolean BACKUP_ENABLE_DEFAULT = true;
+  public final static String BACKUP_SYSTEM_TTL_KEY = "hbase.backup.system.ttl";
+  public final static int BACKUP_SYSTEM_TTL_DEFAULT = HConstants.FOREVER;
 
   public static enum BackupCommand {
     CREATE, CANCEL, DELETE, DESCRIBE, HISTORY, STATUS, CONVERT, MERGE, STOP, SHOW, HELP, PROGRESS, SET,

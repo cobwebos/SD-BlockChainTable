@@ -1260,13 +1260,6 @@ public final class HConstants {
   public static final String DEFAULT_TEMPORARY_HDFS_DIRECTORY = "/user/"
       + System.getProperty("user.name") + "/hbase-staging";
 
-  /**
-   * Backup/Restore constants
-   */
-  public final static String BACKUP_ENABLE_KEY = "hbase.backup.enable";
-  public final static boolean BACKUP_ENABLE_DEFAULT = true;
-  public final static String BACKUP_SYSTEM_TTL_KEY = "hbase.backup.system.ttl";
-  public final static int BACKUP_SYSTEM_TTL_DEFAULT = FOREVER;
 
   private HConstants() {
     // Can't be instantiated with this ctor.

@@ -40,6 +40,7 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
@@ -907,7 +908,8 @@ public final class BackupSystemTable implements Closeable {
     colSessionsDesc.setMaxVersions(1);
     // Time to keep backup sessions (secs)
     Configuration config = HBaseConfiguration.create();
-    int ttl = config.getInt(HConstants.BACKUP_SYSTEM_TTL_KEY, HConstants.BACKUP_SYSTEM_TTL_DEFAULT);
+    int ttl = config.getInt(BackupRestoreConstants.BACKUP_SYSTEM_TTL_KEY,
+      BackupRestoreConstants.BACKUP_SYSTEM_TTL_DEFAULT);
     colSessionsDesc.setTimeToLive(ttl);
     tableDesc.addFamily(colSessionsDesc);
     HColumnDescriptor colMetaDesc = new HColumnDescriptor(META_FAMILY);

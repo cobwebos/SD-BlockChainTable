@@ -38,6 +38,7 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
@@ -82,9 +83,9 @@ public class BackupManager implements Closeable {
    * @throws IOException exception
    */
   public BackupManager(Connection conn, Configuration conf) throws IOException {
-    if (!conf.getBoolean(HConstants.BACKUP_ENABLE_KEY, HConstants.BACKUP_ENABLE_DEFAULT)) {
+    if (!conf.getBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, BackupRestoreConstants.BACKUP_ENABLE_DEFAULT)) {
       throw new BackupException("HBase backup is not enabled. Check your " +
-          HConstants.BACKUP_ENABLE_KEY + " setting.");
+          BackupRestoreConstants.BACKUP_ENABLE_KEY + " setting.");
     }
     this.conf = conf;
     this.conn = conn;
@@ -163,7 +164,7 @@ public class BackupManager implements Closeable {
   
   
   private static boolean isBackupEnabled(Configuration conf) {
-    return conf.getBoolean(HConstants.BACKUP_ENABLE_KEY, HConstants.BACKUP_ENABLE_DEFAULT);
+    return conf.getBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, BackupRestoreConstants.BACKUP_ENABLE_DEFAULT);
   }
 
   /**

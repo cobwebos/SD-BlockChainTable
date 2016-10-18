@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -118,7 +119,8 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
   @Override
   public void setConf(Configuration config) {
     // If backup is disabled, keep all members null
-    if (!config.getBoolean(HConstants.BACKUP_ENABLE_KEY, HConstants.BACKUP_ENABLE_DEFAULT)) {
+    if (!config.getBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, 
+      BackupRestoreConstants.BACKUP_ENABLE_DEFAULT)) {
       LOG.warn("Backup is disabled - allowing all wals to be deleted");
       return;
     }
