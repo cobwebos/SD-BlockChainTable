@@ -361,8 +361,8 @@ public final class BackupCommands {
         System.err.println("No backup id was specified, "
             + "will retrieve the most recent (ongoing) sessions");
       }
-      String[] args = cmdline.getArgs();
-      if (args.length > 2) {
+      String[] args = cmdline == null ? null : cmdline.getArgs();
+      if (args != null && args.length > 2) {
         System.err.println("ERROR: wrong number of arguments: " + args.length);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
@@ -438,8 +438,6 @@ public final class BackupCommands {
       if (cmdline == null || cmdline.getArgs() == null || cmdline.getArgs().length < 2) {
         System.out.println("No backup id(s) was specified, will use the most recent one");
       }
-      String[] args = cmdline.getArgs();
-      String backupId = args == null || args.length == 0 ? null : args[1];
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
       try (final Connection conn = ConnectionFactory.createConnection(conf);
           HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {

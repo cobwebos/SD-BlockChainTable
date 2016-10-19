@@ -386,6 +386,25 @@ public class BackupInfo implements Comparable<BackupInfo> {
   }
 
   @Override
+  public int hashCode() {
+    int hash = 33 * type.hashCode() + backupId != null ? backupId.hashCode() : 0;
+    if (targetRootDir != null) {
+      hash = 33 * hash + targetRootDir.hashCode();
+    }
+    hash = 33 * hash + state.hashCode();
+    hash = 33 * hash + phase.hashCode();
+    hash = 33 * hash + (int)(startTs ^ (startTs >>> 32));
+    hash = 33 * hash + (int)(endTs ^ (endTs >>> 32));
+    hash = 33 * hash + (int)(totalBytesCopied ^ (totalBytesCopied >>> 32));
+    if (hlogTargetDir != null) {
+      hash = 33 * hash + hlogTargetDir.hashCode();
+    }
+    if (jobId != null) {
+      hash = 33 * hash + jobId.hashCode();
+    }
+    return hash;
+  }
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof BackupInfo) {
       BackupInfo other = (BackupInfo) obj;
@@ -496,8 +515,8 @@ public class BackupInfo implements Comparable<BackupInfo> {
 
   @Override
   public int compareTo(BackupInfo o) {
-    Long thisTS = new Long(this.getBackupId().substring(this.getBackupId().lastIndexOf("_") + 1));
-    Long otherTS = new Long(o.getBackupId().substring(o.getBackupId().lastIndexOf("_") + 1));
+    Long thisTS = Long.valueOf(this.getBackupId().substring(this.getBackupId().lastIndexOf("_") + 1));
+    Long otherTS = Long.valueOf(o.getBackupId().substring(o.getBackupId().lastIndexOf("_") + 1));
     return thisTS.compareTo(otherTS);
   }
 

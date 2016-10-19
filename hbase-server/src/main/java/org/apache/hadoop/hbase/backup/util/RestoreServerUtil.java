@@ -715,15 +715,17 @@ public class RestoreServerUtil {
         }
         long startTime = EnvironmentEdgeManager.currentTime();
         while (!admin.isTableAvailable(targetTableName, keys)) {
-          Thread.sleep(100);
+          try {
+            Thread.sleep(100);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+          }
           if (EnvironmentEdgeManager.currentTime() - startTime > TABLE_AVAILABILITY_WAIT_TIME) {
             throw new IOException("Time out "+TABLE_AVAILABILITY_WAIT_TIME+
               "ms expired, table " + targetTableName + " is still not available");
           }
         }
       }
-    } catch (Exception e) {
-      throw new IOException(e);
     }
   }
 

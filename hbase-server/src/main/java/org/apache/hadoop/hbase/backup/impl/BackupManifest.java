@@ -228,12 +228,30 @@ public class BackupManifest {
       String name1 = thisBackupId.substring(0, index1);
       String name2 = otherBackupId.substring(0, index2);
       if(name1.equals(name2)) {
-        Long thisTS = new Long(thisBackupId.substring(index1 + 1));
-        Long otherTS = new Long(otherBackupId.substring(index2 + 1));
+        Long thisTS = Long.valueOf(thisBackupId.substring(index1 + 1));
+        Long otherTS = Long.valueOf(otherBackupId.substring(index2 + 1));
         return thisTS.compareTo(otherTS);
       } else {
         return name1.compareTo(name2);
       }
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof BackupImage) {
+        return this.compareTo((BackupImage)obj) == 0;
+      }
+      return false;
+    }
+    @Override
+    public int hashCode() {
+      int hash = 33 * this.getBackupId().hashCode() + type.hashCode();
+      hash = 33 * hash + rootDir.hashCode();
+      hash = 33 * hash + Long.valueOf(startTs).hashCode();
+      hash = 33 * hash + Long.valueOf(completeTs).hashCode();
+      for (TableName table : tableList) {
+        hash = 33 * hash + table.hashCode();
+      }
+      return hash;
     }
   }
 
@@ -526,10 +544,11 @@ public class BackupManifest {
           BackupProtos.TableServerTimestamp.newBuilder();
       tstBuilder.setTable(ProtobufUtil.toProtoTableName(key));
 
-      for (String s : value.keySet()) {
+      for (Map.Entry<String, Long> entry2 : value.entrySet()) {
+        String s = entry2.getKey();
         BackupProtos.ServerTimestamp.Builder stBuilder = BackupProtos.ServerTimestamp.newBuilder();
         stBuilder.setServer(s);
-        stBuilder.setTimestamp(value.get(s));
+        stBuilder.setTimestamp(entry2.getValue());
         tstBuilder.addServerTimestamp(stBuilder.build());
       }
       builder.addTstMap(tstBuilder.build());

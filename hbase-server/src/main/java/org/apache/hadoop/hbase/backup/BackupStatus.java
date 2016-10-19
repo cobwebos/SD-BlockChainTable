@@ -39,7 +39,7 @@ public class BackupStatus implements Serializable {
   private static final long serialVersionUID = -5968397963548535982L;
 
   // table name for backup
-  private TableName table;
+  private transient TableName table;
 
   // target directory of the backup image for this table
   private String targetDir;
