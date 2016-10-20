@@ -68,7 +68,7 @@ public class IncrementalBackupManager {
   /**
    * Obtain the list of logs that need to be copied out for this incremental backup. The list is set
    * in BackupContext.
-   * @param svc MasterServices
+   * @param conn the Connection
    * @param backupContext backup context
    * @return The new HashMap of RS log timestamps after the log roll for this incremental backup.
    * @throws IOException exception

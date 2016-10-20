@@ -29,8 +29,8 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 /**
- * The administrative API for HBase Backup. Obtain an instance from 
- * an {@link Admin#getBackupAdmin()} and call {@link #close()} afterwards.
+ * The administrative API for HBase Backup. Construct an instance from 
+ * {@link HBaseBackupAdmin(Connection)} and call {@link #close()} afterwards.
  * <p>BackupAdmin can be used to create backups, restore data from backups and for 
  * other backup-related operations. 
  *
@@ -45,7 +45,7 @@ public interface BackupAdmin extends Closeable{
   /**
    * Backs up given list of tables fully. Synchronous operation.
    * 
-   * @param request BackupRequest instance which contains the following members:
+   * @param userRequest BackupRequest instance which contains the following members:
    *  type whether the backup is full or incremental
    *  tableList list of tables to backup
    *  targetRootDir root directory for saving the backup
@@ -59,7 +59,7 @@ public interface BackupAdmin extends Closeable{
   /**
    * Backs up given list of tables fully. Asynchronous operation.
    * 
-   * @param request BackupRequest instance which contains the following members:
+   * @param userRequest BackupRequest instance which contains the following members:
    *  type whether the backup is full or incremental
    *  tableList list of tables to backup
    *  targetRootDir root dir for saving the backup

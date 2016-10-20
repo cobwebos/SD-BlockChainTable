@@ -242,7 +242,7 @@ public final class BackupSystemTable implements Closeable {
   /**
    * Writes Region Server last roll log result (timestamp) to hbase:backup table
    * @param server - Region Server name
-   * @param ts- last log timestamp
+   * @param ts - last log timestamp
    * @param backupRoot root directory path to backup
    * @throws IOException exception
    */
@@ -260,7 +260,7 @@ public final class BackupSystemTable implements Closeable {
 
   /**
    * Get all completed backup information (in desc order by time)
-   * @param onlyCompeleted, true, if only successfully completed sessions
+   * @param onlyCompeleted true, if only successfully completed sessions
    * @return history info of BackupCompleteData
    * @throws IOException exception
    */
@@ -776,7 +776,7 @@ public final class BackupSystemTable implements Closeable {
   /**
    * Add backup set (list of tables)
    * @param name - set name
-   * @param tables - list of tables, comma-separated
+   * @param newTables - list of tables, comma-separated
    * @throws IOException
    */
   public void addToBackupSet(String name, String[] newTables) throws IOException {
@@ -823,7 +823,7 @@ public final class BackupSystemTable implements Closeable {
   /**
    * Remove tables from backup set (list of tables)
    * @param name - set name
-   * @param tables - list of tables, comma-separated
+   * @param toRemove - list of tables, comma-separated
    * @throws IOException
    */
   public void removeFromBackupSet(String name, String[] toRemove) throws IOException {

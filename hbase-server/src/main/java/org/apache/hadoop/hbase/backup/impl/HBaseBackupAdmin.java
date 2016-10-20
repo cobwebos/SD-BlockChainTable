@@ -54,8 +54,8 @@ import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 import com.google.common.collect.Lists;
 
 /**
- * The administrative API implementation for HBase Backup . Obtain an instance from 
- * an {@link Admin#getBackupAdmin()} and call {@link #close()} afterwards.
+ * The administrative API implementation for HBase Backup . Create an instance from 
+ * {@link HBaseBackupAdmin(Connection)} and call {@link #close()} afterwards.
  * <p>BackupAdmin can be used to create backups, restore data from backups and for 
  * other backup-related operations. 
  *

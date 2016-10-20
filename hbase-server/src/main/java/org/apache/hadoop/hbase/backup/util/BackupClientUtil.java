@@ -248,7 +248,7 @@ public final class BackupClientUtil {
    * "hdfs://backup.hbase.org:9000/user/biadmin/backup1/backup_1396650096738/default/t1_dn/"
    * @param backupRootDir backup root directory
    * @param backupId backup id
-   * @param table table name
+   * @param tableName table name
    * @return backupPath String for the particular table
    */
   public static String

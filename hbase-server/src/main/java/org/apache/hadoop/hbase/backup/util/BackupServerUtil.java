@@ -152,7 +152,7 @@ public final class BackupServerUtil {
   /**
    * copy out Table RegionInfo into incremental backup image need to consider move this logic into
    * HBackupFileSystem
-   * @param svc master service
+   * @param conn connection
    * @param backupContext backup context
    * @param conf configuration
    * @throws IOException exception

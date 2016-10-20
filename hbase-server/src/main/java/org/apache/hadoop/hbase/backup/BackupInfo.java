@@ -55,7 +55,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
     
     /**
      * Filter interface
-     * @param info: backup info
+     * @param info backup info
      * @return true if info passes filter, false otherwise 
      */
     public boolean apply(BackupInfo info);
@@ -199,7 +199,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
 
   /**
    * Set progress (0-100%)
-   * @param msg progress value
+   * @param p progress value
    */
 
   public void setProgress(int p) {

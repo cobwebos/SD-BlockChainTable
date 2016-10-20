@@ -341,7 +341,7 @@ public class BackupManifest {
 
   /**
    * Construct manifest from a backup directory.
-   * @param conf configuration
+   * @param fs the FileSystem
    * @param backupPath backup path
    * @throws BackupException exception
    */
