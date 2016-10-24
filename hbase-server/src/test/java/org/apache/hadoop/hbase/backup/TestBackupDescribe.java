@@ -57,7 +57,7 @@ public class TestBackupDescribe extends TestBackupBase {
     assertTrue(ret < 0);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    System.setErr(new PrintStream(baos));
+    System.setOut(new PrintStream(baos));
     args = new String[]{"progress" };
     ToolRunner.run(TEST_UTIL.getConfiguration(), new BackupDriver(), args);
 

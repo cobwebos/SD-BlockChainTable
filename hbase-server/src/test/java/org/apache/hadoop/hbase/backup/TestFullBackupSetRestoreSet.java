@@ -54,7 +54,7 @@ public class TestFullBackupSetRestoreSet extends TestBackupBase {
       assertTrue(names.size() == 1);
       assertTrue(names.get(0).equals(table1));
 
-      String[] args = new String[] { "create", "full", BACKUP_ROOT_DIR, "-set", name };
+      String[] args = new String[] { "create", "full", BACKUP_ROOT_DIR, "-s", name };
       // Run backup
       int ret = ToolRunner.run(conf1, new BackupDriver(), args);
       assertTrue(ret == 0);
@@ -68,8 +68,8 @@ public class TestFullBackupSetRestoreSet extends TestBackupBase {
 
       // Restore from set into other table
       args =
-          new String[] { BACKUP_ROOT_DIR, backupId, "-set", name, table1_restore.getNameAsString(),
-              "-overwrite" };
+          new String[] { BACKUP_ROOT_DIR, backupId, "-s", name, "-m", table1_restore.getNameAsString(),
+              "-o" };
       // Run backup
       ret = ToolRunner.run(conf1, new RestoreDriver(), args);
       assertTrue(ret == 0);
@@ -98,7 +98,7 @@ public class TestFullBackupSetRestoreSet extends TestBackupBase {
       assertTrue(names.size() == 1);
       assertTrue(names.get(0).equals(table1));
 
-      String[] args = new String[] { "create", "full", BACKUP_ROOT_DIR, "-set", name };
+      String[] args = new String[] { "create", "full", BACKUP_ROOT_DIR, "-s", name };
       // Run backup
       int ret = ToolRunner.run(conf1, new BackupDriver(), args);
       assertTrue(ret == 0);
@@ -111,7 +111,7 @@ public class TestFullBackupSetRestoreSet extends TestBackupBase {
       TEST_UTIL.deleteTable(table1);
 
       // Restore from set into other table
-      args = new String[] { BACKUP_ROOT_DIR, backupId, "-set", name, "-overwrite" };
+      args = new String[] { BACKUP_ROOT_DIR, backupId, "-s", name, "-o" };
       // Run backup
       ret = ToolRunner.run(conf1, new RestoreDriver(), args);
       assertTrue(ret == 0);

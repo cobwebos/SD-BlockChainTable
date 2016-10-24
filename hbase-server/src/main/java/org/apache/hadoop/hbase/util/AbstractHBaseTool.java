@@ -49,7 +49,7 @@ public abstract class AbstractHBaseTool implements Tool {
 
   private static final Log LOG = LogFactory.getLog(AbstractHBaseTool.class);
 
-  private final Options options = new Options();
+  protected final Options options = new Options();
 
   protected Configuration conf = null;
 

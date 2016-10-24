@@ -19,12 +19,16 @@
 package org.apache.hadoop.hbase.backup.impl;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
@@ -47,11 +51,11 @@ import com.google.common.collect.Lists;
  */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public final class BackupCommands {
+public final class BackupCommands implements BackupRestoreConstants {
   
   public final static String INCORRECT_USAGE = "Incorrect usage";
 
-  public static final String USAGE = "Usage: hbase backup COMMAND [command-specific arguments]\n"
+  public static final String USAGE = "Usage: bin/hbase backup COMMAND [command-specific arguments]\n"
       + "where COMMAND is one of:\n" 
       + "  create          Create a new backup image\n"
       + "  delete          Delete an existing backup image\n"
@@ -59,43 +63,36 @@ public final class BackupCommands {
       + "  history         Show history of all successful backups\n"
       + "  progress        Show the progress of the latest backup request\n"
       + "  set             Backup set management\n"
-      + "Run \'hbase backup COMMAND -h\' to see help message for each command\n";
+      + "Run \'bin/hbase backup COMMAND -h\' to see help message for each command\n";
 
   public static final String CREATE_CMD_USAGE =
-      "Usage: hbase backup create <type> <backup_root> [tables] [-set name] "
-      + "[-w workers][-b bandwith]\n" 
-      + "  type           \"full\" to create a full backup image\n"
-      + "                 \"incremental\" to create an incremental backup image\n"
+      "Usage: bin/hbase backup create <type> <backup_root> [tables] [options]\n"     
+      + "  type            \"full\" to create a full backup image\n"
+      + "                  \"incremental\" to create an incremental backup image\n"
       + "  backup_root     Full path to store the backup image\n" 
-      + "Options:\n"
       + "  tables          If no tables (\"\") are specified, all tables are backed up.\n"
-      + "                  otherwise it is a comma separated list of tables.\n"
-      + "  -w              Number of parallel workers (MapReduce tasks).\n" 
-      + "  -b              Bandwith per one worker (MapReduce task) in MBs per sec\n" 
-      + "  -set            Name of backup set to use (mutually exclusive with [tables])" ;
+      + "                  otherwise it is a comma separated list of tables.";      
 
-  public static final String PROGRESS_CMD_USAGE = "Usage: hbase backup progress <backupId>\n"
+
+  public static final String PROGRESS_CMD_USAGE = "Usage: bin/hbase backup progress <backupId>\n"
       + "  backupId        Backup image id\n";
   public static final String NO_INFO_FOUND = "No info was found for backup id: ";
 
-  public static final String DESCRIBE_CMD_USAGE = "Usage: hbase backup decsribe <backupId>\n"
+  public static final String DESCRIBE_CMD_USAGE = "Usage: bin/hbase backup describe <backupId>\n"
       + "  backupId        Backup image id\n";
 
   public static final String HISTORY_CMD_USAGE = 
-      "Usage: hbase backup history [-path BACKUP_ROOT] [-n N] [-t table]\n"
-      + "  -n N            Show up to N last backup sessions, default - 10\n"
-      + "  -path           Backup root path\n"
-      + "  -t table        Table name. If specified, only backup images which contain this table\n"
-      + "                  will be listed."  ;
+      "Usage: bin/hbase backup history [options]";
+
   
 
-  public static final String DELETE_CMD_USAGE = "Usage: hbase backup delete <backupId>\n"
+  public static final String DELETE_CMD_USAGE = "Usage: bin/hbase backup delete <backupId>\n"
       + "  backupId        Backup image id\n";
 
-  public static final String CANCEL_CMD_USAGE = "Usage: hbase backup cancel <backupId>\n"
+  public static final String CANCEL_CMD_USAGE = "Usage: bin/hbase backup cancel <backupId>\n"
       + "  backupId        Backup image id\n";
 
-  public static final String SET_CMD_USAGE = "Usage: hbase backup set COMMAND [name] [tables]\n"
+  public static final String SET_CMD_USAGE = "Usage: bin/hbase backup set COMMAND [name] [tables]\n"
       + "  name            Backup set name\n"
       + "  tables          If no tables (\"\") are specified, all tables will belong to the set.\n"
       + "                  Otherwise it is a comma separated list of tables.\n"
@@ -106,6 +103,8 @@ public final class BackupCommands {
       + "  describe        Describe backup set\n"
       + "  delete          Delete backup set\n";
 
+  public static final String USAGE_FOOTER = "";
+    
   public static abstract class Command extends Configured {
     CommandLine cmdline;
     
@@ -176,43 +175,56 @@ public final class BackupCommands {
     public void execute() throws IOException {
       super.execute();
       if (cmdline == null || cmdline.getArgs() == null) {
-        System.err.println("ERROR: missing arguments");
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
       String[] args = cmdline.getArgs();
       if (args.length < 3 || args.length > 4) {
-        System.err.println("ERROR: wrong number of arguments: "+ args.length);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
 
       if (!BackupType.FULL.toString().equalsIgnoreCase(args[1])
           && !BackupType.INCREMENTAL.toString().equalsIgnoreCase(args[1])) {
-        System.err.println("ERROR: invalid backup type: "+ args[1]);
+        System.out.println("ERROR: invalid backup type: "+ args[1]);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-            
+      if(!verifyPath(args[2])) {
+        System.out.println("ERROR: invalid backup destination: "+ args[2]);
+        printUsage();
+        throw new IOException(INCORRECT_USAGE);
+      }
+      
       String tables = null;
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
 
+      // Check if we have both: backup set and list of tables
+      if(args.length == 4 && cmdline.hasOption(OPTION_SET)) {
+        System.out.println("ERROR: You can specify either backup set or list"+
+            " of tables, but not both");
+        printUsage();
+        throw new IOException(INCORRECT_USAGE);
+      }
+      
       // Check backup set
       String setName = null;
-      if (cmdline.hasOption("set")) {
-        setName = cmdline.getOptionValue("set");
+      if (cmdline.hasOption(OPTION_SET)) {
+        setName = cmdline.getOptionValue(OPTION_SET);
         tables = getTablesForSet(setName, conf);
 
         if (tables == null) {
-          System.err.println("ERROR: Backup set '" + setName+ "' is either empty or does not exist");
+          System.out.println("ERROR: Backup set '" + setName+ "' is either empty or does not exist");
           printUsage();
           throw new IOException(INCORRECT_USAGE);
         }
       } else {
         tables = (args.length == 4) ? args[3] : null;
       }
-      int bandwidth = cmdline.hasOption('b') ? Integer.parseInt(cmdline.getOptionValue('b')) : -1;
-      int workers = cmdline.hasOption('w') ? Integer.parseInt(cmdline.getOptionValue('w')) : -1;
+      int bandwidth = cmdline.hasOption(OPTION_BANDWIDTH) ? 
+          Integer.parseInt(cmdline.getOptionValue(OPTION_BANDWIDTH)) : -1;
+      int workers = cmdline.hasOption(OPTION_WORKERS) ? 
+          Integer.parseInt(cmdline.getOptionValue(OPTION_WORKERS)) : -1;
 
       try (Connection conn = ConnectionFactory.createConnection(getConf());
           HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {
@@ -225,12 +237,24 @@ public final class BackupCommands {
         String backupId = admin.backupTables(request);
         System.out.println("Backup session "+ backupId+" finished. Status: SUCCESS");
       } catch (IOException e) {
-        System.err.println("Backup session finished. Status: FAILURE");
+        System.out.println("Backup session finished. Status: FAILURE");
         throw e;
       }
     }
     
-
+    private boolean verifyPath(String path) {
+      try{
+        Path p = new Path(path);
+        Configuration conf = getConf() != null? getConf(): 
+            HBaseConfiguration.create();
+        URI uri = p.toUri();
+        if(uri.getScheme() == null) return false;
+        FileSystem fs = FileSystem.get(uri, conf);
+        return true;
+      } catch(Exception e){
+        return false;
+      }
+    }
 
     private String getTablesForSet(String name, Configuration conf)
         throws IOException {
@@ -244,7 +268,19 @@ public final class BackupCommands {
 
     @Override
     protected void printUsage() {
-      System.err.println(CREATE_CMD_USAGE);      
+      System.out.println(CREATE_CMD_USAGE);
+      Options options = new Options();
+      options.addOption(OPTION_WORKERS, true, OPTION_WORKERS_DESC);
+      options.addOption(OPTION_BANDWIDTH, true, OPTION_BANDWIDTH_DESC);
+      options.addOption(OPTION_SET, true, OPTION_SET_RESTORE_DESC);
+
+      HelpFormatter helpFormatter = new HelpFormatter();
+      helpFormatter.setLeftPadding(2);
+      helpFormatter.setDescPadding(8);
+      helpFormatter.setWidth(100);
+      helpFormatter.setSyntaxPrefix("Options:");
+      helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);  
+   
     }
   }
 
@@ -270,7 +306,7 @@ public final class BackupCommands {
       }
 
       if (args.length != 2) {
-        System.err.println("Only supports help message of a single command type");
+        System.out.println("ERROR: Only supports help message of a single command type");
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -299,7 +335,7 @@ public final class BackupCommands {
 
     @Override
     protected void printUsage() {
-      System.err.println(USAGE);      
+      System.out.println(USAGE);           
     }
   }
 
@@ -314,13 +350,11 @@ public final class BackupCommands {
     public void execute() throws IOException {
       super.execute();
       if (cmdline == null || cmdline.getArgs() == null) {
-        System.err.println("ERROR: missing arguments");
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
       String[] args = cmdline.getArgs();
       if (args.length != 2) {
-        System.err.println("ERROR: wrong number of arguments");
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -331,7 +365,7 @@ public final class BackupCommands {
           final BackupSystemTable sysTable = new BackupSystemTable(conn);) {
         BackupInfo info = sysTable.readBackupInfo(backupId);
         if (info == null) {
-          System.err.println("ERROR: " + backupId + " does not exist");
+          System.out.println("ERROR: " + backupId + " does not exist");
           printUsage();
           throw new IOException(INCORRECT_USAGE);
         }
@@ -341,7 +375,7 @@ public final class BackupCommands {
 
     @Override
     protected void printUsage() {
-      System.err.println(DESCRIBE_CMD_USAGE);
+      System.out.println(DESCRIBE_CMD_USAGE);
     }
   }
 
@@ -375,7 +409,7 @@ public final class BackupCommands {
         BackupInfo info = sysTable.readBackupInfo(backupId);
         int progress = info == null? -1: info.getProgress();
         if(progress < 0){
-          System.err.println(NO_INFO_FOUND + backupId);
+          System.out.println(NO_INFO_FOUND + backupId);
         } else{
           System.out.println(backupId+" progress=" + progress+"%");
         }
@@ -384,7 +418,7 @@ public final class BackupCommands {
 
     @Override
     protected void printUsage() {
-      System.err.println(PROGRESS_CMD_USAGE);      
+      System.out.println(PROGRESS_CMD_USAGE);      
     }
   }
 
@@ -399,7 +433,6 @@ public final class BackupCommands {
     public void execute() throws IOException {
       super.execute();
       if (cmdline == null || cmdline.getArgs() == null || cmdline.getArgs().length < 2) {
-        System.err.println("No backup id(s) was specified");
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -419,7 +452,7 @@ public final class BackupCommands {
 
     @Override
     protected void printUsage() {
-      System.err.println(DELETE_CMD_USAGE);      
+      System.out.println(DELETE_CMD_USAGE);      
     }
   }
 
@@ -506,40 +539,40 @@ public final class BackupCommands {
     private Path getBackupRootPath() throws IOException {
       String value = null;
       try{
-        value = cmdline.getOptionValue("path");
+        value = cmdline.getOptionValue(OPTION_PATH);
         if (value == null) return null;
         return new Path(value);
       } catch (IllegalArgumentException e) {
-        System.err.println("ERROR: Illegal argument for backup root path: "+ value);
+        System.out.println("ERROR: Illegal argument for backup root path: "+ value);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
     }
 
     private TableName getTableName() throws IOException {
-      String value = cmdline.getOptionValue("t"); 
+      String value = cmdline.getOptionValue(OPTION_TABLE); 
       if (value == null) return null;
       try{
         return TableName.valueOf(value);
       } catch (IllegalArgumentException e){
-        System.err.println("Illegal argument for table name: "+ value);
+        System.out.println("Illegal argument for table name: "+ value);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
     }
 
     private String getTableSetName() throws IOException {
-      String value = cmdline.getOptionValue("set"); 
+      String value = cmdline.getOptionValue(OPTION_SET); 
       return value;
     }
     
     private int parseHistoryLength() throws IOException {
-      String value = cmdline.getOptionValue("n");
+      String value = cmdline.getOptionValue(OPTION_RECORD_NUMBER);
       try{
         if (value == null) return DEFAULT_HISTORY_LENGTH;
         return Integer.parseInt(value);
       } catch(NumberFormatException e) {
-        System.err.println("Illegal argument for history length: "+ value);
+        System.out.println("Illegal argument for history length: "+ value);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -547,7 +580,19 @@ public final class BackupCommands {
 
     @Override
     protected void printUsage() {
-      System.err.println(HISTORY_CMD_USAGE);      
+      System.out.println(HISTORY_CMD_USAGE);
+      Options options = new Options();
+      options.addOption(OPTION_RECORD_NUMBER, true, OPTION_RECORD_NUMBER_DESC);
+      options.addOption(OPTION_PATH, true, OPTION_PATH_DESC);
+      options.addOption(OPTION_TABLE, true, OPTION_TABLE_DESC);
+      options.addOption(OPTION_SET, true, OPTION_SET_DESC);
+
+      HelpFormatter helpFormatter = new HelpFormatter();
+      helpFormatter.setLeftPadding(2);
+      helpFormatter.setDescPadding(8);
+      helpFormatter.setWidth(100);
+      helpFormatter.setSyntaxPrefix("Options:");
+      helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);       
     }
   }
 
@@ -568,7 +613,6 @@ public final class BackupCommands {
       super.execute();      
       // Command-line must have at least one element
       if (cmdline == null || cmdline.getArgs() == null || cmdline.getArgs().length < 2) {
-        System.err.println("ERROR: Command line format");
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -614,8 +658,6 @@ public final class BackupCommands {
 
     private void processSetDescribe(String[] args) throws IOException {
       if (args == null || args.length != 3) {
-        System.err.println("ERROR: Wrong number of args for 'set describe' command: "
-            + numOfArgs(args));
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -635,8 +677,6 @@ public final class BackupCommands {
 
     private void processSetDelete(String[] args) throws IOException {
       if (args == null || args.length != 3) {
-        System.err.println("ERROR: Wrong number of args for 'set delete' command: "
-            + numOfArgs(args));
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -655,8 +695,6 @@ public final class BackupCommands {
 
     private void processSetRemove(String[] args) throws IOException {
       if (args == null || args.length != 4) {
-        System.err.println("ERROR: Wrong number of args for 'set remove' command: "
-            + numOfArgs(args));
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -672,8 +710,6 @@ public final class BackupCommands {
 
     private void processSetAdd(String[] args) throws IOException {
       if (args == null || args.length != 4) {
-        System.err.println("ERROR: Wrong number of args for 'set add' command: "
-            + numOfArgs(args));
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -703,7 +739,7 @@ public final class BackupCommands {
       } else if (cmdStr.equals(SET_LIST_CMD)) {
         return BackupCommand.SET_LIST;
       } else {
-        System.err.println("ERROR: Unknown command for 'set' :" + cmdStr);
+        System.out.println("ERROR: Unknown command for 'set' :" + cmdStr);
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
@@ -711,7 +747,7 @@ public final class BackupCommands {
 
     @Override
     protected void printUsage() {
-      System.err.println(SET_CMD_USAGE);
+      System.out.println(SET_CMD_USAGE);
     }
 
   }  

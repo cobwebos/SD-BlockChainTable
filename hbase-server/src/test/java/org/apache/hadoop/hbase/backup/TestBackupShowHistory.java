@@ -82,7 +82,7 @@ public class TestBackupShowHistory extends TestBackupBase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
 
-    String[] args = new String[]{"history",  "-n", "10", "-path", BACKUP_ROOT_DIR }; 
+    String[] args = new String[]{"history",  "-n", "10", "-p", BACKUP_ROOT_DIR }; 
     // Run backup
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertTrue(ret == 0);
@@ -135,8 +135,8 @@ public class TestBackupShowHistory extends TestBackupBase {
     }
     assertTrue(success);
     
-    args = new String[]{"history",  "-n", "10", "-path", BACKUP_ROOT_DIR,
-        "-t", "table1", "-set", "backup"}; 
+    args = new String[]{"history",  "-n", "10", "-p", BACKUP_ROOT_DIR,
+        "-t", "table1", "-s", "backup"}; 
     // Run backup
     ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertTrue(ret == 0);

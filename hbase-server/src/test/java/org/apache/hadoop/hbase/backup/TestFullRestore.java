@@ -34,31 +34,6 @@ public class TestFullRestore extends TestBackupBase {
 
   private static final Log LOG = LogFactory.getLog(TestFullRestore.class);
 
-  /*
-  void restoreTables(String backupRootDir,
-      String backupId, boolean check, boolean autoRestore, List<TableName> sTable,
-      List<TableName> tTable, boolean isOverwrite) throws IOException {
-    Connection conn = null;
-    HBaseAdmin admin = null;
-    RestoreRequest request = new RestoreRequest();
-    request.setAutoRestore(autoRestore).setDependencyCheckOnly(check).setOverwrite(isOverwrite);
-    request.setBackupId(backupId).setBackupRootDir(backupRootDir);
-    request.setTableList(sTable).setTargetTableList(tTable);
-    try {
-      conn = ConnectionFactory.createConnection(conf1);
-      admin = (HBaseAdmin) conn.getAdmin();
-      admin.restoreTablesSync(request);
-    } finally {
-      if (admin != null) {
-        admin.close();
-      }
-      if (conn != null) {
-        conn.close();
-      }
-    }
-  }
-  */
-
   /**
    * Verify that a single table is restored to a new table
    * @throws Exception
@@ -97,7 +72,7 @@ public class TestFullRestore extends TestBackupBase {
     assertTrue(checkSucceeded(backupId));
     //restore <backup_root_path> <backup_id> <tables> [tableMapping]
     String[] args = new String[]{BACKUP_ROOT_DIR, backupId, 
-        table1.getNameAsString(), table1_restore.getNameAsString() }; 
+        table1.getNameAsString(), "-m", table1_restore.getNameAsString() }; 
     // Run backup
     int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
 
@@ -150,7 +125,7 @@ public class TestFullRestore extends TestBackupBase {
     //restore <backup_root_path> <backup_id> <tables> [tableMapping]
     String[] args = new String[]{BACKUP_ROOT_DIR, backupId, 
         StringUtils.join(restore_tableset, ","), 
-        StringUtils.join(tablemap, ",") }; 
+        "-m", StringUtils.join(tablemap, ",") }; 
     // Run backup
     int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
 
@@ -199,7 +174,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] tableset = new TableName[] { table1 };
     //restore <backup_root_path> <backup_id> <tables> [tableMapping]
     String[] args = new String[]{BACKUP_ROOT_DIR, backupId, 
-        StringUtils.join(tableset, ","), "-overwrite" }; 
+        StringUtils.join(tableset, ","), "-o" }; 
     // Run restore
     int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
     assertTrue(ret==0);   
@@ -243,7 +218,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] restore_tableset = new TableName[] { table2, table3 };
     //restore <backup_root_path> <backup_id> <tables> [tableMapping]
     String[] args = new String[]{BACKUP_ROOT_DIR, backupId, 
-        StringUtils.join(restore_tableset, ","), "-overwrite" }; 
+        StringUtils.join(restore_tableset, ","), "-o" }; 
     // Run backup
     int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
 
@@ -294,7 +269,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] tablemap = new TableName[] { table1_restore };
     String[] args = new String[]{BACKUP_ROOT_DIR, backupId, 
         StringUtils.join(tableset, ","), 
-        StringUtils.join(tablemap, ",") }; 
+        "-m", StringUtils.join(tablemap, ",") }; 
     // Run restore
     int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
     assertTrue(ret != 0);    
@@ -339,7 +314,7 @@ public class TestFullRestore extends TestBackupBase {
     TableName[] tablemap = new TableName[] { table2_restore, table3_restore };
     String[] args = new String[]{BACKUP_ROOT_DIR, backupId, 
         StringUtils.join(restore_tableset, ","), 
-        StringUtils.join(tablemap, ",") }; 
+        "-m", StringUtils.join(tablemap, ",") }; 
     // Run restore
     int ret = ToolRunner.run(conf1, new RestoreDriver(), args);
     assertTrue(ret != 0); 

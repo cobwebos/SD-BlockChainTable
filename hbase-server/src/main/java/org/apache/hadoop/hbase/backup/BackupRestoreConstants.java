@@ -27,9 +27,47 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
  */
 @InterfaceAudience.Private
 @InterfaceStability.Stable
-public final class BackupRestoreConstants {
+public interface BackupRestoreConstants {
 
+  // Drivers option list
+  public static final String OPTION_OVERWRITE = "o";
+  public static final String OPTION_OVERWRITE_DESC = 
+      "Overwrite data if any of the restore target tables exists";
+  
+  public static final String OPTION_CHECK = "c";
+  public static final String OPTION_CHECK_DESC = 
+      "Check restore sequence and dependencies only (does not execute the command)";
+  
+  public static final String OPTION_SET = "s";
+  public static final String OPTION_SET_DESC = "Backup set name";
+  public static final String OPTION_SET_RESTORE_DESC = 
+      "Backup set to restore, mutually exclusive with table list <table(s)>";
+  
+  public static final String OPTION_DEBUG = "d";
+  public static final String OPTION_DEBUG_DESC = "Enable debug loggings";
+  
+  public static final String OPTION_TABLE = "t";
+  public static final String OPTION_TABLE_DESC = "Table name. If specified, only backup images,"+
+  " which contain this table will be listed.";
+  
+  public static final String OPTION_BANDWIDTH = "b";
+  public static final String OPTION_BANDWIDTH_DESC = "Bandwidth per task (MapReduce task) in MB/s";
+  
+  public static final String OPTION_WORKERS = "w";
+  public static final String OPTION_WORKERS_DESC = "Number of parallel MapReduce tasks to execute";
 
+  public static final String OPTION_RECORD_NUMBER = "n";
+  public static final String OPTION_RECORD_NUMBER_DESC = "Number of records of backup history. Default: 10";
+  
+  public static final String OPTION_PATH = "p";
+  public static final String OPTION_PATH_DESC = "Backup destination root directory path";
+
+  public static final String OPTION_TABLE_MAPPING = "m";
+  public static final String OPTION_TABLE_MAPPING_DESC = 
+      "A comma separated list of target tables. "+
+      "If specified, each table in <tables> must have a mapping";
+
+  
   // delimiter in tablename list in restore command
   public static final String TABLENAME_DELIMITER_IN_COMMAND = ",";
 
@@ -50,7 +88,5 @@ public final class BackupRestoreConstants {
     SET_ADD, SET_REMOVE, SET_DELETE, SET_DESCRIBE, SET_LIST
   }
 
-  private BackupRestoreConstants() {
-    // Can't be instantiated with this ctor.
-  }
+
 }

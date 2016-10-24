@@ -26,7 +26,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.backup.BackupRestoreConstants.BackupCommand;
 import org.apache.hadoop.hbase.backup.impl.BackupCommands;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -39,27 +38,24 @@ import org.apache.log4j.Logger;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public class BackupDriver extends AbstractHBaseTool {
+public class BackupDriver extends AbstractHBaseTool implements BackupRestoreConstants {
 
   private static final Log LOG = LogFactory.getLog(BackupDriver.class);
   private CommandLine cmd;
-    
-  public BackupDriver() throws IOException
-  {
+
+  public BackupDriver() throws IOException {
     init();
   }
-  
+
   protected void init() throws IOException {
     // define supported options
-    addOptNoArg("debug", "Enable debug loggings");
-    addOptNoArg("all", "All tables");
-    addOptWithArg("t", "Table name");
-    addOptWithArg("b", "Bandwidth per worker (M/R task) in MB/s");
-    addOptWithArg("w", "Number of workers (M/R tasks)");
-    addOptWithArg("n", "History of backup length");
-    addOptWithArg("set", "Backup set name");
-    addOptWithArg("path", "Backup destination root directory path");
-    
+    addOptNoArg(OPTION_DEBUG, OPTION_DEBUG_DESC);
+    addOptWithArg(OPTION_TABLE, OPTION_TABLE_DESC);
+    addOptWithArg(OPTION_BANDWIDTH, OPTION_BANDWIDTH_DESC);
+    addOptWithArg(OPTION_WORKERS, OPTION_WORKERS_DESC);
+    addOptWithArg(OPTION_RECORD_NUMBER, OPTION_RECORD_NUMBER_DESC);
+    addOptWithArg(OPTION_SET, OPTION_SET_DESC);
+    addOptWithArg(OPTION_PATH, OPTION_PATH_DESC);
 
     // disable irrelevant loggers to avoid it mess up command output
     LogUtils.disableUselessLoggers(LOG);
@@ -95,7 +91,7 @@ public class BackupDriver extends AbstractHBaseTool {
     } else if (BackupCommand.SET.name().equalsIgnoreCase(cmd)) {
       type = BackupCommand.SET;
     } else {
-      System.err.println("Unsupported command for backup: " + cmd);
+      System.out.println("Unsupported command for backup: " + cmd);
       printToolUsage();
       return -1;
     }
@@ -110,13 +106,13 @@ public class BackupDriver extends AbstractHBaseTool {
 
     // TODO: get rid of Command altogether?
     BackupCommands.Command command = BackupCommands.createCommand(getConf(), type, this.cmd);
-    if( type == BackupCommand.CREATE && conf != null) {
+    if (type == BackupCommand.CREATE && conf != null) {
       ((BackupCommands.CreateCommand) command).setConf(conf);
-    }   
+    }
     try {
       command.execute();
     } catch (IOException e) {
-      if (e.getMessage().equals(BackupCommands.INCORRECT_USAGE)){
+      if (e.getMessage().equals(BackupCommands.INCORRECT_USAGE)) {
         return -1;
       }
       throw e;
@@ -143,10 +139,10 @@ public class BackupDriver extends AbstractHBaseTool {
     Path hbasedir = FSUtils.getRootDir(conf);
     URI defaultFs = hbasedir.getFileSystem(conf).getUri();
     FSUtils.setFsDefault(conf, new Path(defaultFs));
-    int ret = ToolRunner.run(conf, new BackupDriver(), args);    
-    System.exit(ret);    
+    int ret = ToolRunner.run(conf, new BackupDriver(), args);
+    System.exit(ret);
   }
-  
+
   @Override
   public int run(String[] args) throws IOException {
     if (conf == null) {
@@ -160,7 +156,7 @@ public class BackupDriver extends AbstractHBaseTool {
       cmd = parseArgs(args);
       cmdLineArgs = args;
     } catch (Exception e) {
-      System.err.println("Error when parsing command-line arguments: "+e.getMessage());
+      System.out.println("Error when parsing command-line arguments: " + e.getMessage());
       printToolUsage();
       return EXIT_FAILURE;
     }
@@ -181,19 +177,19 @@ public class BackupDriver extends AbstractHBaseTool {
     }
     return ret;
   }
-  
+
   protected boolean sanityCheckOptions(CommandLine cmd) {
     boolean success = true;
     for (String reqOpt : requiredOptions) {
       if (!cmd.hasOption(reqOpt)) {
-        System.err.println("Required option -" + reqOpt + " is missing");
+        System.out.println("Required option -" + reqOpt + " is missing");
         success = false;
       }
     }
     return success;
   }
-  
+
   protected void printToolUsage() throws IOException {
-    System.err.println(BackupCommands.USAGE); 
+    System.out.println(BackupCommands.USAGE);
   }
 }
