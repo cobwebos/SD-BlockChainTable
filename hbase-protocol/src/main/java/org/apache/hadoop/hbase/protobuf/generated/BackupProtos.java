@@ -10,26 +10,6 @@ public final class BackupProtos {
   }
   /**
    * Protobuf enum {@code hbase.pb.BackupType}
-   *
-   * <pre>
-   *enum FullTableBackupState {
-   *PRE_SNAPSHOT_TABLE = 1;
-   *SNAPSHOT_TABLES = 2;
-   *SNAPSHOT_COPY = 3;
-   *BACKUP_COMPLETE = 4;
-   *}
-   *
-   *enum IncrementalTableBackupState {
-   *PREPARE_INCREMENTAL = 1;
-   *INCREMENTAL_COPY = 2;
-   *INCR_BACKUP_COMPLETE = 3;
-   *}
-   *
-   *message SnapshotTableStateData {
-   *required TableName table = 1;
-   *required string snapshotName = 2;
-   *}
-   * </pre>
    */
   public enum BackupType
       implements com.google.protobuf.ProtocolMessageEnum {
@@ -110,1784 +90,30 @@ public final class BackupProtos {
     // @@protoc_insertion_point(enum_scope:hbase.pb.BackupType)
   }
 
-  public interface BackupImageOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
-
-    // required string backup_id = 1;
-    /**
-     * <code>required string backup_id = 1;</code>
-     */
-    boolean hasBackupId();
-    /**
-     * <code>required string backup_id = 1;</code>
-     */
-    java.lang.String getBackupId();
-    /**
-     * <code>required string backup_id = 1;</code>
-     */
-    com.google.protobuf.ByteString
-        getBackupIdBytes();
-
-    // required .hbase.pb.BackupType backup_type = 2;
-    /**
-     * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-     */
-    boolean hasBackupType();
-    /**
-     * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-     */
-    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getBackupType();
-
-    // required string root_dir = 3;
-    /**
-     * <code>required string root_dir = 3;</code>
-     */
-    boolean hasRootDir();
-    /**
-     * <code>required string root_dir = 3;</code>
-     */
-    java.lang.String getRootDir();
-    /**
-     * <code>required string root_dir = 3;</code>
-     */
-    com.google.protobuf.ByteString
-        getRootDirBytes();
-
-    // repeated .hbase.pb.TableName table_list = 4;
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    java.util.List<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName> 
-        getTableListList();
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTableList(int index);
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    int getTableListCount();
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> 
-        getTableListOrBuilderList();
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableListOrBuilder(
-        int index);
-
-    // required uint64 start_ts = 5;
-    /**
-     * <code>required uint64 start_ts = 5;</code>
-     */
-    boolean hasStartTs();
-    /**
-     * <code>required uint64 start_ts = 5;</code>
-     */
-    long getStartTs();
-
-    // required uint64 complete_ts = 6;
-    /**
-     * <code>required uint64 complete_ts = 6;</code>
-     */
-    boolean hasCompleteTs();
-    /**
-     * <code>required uint64 complete_ts = 6;</code>
-     */
-    long getCompleteTs();
-
-    // repeated .hbase.pb.BackupImage ancestors = 7;
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> 
-        getAncestorsList();
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getAncestors(int index);
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    int getAncestorsCount();
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-        getAncestorsOrBuilderList();
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getAncestorsOrBuilder(
-        int index);
-  }
-  /**
-   * Protobuf type {@code hbase.pb.BackupImage}
-   */
-  public static final class BackupImage extends
-      com.google.protobuf.GeneratedMessage
-      implements BackupImageOrBuilder {
-    // Use BackupImage.newBuilder() to construct.
-    private BackupImage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
-      super(builder);
-      this.unknownFields = builder.getUnknownFields();
-    }
-    private BackupImage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
-
-    private static final BackupImage defaultInstance;
-    public static BackupImage getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public BackupImage getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
-    @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
-        getUnknownFields() {
-      return this.unknownFields;
-    }
-    private BackupImage(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      initFields();
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              backupId_ = input.readBytes();
-              break;
-            }
-            case 16: {
-              int rawValue = input.readEnum();
-              org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType value = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.valueOf(rawValue);
-              if (value == null) {
-                unknownFields.mergeVarintField(2, rawValue);
-              } else {
-                bitField0_ |= 0x00000002;
-                backupType_ = value;
-              }
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              rootDir_ = input.readBytes();
-              break;
-            }
-            case 34: {
-              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                tableList_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName>();
-                mutable_bitField0_ |= 0x00000008;
-              }
-              tableList_.add(input.readMessage(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.PARSER, extensionRegistry));
-              break;
-            }
-            case 40: {
-              bitField0_ |= 0x00000008;
-              startTs_ = input.readUInt64();
-              break;
-            }
-            case 48: {
-              bitField0_ |= 0x00000010;
-              completeTs_ = input.readUInt64();
-              break;
-            }
-            case 58: {
-              if (!((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
-                ancestors_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage>();
-                mutable_bitField0_ |= 0x00000040;
-              }
-              ancestors_.add(input.readMessage(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.PARSER, extensionRegistry));
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-          tableList_ = java.util.Collections.unmodifiableList(tableList_);
-        }
-        if (((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
-          ancestors_ = java.util.Collections.unmodifiableList(ancestors_);
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_descriptor;
-    }
-
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.class, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder.class);
-    }
-
-    public static com.google.protobuf.Parser<BackupImage> PARSER =
-        new com.google.protobuf.AbstractParser<BackupImage>() {
-      public BackupImage parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return new BackupImage(input, extensionRegistry);
-      }
-    };
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<BackupImage> getParserForType() {
-      return PARSER;
-    }
-
-    private int bitField0_;
-    // required string backup_id = 1;
-    public static final int BACKUP_ID_FIELD_NUMBER = 1;
-    private java.lang.Object backupId_;
-    /**
-     * <code>required string backup_id = 1;</code>
-     */
-    public boolean hasBackupId() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <code>required string backup_id = 1;</code>
-     */
-    public java.lang.String getBackupId() {
-      java.lang.Object ref = backupId_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          backupId_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>required string backup_id = 1;</code>
-     */
-    public com.google.protobuf.ByteString
-        getBackupIdBytes() {
-      java.lang.Object ref = backupId_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        backupId_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    // required .hbase.pb.BackupType backup_type = 2;
-    public static final int BACKUP_TYPE_FIELD_NUMBER = 2;
-    private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType backupType_;
-    /**
-     * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-     */
-    public boolean hasBackupType() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-     */
-    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getBackupType() {
-      return backupType_;
-    }
-
-    // required string root_dir = 3;
-    public static final int ROOT_DIR_FIELD_NUMBER = 3;
-    private java.lang.Object rootDir_;
-    /**
-     * <code>required string root_dir = 3;</code>
-     */
-    public boolean hasRootDir() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    /**
-     * <code>required string root_dir = 3;</code>
-     */
-    public java.lang.String getRootDir() {
-      java.lang.Object ref = rootDir_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          rootDir_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>required string root_dir = 3;</code>
-     */
-    public com.google.protobuf.ByteString
-        getRootDirBytes() {
-      java.lang.Object ref = rootDir_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        rootDir_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    // repeated .hbase.pb.TableName table_list = 4;
-    public static final int TABLE_LIST_FIELD_NUMBER = 4;
-    private java.util.List<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName> tableList_;
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    public java.util.List<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName> getTableListList() {
-      return tableList_;
-    }
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> 
-        getTableListOrBuilderList() {
-      return tableList_;
-    }
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    public int getTableListCount() {
-      return tableList_.size();
-    }
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTableList(int index) {
-      return tableList_.get(index);
-    }
-    /**
-     * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-     */
-    public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableListOrBuilder(
-        int index) {
-      return tableList_.get(index);
-    }
-
-    // required uint64 start_ts = 5;
-    public static final int START_TS_FIELD_NUMBER = 5;
-    private long startTs_;
-    /**
-     * <code>required uint64 start_ts = 5;</code>
-     */
-    public boolean hasStartTs() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    /**
-     * <code>required uint64 start_ts = 5;</code>
-     */
-    public long getStartTs() {
-      return startTs_;
-    }
-
-    // required uint64 complete_ts = 6;
-    public static final int COMPLETE_TS_FIELD_NUMBER = 6;
-    private long completeTs_;
-    /**
-     * <code>required uint64 complete_ts = 6;</code>
-     */
-    public boolean hasCompleteTs() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    /**
-     * <code>required uint64 complete_ts = 6;</code>
-     */
-    public long getCompleteTs() {
-      return completeTs_;
-    }
-
-    // repeated .hbase.pb.BackupImage ancestors = 7;
-    public static final int ANCESTORS_FIELD_NUMBER = 7;
-    private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> ancestors_;
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> getAncestorsList() {
-      return ancestors_;
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-        getAncestorsOrBuilderList() {
-      return ancestors_;
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    public int getAncestorsCount() {
-      return ancestors_.size();
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getAncestors(int index) {
-      return ancestors_.get(index);
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-     */
-    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getAncestorsOrBuilder(
-        int index) {
-      return ancestors_.get(index);
-    }
-
-    private void initFields() {
-      backupId_ = "";
-      backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
-      rootDir_ = "";
-      tableList_ = java.util.Collections.emptyList();
-      startTs_ = 0L;
-      completeTs_ = 0L;
-      ancestors_ = java.util.Collections.emptyList();
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-
-      if (!hasBackupId()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasBackupType()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasRootDir()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasStartTs()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasCompleteTs()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      for (int i = 0; i < getTableListCount(); i++) {
-        if (!getTableList(i).isInitialized()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
-      }
-      for (int i = 0; i < getAncestorsCount(); i++) {
-        if (!getAncestors(i).isInitialized()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getBackupIdBytes());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeEnum(2, backupType_.getNumber());
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getRootDirBytes());
-      }
-      for (int i = 0; i < tableList_.size(); i++) {
-        output.writeMessage(4, tableList_.get(i));
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeUInt64(5, startTs_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeUInt64(6, completeTs_);
-      }
-      for (int i = 0; i < ancestors_.size(); i++) {
-        output.writeMessage(7, ancestors_.get(i));
-      }
-      getUnknownFields().writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getBackupIdBytes());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(2, backupType_.getNumber());
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, getRootDirBytes());
-      }
-      for (int i = 0; i < tableList_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(4, tableList_.get(i));
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(5, startTs_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(6, completeTs_);
-      }
-      for (int i = 0; i < ancestors_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(7, ancestors_.get(i));
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
-      if (obj == this) {
-       return true;
-      }
-      if (!(obj instanceof org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage)) {
-        return super.equals(obj);
-      }
-      org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage other = (org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage) obj;
-
-      boolean result = true;
-      result = result && (hasBackupId() == other.hasBackupId());
-      if (hasBackupId()) {
-        result = result && getBackupId()
-            .equals(other.getBackupId());
-      }
-      result = result && (hasBackupType() == other.hasBackupType());
-      if (hasBackupType()) {
-        result = result &&
-            (getBackupType() == other.getBackupType());
-      }
-      result = result && (hasRootDir() == other.hasRootDir());
-      if (hasRootDir()) {
-        result = result && getRootDir()
-            .equals(other.getRootDir());
-      }
-      result = result && getTableListList()
-          .equals(other.getTableListList());
-      result = result && (hasStartTs() == other.hasStartTs());
-      if (hasStartTs()) {
-        result = result && (getStartTs()
-            == other.getStartTs());
-      }
-      result = result && (hasCompleteTs() == other.hasCompleteTs());
-      if (hasCompleteTs()) {
-        result = result && (getCompleteTs()
-            == other.getCompleteTs());
-      }
-      result = result && getAncestorsList()
-          .equals(other.getAncestorsList());
-      result = result &&
-          getUnknownFields().equals(other.getUnknownFields());
-      return result;
-    }
-
-    private int memoizedHashCode = 0;
-    @java.lang.Override
-    public int hashCode() {
-      if (memoizedHashCode != 0) {
-        return memoizedHashCode;
-      }
-      int hash = 41;
-      hash = (19 * hash) + getDescriptorForType().hashCode();
-      if (hasBackupId()) {
-        hash = (37 * hash) + BACKUP_ID_FIELD_NUMBER;
-        hash = (53 * hash) + getBackupId().hashCode();
-      }
-      if (hasBackupType()) {
-        hash = (37 * hash) + BACKUP_TYPE_FIELD_NUMBER;
-        hash = (53 * hash) + hashEnum(getBackupType());
-      }
-      if (hasRootDir()) {
-        hash = (37 * hash) + ROOT_DIR_FIELD_NUMBER;
-        hash = (53 * hash) + getRootDir().hashCode();
-      }
-      if (getTableListCount() > 0) {
-        hash = (37 * hash) + TABLE_LIST_FIELD_NUMBER;
-        hash = (53 * hash) + getTableListList().hashCode();
-      }
-      if (hasStartTs()) {
-        hash = (37 * hash) + START_TS_FIELD_NUMBER;
-        hash = (53 * hash) + hashLong(getStartTs());
-      }
-      if (hasCompleteTs()) {
-        hash = (37 * hash) + COMPLETE_TS_FIELD_NUMBER;
-        hash = (53 * hash) + hashLong(getCompleteTs());
-      }
-      if (getAncestorsCount() > 0) {
-        hash = (37 * hash) + ANCESTORS_FIELD_NUMBER;
-        hash = (53 * hash) + getAncestorsList().hashCode();
-      }
-      hash = (29 * hash) + getUnknownFields().hashCode();
-      memoizedHashCode = hash;
-      return hash;
-    }
-
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code hbase.pb.BackupImage}
-     */
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.class, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder.class);
-      }
-
-      // Construct using org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          getTableListFieldBuilder();
-          getAncestorsFieldBuilder();
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-
-      public Builder clear() {
-        super.clear();
-        backupId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
-        backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        rootDir_ = "";
-        bitField0_ = (bitField0_ & ~0x00000004);
-        if (tableListBuilder_ == null) {
-          tableList_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000008);
-        } else {
-          tableListBuilder_.clear();
-        }
-        startTs_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000010);
-        completeTs_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000020);
-        if (ancestorsBuilder_ == null) {
-          ancestors_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000040);
-        } else {
-          ancestorsBuilder_.clear();
-        }
-        return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_descriptor;
-      }
-
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getDefaultInstanceForType() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance();
-      }
-
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage build() {
-        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage buildPartial() {
-        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage result = new org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.backupId_ = backupId_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.backupType_ = backupType_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.rootDir_ = rootDir_;
-        if (tableListBuilder_ == null) {
-          if (((bitField0_ & 0x00000008) == 0x00000008)) {
-            tableList_ = java.util.Collections.unmodifiableList(tableList_);
-            bitField0_ = (bitField0_ & ~0x00000008);
-          }
-          result.tableList_ = tableList_;
-        } else {
-          result.tableList_ = tableListBuilder_.build();
-        }
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.startTs_ = startTs_;
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.completeTs_ = completeTs_;
-        if (ancestorsBuilder_ == null) {
-          if (((bitField0_ & 0x00000040) == 0x00000040)) {
-            ancestors_ = java.util.Collections.unmodifiableList(ancestors_);
-            bitField0_ = (bitField0_ & ~0x00000040);
-          }
-          result.ancestors_ = ancestors_;
-        } else {
-          result.ancestors_ = ancestorsBuilder_.build();
-        }
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage) {
-          return mergeFrom((org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage other) {
-        if (other == org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance()) return this;
-        if (other.hasBackupId()) {
-          bitField0_ |= 0x00000001;
-          backupId_ = other.backupId_;
-          onChanged();
-        }
-        if (other.hasBackupType()) {
-          setBackupType(other.getBackupType());
-        }
-        if (other.hasRootDir()) {
-          bitField0_ |= 0x00000004;
-          rootDir_ = other.rootDir_;
-          onChanged();
-        }
-        if (tableListBuilder_ == null) {
-          if (!other.tableList_.isEmpty()) {
-            if (tableList_.isEmpty()) {
-              tableList_ = other.tableList_;
-              bitField0_ = (bitField0_ & ~0x00000008);
-            } else {
-              ensureTableListIsMutable();
-              tableList_.addAll(other.tableList_);
-            }
-            onChanged();
-          }
-        } else {
-          if (!other.tableList_.isEmpty()) {
-            if (tableListBuilder_.isEmpty()) {
-              tableListBuilder_.dispose();
-              tableListBuilder_ = null;
-              tableList_ = other.tableList_;
-              bitField0_ = (bitField0_ & ~0x00000008);
-              tableListBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                   getTableListFieldBuilder() : null;
-            } else {
-              tableListBuilder_.addAllMessages(other.tableList_);
-            }
-          }
-        }
-        if (other.hasStartTs()) {
-          setStartTs(other.getStartTs());
-        }
-        if (other.hasCompleteTs()) {
-          setCompleteTs(other.getCompleteTs());
-        }
-        if (ancestorsBuilder_ == null) {
-          if (!other.ancestors_.isEmpty()) {
-            if (ancestors_.isEmpty()) {
-              ancestors_ = other.ancestors_;
-              bitField0_ = (bitField0_ & ~0x00000040);
-            } else {
-              ensureAncestorsIsMutable();
-              ancestors_.addAll(other.ancestors_);
-            }
-            onChanged();
-          }
-        } else {
-          if (!other.ancestors_.isEmpty()) {
-            if (ancestorsBuilder_.isEmpty()) {
-              ancestorsBuilder_.dispose();
-              ancestorsBuilder_ = null;
-              ancestors_ = other.ancestors_;
-              bitField0_ = (bitField0_ & ~0x00000040);
-              ancestorsBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                   getAncestorsFieldBuilder() : null;
-            } else {
-              ancestorsBuilder_.addAllMessages(other.ancestors_);
-            }
-          }
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        if (!hasBackupId()) {
-          
-          return false;
-        }
-        if (!hasBackupType()) {
-          
-          return false;
-        }
-        if (!hasRootDir()) {
-          
-          return false;
-        }
-        if (!hasStartTs()) {
-          
-          return false;
-        }
-        if (!hasCompleteTs()) {
-          
-          return false;
-        }
-        for (int i = 0; i < getTableListCount(); i++) {
-          if (!getTableList(i).isInitialized()) {
-            
-            return false;
-          }
-        }
-        for (int i = 0; i < getAncestorsCount(); i++) {
-          if (!getAncestors(i).isInitialized()) {
-            
-            return false;
-          }
-        }
-        return true;
-      }
-
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage) e.getUnfinishedMessage();
-          throw e;
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      // required string backup_id = 1;
-      private java.lang.Object backupId_ = "";
-      /**
-       * <code>required string backup_id = 1;</code>
-       */
-      public boolean hasBackupId() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <code>required string backup_id = 1;</code>
-       */
-      public java.lang.String getBackupId() {
-        java.lang.Object ref = backupId_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          backupId_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>required string backup_id = 1;</code>
-       */
-      public com.google.protobuf.ByteString
-          getBackupIdBytes() {
-        java.lang.Object ref = backupId_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          backupId_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>required string backup_id = 1;</code>
-       */
-      public Builder setBackupId(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        backupId_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string backup_id = 1;</code>
-       */
-      public Builder clearBackupId() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        backupId_ = getDefaultInstance().getBackupId();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string backup_id = 1;</code>
-       */
-      public Builder setBackupIdBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        backupId_ = value;
-        onChanged();
-        return this;
-      }
-
-      // required .hbase.pb.BackupType backup_type = 2;
-      private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
-      /**
-       * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-       */
-      public boolean hasBackupType() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getBackupType() {
-        return backupType_;
-      }
-      /**
-       * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-       */
-      public Builder setBackupType(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType value) {
-        if (value == null) {
-          throw new NullPointerException();
-        }
-        bitField0_ |= 0x00000002;
-        backupType_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required .hbase.pb.BackupType backup_type = 2;</code>
-       */
-      public Builder clearBackupType() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
-        onChanged();
-        return this;
-      }
-
-      // required string root_dir = 3;
-      private java.lang.Object rootDir_ = "";
-      /**
-       * <code>required string root_dir = 3;</code>
-       */
-      public boolean hasRootDir() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <code>required string root_dir = 3;</code>
-       */
-      public java.lang.String getRootDir() {
-        java.lang.Object ref = rootDir_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          rootDir_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>required string root_dir = 3;</code>
-       */
-      public com.google.protobuf.ByteString
-          getRootDirBytes() {
-        java.lang.Object ref = rootDir_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          rootDir_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>required string root_dir = 3;</code>
-       */
-      public Builder setRootDir(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        rootDir_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string root_dir = 3;</code>
-       */
-      public Builder clearRootDir() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        rootDir_ = getDefaultInstance().getRootDir();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string root_dir = 3;</code>
-       */
-      public Builder setRootDirBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        rootDir_ = value;
-        onChanged();
-        return this;
-      }
-
-      // repeated .hbase.pb.TableName table_list = 4;
-      private java.util.List<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName> tableList_ =
-        java.util.Collections.emptyList();
-      private void ensureTableListIsMutable() {
-        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-          tableList_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName>(tableList_);
-          bitField0_ |= 0x00000008;
-         }
-      }
-
-      private com.google.protobuf.RepeatedFieldBuilder<
-          org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> tableListBuilder_;
-
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName> getTableListList() {
-        if (tableListBuilder_ == null) {
-          return java.util.Collections.unmodifiableList(tableList_);
-        } else {
-          return tableListBuilder_.getMessageList();
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public int getTableListCount() {
-        if (tableListBuilder_ == null) {
-          return tableList_.size();
-        } else {
-          return tableListBuilder_.getCount();
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTableList(int index) {
-        if (tableListBuilder_ == null) {
-          return tableList_.get(index);
-        } else {
-          return tableListBuilder_.getMessage(index);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder setTableList(
-          int index, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName value) {
-        if (tableListBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureTableListIsMutable();
-          tableList_.set(index, value);
-          onChanged();
-        } else {
-          tableListBuilder_.setMessage(index, value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder setTableList(
-          int index, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder builderForValue) {
-        if (tableListBuilder_ == null) {
-          ensureTableListIsMutable();
-          tableList_.set(index, builderForValue.build());
-          onChanged();
-        } else {
-          tableListBuilder_.setMessage(index, builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder addTableList(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName value) {
-        if (tableListBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureTableListIsMutable();
-          tableList_.add(value);
-          onChanged();
-        } else {
-          tableListBuilder_.addMessage(value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder addTableList(
-          int index, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName value) {
-        if (tableListBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureTableListIsMutable();
-          tableList_.add(index, value);
-          onChanged();
-        } else {
-          tableListBuilder_.addMessage(index, value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder addTableList(
-          org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder builderForValue) {
-        if (tableListBuilder_ == null) {
-          ensureTableListIsMutable();
-          tableList_.add(builderForValue.build());
-          onChanged();
-        } else {
-          tableListBuilder_.addMessage(builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder addTableList(
-          int index, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder builderForValue) {
-        if (tableListBuilder_ == null) {
-          ensureTableListIsMutable();
-          tableList_.add(index, builderForValue.build());
-          onChanged();
-        } else {
-          tableListBuilder_.addMessage(index, builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder addAllTableList(
-          java.lang.Iterable<? extends org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName> values) {
-        if (tableListBuilder_ == null) {
-          ensureTableListIsMutable();
-          super.addAll(values, tableList_);
-          onChanged();
-        } else {
-          tableListBuilder_.addAllMessages(values);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder clearTableList() {
-        if (tableListBuilder_ == null) {
-          tableList_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000008);
-          onChanged();
-        } else {
-          tableListBuilder_.clear();
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public Builder removeTableList(int index) {
-        if (tableListBuilder_ == null) {
-          ensureTableListIsMutable();
-          tableList_.remove(index);
-          onChanged();
-        } else {
-          tableListBuilder_.remove(index);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder getTableListBuilder(
-          int index) {
-        return getTableListFieldBuilder().getBuilder(index);
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableListOrBuilder(
-          int index) {
-        if (tableListBuilder_ == null) {
-          return tableList_.get(index);  } else {
-          return tableListBuilder_.getMessageOrBuilder(index);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> 
-           getTableListOrBuilderList() {
-        if (tableListBuilder_ != null) {
-          return tableListBuilder_.getMessageOrBuilderList();
-        } else {
-          return java.util.Collections.unmodifiableList(tableList_);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder addTableListBuilder() {
-        return getTableListFieldBuilder().addBuilder(
-            org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.getDefaultInstance());
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder addTableListBuilder(
-          int index) {
-        return getTableListFieldBuilder().addBuilder(
-            index, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.getDefaultInstance());
-      }
-      /**
-       * <code>repeated .hbase.pb.TableName table_list = 4;</code>
-       */
-      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder> 
-           getTableListBuilderList() {
-        return getTableListFieldBuilder().getBuilderList();
-      }
-      private com.google.protobuf.RepeatedFieldBuilder<
-          org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> 
-          getTableListFieldBuilder() {
-        if (tableListBuilder_ == null) {
-          tableListBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-              org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder>(
-                  tableList_,
-                  ((bitField0_ & 0x00000008) == 0x00000008),
-                  getParentForChildren(),
-                  isClean());
-          tableList_ = null;
-        }
-        return tableListBuilder_;
-      }
-
-      // required uint64 start_ts = 5;
-      private long startTs_ ;
-      /**
-       * <code>required uint64 start_ts = 5;</code>
-       */
-      public boolean hasStartTs() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      /**
-       * <code>required uint64 start_ts = 5;</code>
-       */
-      public long getStartTs() {
-        return startTs_;
-      }
-      /**
-       * <code>required uint64 start_ts = 5;</code>
-       */
-      public Builder setStartTs(long value) {
-        bitField0_ |= 0x00000010;
-        startTs_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required uint64 start_ts = 5;</code>
-       */
-      public Builder clearStartTs() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        startTs_ = 0L;
-        onChanged();
-        return this;
-      }
-
-      // required uint64 complete_ts = 6;
-      private long completeTs_ ;
-      /**
-       * <code>required uint64 complete_ts = 6;</code>
-       */
-      public boolean hasCompleteTs() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
-      }
-      /**
-       * <code>required uint64 complete_ts = 6;</code>
-       */
-      public long getCompleteTs() {
-        return completeTs_;
-      }
-      /**
-       * <code>required uint64 complete_ts = 6;</code>
-       */
-      public Builder setCompleteTs(long value) {
-        bitField0_ |= 0x00000020;
-        completeTs_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required uint64 complete_ts = 6;</code>
-       */
-      public Builder clearCompleteTs() {
-        bitField0_ = (bitField0_ & ~0x00000020);
-        completeTs_ = 0L;
-        onChanged();
-        return this;
-      }
-
-      // repeated .hbase.pb.BackupImage ancestors = 7;
-      private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> ancestors_ =
-        java.util.Collections.emptyList();
-      private void ensureAncestorsIsMutable() {
-        if (!((bitField0_ & 0x00000040) == 0x00000040)) {
-          ancestors_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage>(ancestors_);
-          bitField0_ |= 0x00000040;
-         }
-      }
-
-      private com.google.protobuf.RepeatedFieldBuilder<
-          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> ancestorsBuilder_;
-
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> getAncestorsList() {
-        if (ancestorsBuilder_ == null) {
-          return java.util.Collections.unmodifiableList(ancestors_);
-        } else {
-          return ancestorsBuilder_.getMessageList();
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public int getAncestorsCount() {
-        if (ancestorsBuilder_ == null) {
-          return ancestors_.size();
-        } else {
-          return ancestorsBuilder_.getCount();
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getAncestors(int index) {
-        if (ancestorsBuilder_ == null) {
-          return ancestors_.get(index);
-        } else {
-          return ancestorsBuilder_.getMessage(index);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder setAncestors(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
-        if (ancestorsBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureAncestorsIsMutable();
-          ancestors_.set(index, value);
-          onChanged();
-        } else {
-          ancestorsBuilder_.setMessage(index, value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder setAncestors(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
-        if (ancestorsBuilder_ == null) {
-          ensureAncestorsIsMutable();
-          ancestors_.set(index, builderForValue.build());
-          onChanged();
-        } else {
-          ancestorsBuilder_.setMessage(index, builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder addAncestors(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
-        if (ancestorsBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureAncestorsIsMutable();
-          ancestors_.add(value);
-          onChanged();
-        } else {
-          ancestorsBuilder_.addMessage(value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder addAncestors(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
-        if (ancestorsBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureAncestorsIsMutable();
-          ancestors_.add(index, value);
-          onChanged();
-        } else {
-          ancestorsBuilder_.addMessage(index, value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder addAncestors(
-          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
-        if (ancestorsBuilder_ == null) {
-          ensureAncestorsIsMutable();
-          ancestors_.add(builderForValue.build());
-          onChanged();
-        } else {
-          ancestorsBuilder_.addMessage(builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder addAncestors(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
-        if (ancestorsBuilder_ == null) {
-          ensureAncestorsIsMutable();
-          ancestors_.add(index, builderForValue.build());
-          onChanged();
-        } else {
-          ancestorsBuilder_.addMessage(index, builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder addAllAncestors(
-          java.lang.Iterable<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> values) {
-        if (ancestorsBuilder_ == null) {
-          ensureAncestorsIsMutable();
-          super.addAll(values, ancestors_);
-          onChanged();
-        } else {
-          ancestorsBuilder_.addAllMessages(values);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder clearAncestors() {
-        if (ancestorsBuilder_ == null) {
-          ancestors_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000040);
-          onChanged();
-        } else {
-          ancestorsBuilder_.clear();
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public Builder removeAncestors(int index) {
-        if (ancestorsBuilder_ == null) {
-          ensureAncestorsIsMutable();
-          ancestors_.remove(index);
-          onChanged();
-        } else {
-          ancestorsBuilder_.remove(index);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder getAncestorsBuilder(
-          int index) {
-        return getAncestorsFieldBuilder().getBuilder(index);
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getAncestorsOrBuilder(
-          int index) {
-        if (ancestorsBuilder_ == null) {
-          return ancestors_.get(index);  } else {
-          return ancestorsBuilder_.getMessageOrBuilder(index);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-           getAncestorsOrBuilderList() {
-        if (ancestorsBuilder_ != null) {
-          return ancestorsBuilder_.getMessageOrBuilderList();
-        } else {
-          return java.util.Collections.unmodifiableList(ancestors_);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder addAncestorsBuilder() {
-        return getAncestorsFieldBuilder().addBuilder(
-            org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance());
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder addAncestorsBuilder(
-          int index) {
-        return getAncestorsFieldBuilder().addBuilder(
-            index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance());
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
-       */
-      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder> 
-           getAncestorsBuilderList() {
-        return getAncestorsFieldBuilder().getBuilderList();
-      }
-      private com.google.protobuf.RepeatedFieldBuilder<
-          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-          getAncestorsFieldBuilder() {
-        if (ancestorsBuilder_ == null) {
-          ancestorsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-              org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder>(
-                  ancestors_,
-                  ((bitField0_ & 0x00000040) == 0x00000040),
-                  getParentForChildren(),
-                  isClean());
-          ancestors_ = null;
-        }
-        return ancestorsBuilder_;
-      }
-
-      // @@protoc_insertion_point(builder_scope:hbase.pb.BackupImage)
-    }
-
-    static {
-      defaultInstance = new BackupImage(true);
-      defaultInstance.initFields();
-    }
-
-    // @@protoc_insertion_point(class_scope:hbase.pb.BackupImage)
-  }
-
   public interface ServerTimestampOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // required string server = 1;
+    // optional .hbase.pb.ServerName server = 1;
     /**
-     * <code>required string server = 1;</code>
+     * <code>optional .hbase.pb.ServerName server = 1;</code>
      */
     boolean hasServer();
     /**
-     * <code>required string server = 1;</code>
+     * <code>optional .hbase.pb.ServerName server = 1;</code>
      */
-    java.lang.String getServer();
+    org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName getServer();
     /**
-     * <code>required string server = 1;</code>
+     * <code>optional .hbase.pb.ServerName server = 1;</code>
      */
-    com.google.protobuf.ByteString
-        getServerBytes();
+    org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerNameOrBuilder getServerOrBuilder();
 
-    // required uint64 timestamp = 2;
+    // optional uint64 timestamp = 2;
     /**
-     * <code>required uint64 timestamp = 2;</code>
+     * <code>optional uint64 timestamp = 2;</code>
      */
     boolean hasTimestamp();
     /**
-     * <code>required uint64 timestamp = 2;</code>
+     * <code>optional uint64 timestamp = 2;</code>
      */
     long getTimestamp();
   }
@@ -1943,8 +169,16 @@ public final class BackupProtos {
               break;
             }
             case 10: {
+              org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                subBuilder = server_.toBuilder();
+              }
+              server_ = input.readMessage(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(server_);
+                server_ = subBuilder.buildPartial();
+              }
               bitField0_ |= 0x00000001;
-              server_ = input.readBytes();
               break;
             }
             case 16: {
@@ -1992,67 +226,46 @@ public final class BackupProtos {
     }
 
     private int bitField0_;
-    // required string server = 1;
+    // optional .hbase.pb.ServerName server = 1;
     public static final int SERVER_FIELD_NUMBER = 1;
-    private java.lang.Object server_;
+    private org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName server_;
     /**
-     * <code>required string server = 1;</code>
+     * <code>optional .hbase.pb.ServerName server = 1;</code>
      */
     public boolean hasServer() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string server = 1;</code>
+     * <code>optional .hbase.pb.ServerName server = 1;</code>
      */
-    public java.lang.String getServer() {
-      java.lang.Object ref = server_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          server_ = s;
-        }
-        return s;
-      }
+    public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName getServer() {
+      return server_;
     }
     /**
-     * <code>required string server = 1;</code>
+     * <code>optional .hbase.pb.ServerName server = 1;</code>
      */
-    public com.google.protobuf.ByteString
-        getServerBytes() {
-      java.lang.Object ref = server_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        server_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+    public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerNameOrBuilder getServerOrBuilder() {
+      return server_;
     }
 
-    // required uint64 timestamp = 2;
+    // optional uint64 timestamp = 2;
     public static final int TIMESTAMP_FIELD_NUMBER = 2;
     private long timestamp_;
     /**
-     * <code>required uint64 timestamp = 2;</code>
+     * <code>optional uint64 timestamp = 2;</code>
      */
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required uint64 timestamp = 2;</code>
+     * <code>optional uint64 timestamp = 2;</code>
      */
     public long getTimestamp() {
       return timestamp_;
     }
 
     private void initFields() {
-      server_ = "";
+      server_ = org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.getDefaultInstance();
       timestamp_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
@@ -2060,13 +273,11 @@ public final class BackupProtos {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
 
-      if (!hasServer()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasTimestamp()) {
-        memoizedIsInitialized = 0;
-        return false;
+      if (hasServer()) {
+        if (!getServer().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
       }
       memoizedIsInitialized = 1;
       return true;
@@ -2076,7 +287,7 @@ public final class BackupProtos {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getServerBytes());
+        output.writeMessage(1, server_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeUInt64(2, timestamp_);
@@ -2092,7 +303,7 @@ public final class BackupProtos {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getServerBytes());
+          .computeMessageSize(1, server_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
@@ -2253,6 +464,7 @@ public final class BackupProtos {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getServerFieldBuilder();
         }
       }
       private static Builder create() {
@@ -2261,7 +473,11 @@ public final class BackupProtos {
 
       public Builder clear() {
         super.clear();
-        server_ = "";
+        if (serverBuilder_ == null) {
+          server_ = org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.getDefaultInstance();
+        } else {
+          serverBuilder_.clear();
+        }
         bitField0_ = (bitField0_ & ~0x00000001);
         timestamp_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -2296,7 +512,11 @@ public final class BackupProtos {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.server_ = server_;
+        if (serverBuilder_ == null) {
+          result.server_ = server_;
+        } else {
+          result.server_ = serverBuilder_.build();
+        }
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
@@ -2318,9 +538,7 @@ public final class BackupProtos {
       public Builder mergeFrom(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.ServerTimestamp other) {
         if (other == org.apache.hadoop.hbase.protobuf.generated.BackupProtos.ServerTimestamp.getDefaultInstance()) return this;
         if (other.hasServer()) {
-          bitField0_ |= 0x00000001;
-          server_ = other.server_;
-          onChanged();
+          mergeServer(other.getServer());
         }
         if (other.hasTimestamp()) {
           setTimestamp(other.getTimestamp());
@@ -2330,13 +548,11 @@ public final class BackupProtos {
       }
 
       public final boolean isInitialized() {
-        if (!hasServer()) {
-          
-          return false;
-        }
-        if (!hasTimestamp()) {
-          
-          return false;
+        if (hasServer()) {
+          if (!getServer().isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -2360,96 +576,139 @@ public final class BackupProtos {
       }
       private int bitField0_;
 
-      // required string server = 1;
-      private java.lang.Object server_ = "";
+      // optional .hbase.pb.ServerName server = 1;
+      private org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName server_ = org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerNameOrBuilder> serverBuilder_;
       /**
-       * <code>required string server = 1;</code>
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
        */
       public boolean hasServer() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string server = 1;</code>
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
        */
-      public java.lang.String getServer() {
-        java.lang.Object ref = server_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          server_ = s;
-          return s;
+      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName getServer() {
+        if (serverBuilder_ == null) {
+          return server_;
         } else {
-          return (java.lang.String) ref;
+          return serverBuilder_.getMessage();
         }
       }
       /**
-       * <code>required string server = 1;</code>
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
        */
-      public com.google.protobuf.ByteString
-          getServerBytes() {
-        java.lang.Object ref = server_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          server_ = b;
-          return b;
+      public Builder setServer(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName value) {
+        if (serverBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          server_ = value;
+          onChanged();
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          serverBuilder_.setMessage(value);
         }
+        bitField0_ |= 0x00000001;
+        return this;
       }
       /**
-       * <code>required string server = 1;</code>
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
        */
       public Builder setServer(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        server_ = value;
-        onChanged();
+          org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.Builder builderForValue) {
+        if (serverBuilder_ == null) {
+          server_ = builderForValue.build();
+          onChanged();
+        } else {
+          serverBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000001;
         return this;
       }
       /**
-       * <code>required string server = 1;</code>
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
+       */
+      public Builder mergeServer(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName value) {
+        if (serverBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+              server_ != org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.getDefaultInstance()) {
+            server_ =
+              org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.newBuilder(server_).mergeFrom(value).buildPartial();
+          } else {
+            server_ = value;
+          }
+          onChanged();
+        } else {
+          serverBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
        */
       public Builder clearServer() {
+        if (serverBuilder_ == null) {
+          server_ = org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.getDefaultInstance();
+          onChanged();
+        } else {
+          serverBuilder_.clear();
+        }
         bitField0_ = (bitField0_ & ~0x00000001);
-        server_ = getDefaultInstance().getServer();
-        onChanged();
         return this;
       }
       /**
-       * <code>required string server = 1;</code>
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
        */
-      public Builder setServerBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        server_ = value;
+      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.Builder getServerBuilder() {
+        bitField0_ |= 0x00000001;
         onChanged();
-        return this;
+        return getServerFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
+       */
+      public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerNameOrBuilder getServerOrBuilder() {
+        if (serverBuilder_ != null) {
+          return serverBuilder_.getMessageOrBuilder();
+        } else {
+          return server_;
+        }
+      }
+      /**
+       * <code>optional .hbase.pb.ServerName server = 1;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerNameOrBuilder> 
+          getServerFieldBuilder() {
+        if (serverBuilder_ == null) {
+          serverBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ServerNameOrBuilder>(
+                  server_,
+                  getParentForChildren(),
+                  isClean());
+          server_ = null;
+        }
+        return serverBuilder_;
       }
 
-      // required uint64 timestamp = 2;
+      // optional uint64 timestamp = 2;
       private long timestamp_ ;
       /**
-       * <code>required uint64 timestamp = 2;</code>
+       * <code>optional uint64 timestamp = 2;</code>
        */
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required uint64 timestamp = 2;</code>
+       * <code>optional uint64 timestamp = 2;</code>
        */
       public long getTimestamp() {
         return timestamp_;
       }
       /**
-       * <code>required uint64 timestamp = 2;</code>
+       * <code>optional uint64 timestamp = 2;</code>
        */
       public Builder setTimestamp(long value) {
         bitField0_ |= 0x00000002;
@@ -2458,7 +717,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required uint64 timestamp = 2;</code>
+       * <code>optional uint64 timestamp = 2;</code>
        */
       public Builder clearTimestamp() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -2481,17 +740,17 @@ public final class BackupProtos {
   public interface TableServerTimestampOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // required .hbase.pb.TableName table = 1;
+    // optional .hbase.pb.TableName table = 1;
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     boolean hasTable();
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTable();
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableOrBuilder();
 
@@ -2635,23 +894,23 @@ public final class BackupProtos {
     }
 
     private int bitField0_;
-    // required .hbase.pb.TableName table = 1;
+    // optional .hbase.pb.TableName table = 1;
     public static final int TABLE_FIELD_NUMBER = 1;
     private org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName table_;
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     public boolean hasTable() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTable() {
       return table_;
     }
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableOrBuilder() {
       return table_;
@@ -2702,13 +961,11 @@ public final class BackupProtos {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
 
-      if (!hasTable()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!getTable().isInitialized()) {
-        memoizedIsInitialized = 0;
-        return false;
+      if (hasTable()) {
+        if (!getTable().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
       }
       for (int i = 0; i < getServerTimestampCount(); i++) {
         if (!getServerTimestamp(i).isInitialized()) {
@@ -3015,13 +1272,11 @@ public final class BackupProtos {
       }
 
       public final boolean isInitialized() {
-        if (!hasTable()) {
-          
-          return false;
-        }
-        if (!getTable().isInitialized()) {
-          
-          return false;
+        if (hasTable()) {
+          if (!getTable().isInitialized()) {
+            
+            return false;
+          }
         }
         for (int i = 0; i < getServerTimestampCount(); i++) {
           if (!getServerTimestamp(i).isInitialized()) {
@@ -3051,18 +1306,18 @@ public final class BackupProtos {
       }
       private int bitField0_;
 
-      // required .hbase.pb.TableName table = 1;
+      // optional .hbase.pb.TableName table = 1;
       private org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName table_ = org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> tableBuilder_;
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public boolean hasTable() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTable() {
         if (tableBuilder_ == null) {
@@ -3072,7 +1327,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder setTable(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName value) {
         if (tableBuilder_ == null) {
@@ -3088,7 +1343,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder setTable(
           org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder builderForValue) {
@@ -3102,7 +1357,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder mergeTable(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName value) {
         if (tableBuilder_ == null) {
@@ -3121,7 +1376,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder clearTable() {
         if (tableBuilder_ == null) {
@@ -3134,7 +1389,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder getTableBuilder() {
         bitField0_ |= 0x00000001;
@@ -3142,7 +1397,7 @@ public final class BackupProtos {
         return getTableFieldBuilder().getBuilder();
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableOrBuilder() {
         if (tableBuilder_ != null) {
@@ -3152,7 +1407,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> 
@@ -3419,48 +1674,48 @@ public final class BackupProtos {
     // @@protoc_insertion_point(class_scope:hbase.pb.TableServerTimestamp)
   }
 
-  public interface BackupManifestOrBuilder
+  public interface BackupImageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // required string version = 1;
+    // optional string backup_id = 1;
     /**
-     * <code>required string version = 1;</code>
-     */
-    boolean hasVersion();
-    /**
-     * <code>required string version = 1;</code>
-     */
-    java.lang.String getVersion();
-    /**
-     * <code>required string version = 1;</code>
-     */
-    com.google.protobuf.ByteString
-        getVersionBytes();
-
-    // required string backup_id = 2;
-    /**
-     * <code>required string backup_id = 2;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     boolean hasBackupId();
     /**
-     * <code>required string backup_id = 2;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     java.lang.String getBackupId();
     /**
-     * <code>required string backup_id = 2;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     com.google.protobuf.ByteString
         getBackupIdBytes();
 
-    // required .hbase.pb.BackupType type = 3;
+    // optional .hbase.pb.BackupType backup_type = 2;
     /**
-     * <code>required .hbase.pb.BackupType type = 3;</code>
+     * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
      */
-    boolean hasType();
+    boolean hasBackupType();
     /**
-     * <code>required .hbase.pb.BackupType type = 3;</code>
+     * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
      */
-    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getType();
+    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getBackupType();
+
+    // optional string root_dir = 3;
+    /**
+     * <code>optional string root_dir = 3;</code>
+     */
+    boolean hasRootDir();
+    /**
+     * <code>optional string root_dir = 3;</code>
+     */
+    java.lang.String getRootDir();
+    /**
+     * <code>optional string root_dir = 3;</code>
+     */
+    com.google.protobuf.ByteString
+        getRootDirBytes();
 
     // repeated .hbase.pb.TableName table_list = 4;
     /**
@@ -3487,95 +1742,95 @@ public final class BackupProtos {
     org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableListOrBuilder(
         int index);
 
-    // required uint64 start_ts = 5;
+    // optional uint64 start_ts = 5;
     /**
-     * <code>required uint64 start_ts = 5;</code>
+     * <code>optional uint64 start_ts = 5;</code>
      */
     boolean hasStartTs();
     /**
-     * <code>required uint64 start_ts = 5;</code>
+     * <code>optional uint64 start_ts = 5;</code>
      */
     long getStartTs();
 
-    // required uint64 complete_ts = 6;
+    // optional uint64 complete_ts = 6;
     /**
-     * <code>required uint64 complete_ts = 6;</code>
+     * <code>optional uint64 complete_ts = 6;</code>
      */
     boolean hasCompleteTs();
     /**
-     * <code>required uint64 complete_ts = 6;</code>
+     * <code>optional uint64 complete_ts = 6;</code>
      */
     long getCompleteTs();
 
-    // repeated .hbase.pb.TableServerTimestamp tst_map = 7;
+    // repeated .hbase.pb.BackupImage ancestors = 7;
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> 
+        getAncestorsList();
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getAncestors(int index);
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    int getAncestorsCount();
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
+        getAncestorsOrBuilderList();
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getAncestorsOrBuilder(
+        int index);
+
+    // repeated .hbase.pb.TableServerTimestamp tst_map = 8;
+    /**
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp> 
         getTstMapList();
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp getTstMap(int index);
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     int getTstMapCount();
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder> 
         getTstMapOrBuilderList();
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder getTstMapOrBuilder(
         int index);
-
-    // repeated .hbase.pb.BackupImage dependent_backup_image = 8;
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> 
-        getDependentBackupImageList();
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getDependentBackupImage(int index);
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    int getDependentBackupImageCount();
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-        getDependentBackupImageOrBuilderList();
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getDependentBackupImageOrBuilder(
-        int index);
   }
   /**
-   * Protobuf type {@code hbase.pb.BackupManifest}
+   * Protobuf type {@code hbase.pb.BackupImage}
    */
-  public static final class BackupManifest extends
+  public static final class BackupImage extends
       com.google.protobuf.GeneratedMessage
-      implements BackupManifestOrBuilder {
-    // Use BackupManifest.newBuilder() to construct.
-    private BackupManifest(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      implements BackupImageOrBuilder {
+    // Use BackupImage.newBuilder() to construct.
+    private BackupImage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private BackupManifest(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private BackupImage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
-    private static final BackupManifest defaultInstance;
-    public static BackupManifest getDefaultInstance() {
+    private static final BackupImage defaultInstance;
+    public static BackupImage getDefaultInstance() {
       return defaultInstance;
     }
 
-    public BackupManifest getDefaultInstanceForType() {
+    public BackupImage getDefaultInstanceForType() {
       return defaultInstance;
     }
 
@@ -3585,7 +1840,7 @@ public final class BackupProtos {
         getUnknownFields() {
       return this.unknownFields;
     }
-    private BackupManifest(
+    private BackupImage(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -3610,23 +1865,23 @@ public final class BackupProtos {
             }
             case 10: {
               bitField0_ |= 0x00000001;
-              version_ = input.readBytes();
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000002;
               backupId_ = input.readBytes();
               break;
             }
-            case 24: {
+            case 16: {
               int rawValue = input.readEnum();
               org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType value = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.valueOf(rawValue);
               if (value == null) {
-                unknownFields.mergeVarintField(3, rawValue);
+                unknownFields.mergeVarintField(2, rawValue);
               } else {
-                bitField0_ |= 0x00000004;
-                type_ = value;
+                bitField0_ |= 0x00000002;
+                backupType_ = value;
               }
+              break;
+            }
+            case 26: {
+              bitField0_ |= 0x00000004;
+              rootDir_ = input.readBytes();
               break;
             }
             case 34: {
@@ -3649,18 +1904,18 @@ public final class BackupProtos {
             }
             case 58: {
               if (!((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
-                tstMap_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp>();
+                ancestors_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage>();
                 mutable_bitField0_ |= 0x00000040;
               }
-              tstMap_.add(input.readMessage(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.PARSER, extensionRegistry));
+              ancestors_.add(input.readMessage(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.PARSER, extensionRegistry));
               break;
             }
             case 66: {
               if (!((mutable_bitField0_ & 0x00000080) == 0x00000080)) {
-                dependentBackupImage_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage>();
+                tstMap_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp>();
                 mutable_bitField0_ |= 0x00000080;
               }
-              dependentBackupImage_.add(input.readMessage(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.PARSER, extensionRegistry));
+              tstMap_.add(input.readMessage(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.PARSER, extensionRegistry));
               break;
             }
           }
@@ -3675,10 +1930,10 @@ public final class BackupProtos {
           tableList_ = java.util.Collections.unmodifiableList(tableList_);
         }
         if (((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
-          tstMap_ = java.util.Collections.unmodifiableList(tstMap_);
+          ancestors_ = java.util.Collections.unmodifiableList(ancestors_);
         }
         if (((mutable_bitField0_ & 0x00000080) == 0x00000080)) {
-          dependentBackupImage_ = java.util.Collections.unmodifiableList(dependentBackupImage_);
+          tstMap_ = java.util.Collections.unmodifiableList(tstMap_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -3686,86 +1941,43 @@ public final class BackupProtos {
     }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupManifest_descriptor;
+      return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_descriptor;
     }
 
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupManifest_fieldAccessorTable
+      return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest.class, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest.Builder.class);
+              org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.class, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<BackupManifest> PARSER =
-        new com.google.protobuf.AbstractParser<BackupManifest>() {
-      public BackupManifest parsePartialFrom(
+    public static com.google.protobuf.Parser<BackupImage> PARSER =
+        new com.google.protobuf.AbstractParser<BackupImage>() {
+      public BackupImage parsePartialFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws com.google.protobuf.InvalidProtocolBufferException {
-        return new BackupManifest(input, extensionRegistry);
+        return new BackupImage(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<BackupManifest> getParserForType() {
+    public com.google.protobuf.Parser<BackupImage> getParserForType() {
       return PARSER;
     }
 
     private int bitField0_;
-    // required string version = 1;
-    public static final int VERSION_FIELD_NUMBER = 1;
-    private java.lang.Object version_;
+    // optional string backup_id = 1;
+    public static final int BACKUP_ID_FIELD_NUMBER = 1;
+    private java.lang.Object backupId_;
     /**
-     * <code>required string version = 1;</code>
+     * <code>optional string backup_id = 1;</code>
      */
-    public boolean hasVersion() {
+    public boolean hasBackupId() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string version = 1;</code>
-     */
-    public java.lang.String getVersion() {
-      java.lang.Object ref = version_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          version_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>required string version = 1;</code>
-     */
-    public com.google.protobuf.ByteString
-        getVersionBytes() {
-      java.lang.Object ref = version_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        version_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    // required string backup_id = 2;
-    public static final int BACKUP_ID_FIELD_NUMBER = 2;
-    private java.lang.Object backupId_;
-    /**
-     * <code>required string backup_id = 2;</code>
-     */
-    public boolean hasBackupId() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <code>required string backup_id = 2;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     public java.lang.String getBackupId() {
       java.lang.Object ref = backupId_;
@@ -3782,7 +1994,7 @@ public final class BackupProtos {
       }
     }
     /**
-     * <code>required string backup_id = 2;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     public com.google.protobuf.ByteString
         getBackupIdBytes() {
@@ -3798,20 +2010,63 @@ public final class BackupProtos {
       }
     }
 
-    // required .hbase.pb.BackupType type = 3;
-    public static final int TYPE_FIELD_NUMBER = 3;
-    private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType type_;
+    // optional .hbase.pb.BackupType backup_type = 2;
+    public static final int BACKUP_TYPE_FIELD_NUMBER = 2;
+    private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType backupType_;
     /**
-     * <code>required .hbase.pb.BackupType type = 3;</code>
+     * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
      */
-    public boolean hasType() {
+    public boolean hasBackupType() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
+     */
+    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getBackupType() {
+      return backupType_;
+    }
+
+    // optional string root_dir = 3;
+    public static final int ROOT_DIR_FIELD_NUMBER = 3;
+    private java.lang.Object rootDir_;
+    /**
+     * <code>optional string root_dir = 3;</code>
+     */
+    public boolean hasRootDir() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>required .hbase.pb.BackupType type = 3;</code>
+     * <code>optional string root_dir = 3;</code>
      */
-    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getType() {
-      return type_;
+    public java.lang.String getRootDir() {
+      java.lang.Object ref = rootDir_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          rootDir_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string root_dir = 3;</code>
+     */
+    public com.google.protobuf.ByteString
+        getRootDirBytes() {
+      java.lang.Object ref = rootDir_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        rootDir_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
     }
 
     // repeated .hbase.pb.TableName table_list = 4;
@@ -3850,159 +2105,139 @@ public final class BackupProtos {
       return tableList_.get(index);
     }
 
-    // required uint64 start_ts = 5;
+    // optional uint64 start_ts = 5;
     public static final int START_TS_FIELD_NUMBER = 5;
     private long startTs_;
     /**
-     * <code>required uint64 start_ts = 5;</code>
+     * <code>optional uint64 start_ts = 5;</code>
      */
     public boolean hasStartTs() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     /**
-     * <code>required uint64 start_ts = 5;</code>
+     * <code>optional uint64 start_ts = 5;</code>
      */
     public long getStartTs() {
       return startTs_;
     }
 
-    // required uint64 complete_ts = 6;
+    // optional uint64 complete_ts = 6;
     public static final int COMPLETE_TS_FIELD_NUMBER = 6;
     private long completeTs_;
     /**
-     * <code>required uint64 complete_ts = 6;</code>
+     * <code>optional uint64 complete_ts = 6;</code>
      */
     public boolean hasCompleteTs() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     /**
-     * <code>required uint64 complete_ts = 6;</code>
+     * <code>optional uint64 complete_ts = 6;</code>
      */
     public long getCompleteTs() {
       return completeTs_;
     }
 
-    // repeated .hbase.pb.TableServerTimestamp tst_map = 7;
-    public static final int TST_MAP_FIELD_NUMBER = 7;
+    // repeated .hbase.pb.BackupImage ancestors = 7;
+    public static final int ANCESTORS_FIELD_NUMBER = 7;
+    private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> ancestors_;
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> getAncestorsList() {
+      return ancestors_;
+    }
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
+        getAncestorsOrBuilderList() {
+      return ancestors_;
+    }
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    public int getAncestorsCount() {
+      return ancestors_.size();
+    }
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getAncestors(int index) {
+      return ancestors_.get(index);
+    }
+    /**
+     * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+     */
+    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getAncestorsOrBuilder(
+        int index) {
+      return ancestors_.get(index);
+    }
+
+    // repeated .hbase.pb.TableServerTimestamp tst_map = 8;
+    public static final int TST_MAP_FIELD_NUMBER = 8;
     private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp> tstMap_;
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp> getTstMapList() {
       return tstMap_;
     }
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder> 
         getTstMapOrBuilderList() {
       return tstMap_;
     }
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     public int getTstMapCount() {
       return tstMap_.size();
     }
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp getTstMap(int index) {
       return tstMap_.get(index);
     }
     /**
-     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+     * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
      */
     public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder getTstMapOrBuilder(
         int index) {
       return tstMap_.get(index);
     }
 
-    // repeated .hbase.pb.BackupImage dependent_backup_image = 8;
-    public static final int DEPENDENT_BACKUP_IMAGE_FIELD_NUMBER = 8;
-    private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> dependentBackupImage_;
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> getDependentBackupImageList() {
-      return dependentBackupImage_;
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-        getDependentBackupImageOrBuilderList() {
-      return dependentBackupImage_;
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    public int getDependentBackupImageCount() {
-      return dependentBackupImage_.size();
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getDependentBackupImage(int index) {
-      return dependentBackupImage_.get(index);
-    }
-    /**
-     * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-     */
-    public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getDependentBackupImageOrBuilder(
-        int index) {
-      return dependentBackupImage_.get(index);
-    }
-
     private void initFields() {
-      version_ = "";
       backupId_ = "";
-      type_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
+      backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
+      rootDir_ = "";
       tableList_ = java.util.Collections.emptyList();
       startTs_ = 0L;
       completeTs_ = 0L;
+      ancestors_ = java.util.Collections.emptyList();
       tstMap_ = java.util.Collections.emptyList();
-      dependentBackupImage_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
 
-      if (!hasVersion()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasBackupId()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasType()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasStartTs()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasCompleteTs()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
       for (int i = 0; i < getTableListCount(); i++) {
         if (!getTableList(i).isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
       }
-      for (int i = 0; i < getTstMapCount(); i++) {
-        if (!getTstMap(i).isInitialized()) {
+      for (int i = 0; i < getAncestorsCount(); i++) {
+        if (!getAncestors(i).isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
       }
-      for (int i = 0; i < getDependentBackupImageCount(); i++) {
-        if (!getDependentBackupImage(i).isInitialized()) {
+      for (int i = 0; i < getTstMapCount(); i++) {
+        if (!getTstMap(i).isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -4015,13 +2250,13 @@ public final class BackupProtos {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getVersionBytes());
+        output.writeBytes(1, getBackupIdBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getBackupIdBytes());
+        output.writeEnum(2, backupType_.getNumber());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeEnum(3, type_.getNumber());
+        output.writeBytes(3, getRootDirBytes());
       }
       for (int i = 0; i < tableList_.size(); i++) {
         output.writeMessage(4, tableList_.get(i));
@@ -4032,11 +2267,11 @@ public final class BackupProtos {
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeUInt64(6, completeTs_);
       }
-      for (int i = 0; i < tstMap_.size(); i++) {
-        output.writeMessage(7, tstMap_.get(i));
+      for (int i = 0; i < ancestors_.size(); i++) {
+        output.writeMessage(7, ancestors_.get(i));
       }
-      for (int i = 0; i < dependentBackupImage_.size(); i++) {
-        output.writeMessage(8, dependentBackupImage_.get(i));
+      for (int i = 0; i < tstMap_.size(); i++) {
+        output.writeMessage(8, tstMap_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -4049,15 +2284,15 @@ public final class BackupProtos {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getVersionBytes());
+          .computeBytesSize(1, getBackupIdBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getBackupIdBytes());
+          .computeEnumSize(2, backupType_.getNumber());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(3, type_.getNumber());
+          .computeBytesSize(3, getRootDirBytes());
       }
       for (int i = 0; i < tableList_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
@@ -4071,13 +2306,13 @@ public final class BackupProtos {
         size += com.google.protobuf.CodedOutputStream
           .computeUInt64Size(6, completeTs_);
       }
+      for (int i = 0; i < ancestors_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(7, ancestors_.get(i));
+      }
       for (int i = 0; i < tstMap_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(7, tstMap_.get(i));
-      }
-      for (int i = 0; i < dependentBackupImage_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(8, dependentBackupImage_.get(i));
+          .computeMessageSize(8, tstMap_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -4096,26 +2331,26 @@ public final class BackupProtos {
       if (obj == this) {
        return true;
       }
-      if (!(obj instanceof org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest)) {
+      if (!(obj instanceof org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage)) {
         return super.equals(obj);
       }
-      org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest other = (org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest) obj;
+      org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage other = (org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage) obj;
 
       boolean result = true;
-      result = result && (hasVersion() == other.hasVersion());
-      if (hasVersion()) {
-        result = result && getVersion()
-            .equals(other.getVersion());
-      }
       result = result && (hasBackupId() == other.hasBackupId());
       if (hasBackupId()) {
         result = result && getBackupId()
             .equals(other.getBackupId());
       }
-      result = result && (hasType() == other.hasType());
-      if (hasType()) {
+      result = result && (hasBackupType() == other.hasBackupType());
+      if (hasBackupType()) {
         result = result &&
-            (getType() == other.getType());
+            (getBackupType() == other.getBackupType());
+      }
+      result = result && (hasRootDir() == other.hasRootDir());
+      if (hasRootDir()) {
+        result = result && getRootDir()
+            .equals(other.getRootDir());
       }
       result = result && getTableListList()
           .equals(other.getTableListList());
@@ -4129,10 +2364,10 @@ public final class BackupProtos {
         result = result && (getCompleteTs()
             == other.getCompleteTs());
       }
+      result = result && getAncestorsList()
+          .equals(other.getAncestorsList());
       result = result && getTstMapList()
           .equals(other.getTstMapList());
-      result = result && getDependentBackupImageList()
-          .equals(other.getDependentBackupImageList());
       result = result &&
           getUnknownFields().equals(other.getUnknownFields());
       return result;
@@ -4146,17 +2381,17 @@ public final class BackupProtos {
       }
       int hash = 41;
       hash = (19 * hash) + getDescriptorForType().hashCode();
-      if (hasVersion()) {
-        hash = (37 * hash) + VERSION_FIELD_NUMBER;
-        hash = (53 * hash) + getVersion().hashCode();
-      }
       if (hasBackupId()) {
         hash = (37 * hash) + BACKUP_ID_FIELD_NUMBER;
         hash = (53 * hash) + getBackupId().hashCode();
       }
-      if (hasType()) {
-        hash = (37 * hash) + TYPE_FIELD_NUMBER;
-        hash = (53 * hash) + hashEnum(getType());
+      if (hasBackupType()) {
+        hash = (37 * hash) + BACKUP_TYPE_FIELD_NUMBER;
+        hash = (53 * hash) + hashEnum(getBackupType());
+      }
+      if (hasRootDir()) {
+        hash = (37 * hash) + ROOT_DIR_FIELD_NUMBER;
+        hash = (53 * hash) + getRootDir().hashCode();
       }
       if (getTableListCount() > 0) {
         hash = (37 * hash) + TABLE_LIST_FIELD_NUMBER;
@@ -4170,66 +2405,66 @@ public final class BackupProtos {
         hash = (37 * hash) + COMPLETE_TS_FIELD_NUMBER;
         hash = (53 * hash) + hashLong(getCompleteTs());
       }
+      if (getAncestorsCount() > 0) {
+        hash = (37 * hash) + ANCESTORS_FIELD_NUMBER;
+        hash = (53 * hash) + getAncestorsList().hashCode();
+      }
       if (getTstMapCount() > 0) {
         hash = (37 * hash) + TST_MAP_FIELD_NUMBER;
         hash = (53 * hash) + getTstMapList().hashCode();
-      }
-      if (getDependentBackupImageCount() > 0) {
-        hash = (37 * hash) + DEPENDENT_BACKUP_IMAGE_FIELD_NUMBER;
-        hash = (53 * hash) + getDependentBackupImageList().hashCode();
       }
       hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
 
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(byte[] data)
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(java.io.InputStream input)
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseDelimitedFrom(java.io.InputStream input)
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseDelimitedFrom(
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
-    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parseFrom(
+    public static org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -4238,7 +2473,7 @@ public final class BackupProtos {
 
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest prototype) {
+    public static Builder newBuilder(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
@@ -4250,24 +2485,24 @@ public final class BackupProtos {
       return builder;
     }
     /**
-     * Protobuf type {@code hbase.pb.BackupManifest}
+     * Protobuf type {@code hbase.pb.BackupImage}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifestOrBuilder {
+       implements org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupManifest_descriptor;
+        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_descriptor;
       }
 
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupManifest_fieldAccessorTable
+        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest.class, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest.Builder.class);
+                org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.class, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder.class);
       }
 
-      // Construct using org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest.newBuilder()
+      // Construct using org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -4280,8 +2515,8 @@ public final class BackupProtos {
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getTableListFieldBuilder();
+          getAncestorsFieldBuilder();
           getTstMapFieldBuilder();
-          getDependentBackupImageFieldBuilder();
         }
       }
       private static Builder create() {
@@ -4290,11 +2525,11 @@ public final class BackupProtos {
 
       public Builder clear() {
         super.clear();
-        version_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
         backupId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
         bitField0_ = (bitField0_ & ~0x00000002);
-        type_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
+        rootDir_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
         if (tableListBuilder_ == null) {
           tableList_ = java.util.Collections.emptyList();
@@ -4306,17 +2541,17 @@ public final class BackupProtos {
         bitField0_ = (bitField0_ & ~0x00000010);
         completeTs_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000020);
-        if (tstMapBuilder_ == null) {
-          tstMap_ = java.util.Collections.emptyList();
+        if (ancestorsBuilder_ == null) {
+          ancestors_ = java.util.Collections.emptyList();
           bitField0_ = (bitField0_ & ~0x00000040);
         } else {
-          tstMapBuilder_.clear();
+          ancestorsBuilder_.clear();
         }
-        if (dependentBackupImageBuilder_ == null) {
-          dependentBackupImage_ = java.util.Collections.emptyList();
+        if (tstMapBuilder_ == null) {
+          tstMap_ = java.util.Collections.emptyList();
           bitField0_ = (bitField0_ & ~0x00000080);
         } else {
-          dependentBackupImageBuilder_.clear();
+          tstMapBuilder_.clear();
         }
         return this;
       }
@@ -4327,37 +2562,37 @@ public final class BackupProtos {
 
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupManifest_descriptor;
+        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.internal_static_hbase_pb_BackupImage_descriptor;
       }
 
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest getDefaultInstanceForType() {
-        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest.getDefaultInstance();
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getDefaultInstanceForType() {
+        return org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance();
       }
 
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest build() {
-        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest result = buildPartial();
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage build() {
+        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest buildPartial() {
-        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest result = new org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest(this);
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage buildPartial() {
+        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage result = new org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.version_ = version_;
+        result.backupId_ = backupId_;
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.backupId_ = backupId_;
+        result.backupType_ = backupType_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.type_ = type_;
+        result.rootDir_ = rootDir_;
         if (tableListBuilder_ == null) {
           if (((bitField0_ & 0x00000008) == 0x00000008)) {
             tableList_ = java.util.Collections.unmodifiableList(tableList_);
@@ -4375,23 +2610,23 @@ public final class BackupProtos {
           to_bitField0_ |= 0x00000010;
         }
         result.completeTs_ = completeTs_;
-        if (tstMapBuilder_ == null) {
+        if (ancestorsBuilder_ == null) {
           if (((bitField0_ & 0x00000040) == 0x00000040)) {
-            tstMap_ = java.util.Collections.unmodifiableList(tstMap_);
+            ancestors_ = java.util.Collections.unmodifiableList(ancestors_);
             bitField0_ = (bitField0_ & ~0x00000040);
+          }
+          result.ancestors_ = ancestors_;
+        } else {
+          result.ancestors_ = ancestorsBuilder_.build();
+        }
+        if (tstMapBuilder_ == null) {
+          if (((bitField0_ & 0x00000080) == 0x00000080)) {
+            tstMap_ = java.util.Collections.unmodifiableList(tstMap_);
+            bitField0_ = (bitField0_ & ~0x00000080);
           }
           result.tstMap_ = tstMap_;
         } else {
           result.tstMap_ = tstMapBuilder_.build();
-        }
-        if (dependentBackupImageBuilder_ == null) {
-          if (((bitField0_ & 0x00000080) == 0x00000080)) {
-            dependentBackupImage_ = java.util.Collections.unmodifiableList(dependentBackupImage_);
-            bitField0_ = (bitField0_ & ~0x00000080);
-          }
-          result.dependentBackupImage_ = dependentBackupImage_;
-        } else {
-          result.dependentBackupImage_ = dependentBackupImageBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -4399,28 +2634,28 @@ public final class BackupProtos {
       }
 
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest) {
-          return mergeFrom((org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest)other);
+        if (other instanceof org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage) {
+          return mergeFrom((org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest other) {
-        if (other == org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest.getDefaultInstance()) return this;
-        if (other.hasVersion()) {
-          bitField0_ |= 0x00000001;
-          version_ = other.version_;
-          onChanged();
-        }
+      public Builder mergeFrom(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage other) {
+        if (other == org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance()) return this;
         if (other.hasBackupId()) {
-          bitField0_ |= 0x00000002;
+          bitField0_ |= 0x00000001;
           backupId_ = other.backupId_;
           onChanged();
         }
-        if (other.hasType()) {
-          setType(other.getType());
+        if (other.hasBackupType()) {
+          setBackupType(other.getBackupType());
+        }
+        if (other.hasRootDir()) {
+          bitField0_ |= 0x00000004;
+          rootDir_ = other.rootDir_;
+          onChanged();
         }
         if (tableListBuilder_ == null) {
           if (!other.tableList_.isEmpty()) {
@@ -4454,11 +2689,37 @@ public final class BackupProtos {
         if (other.hasCompleteTs()) {
           setCompleteTs(other.getCompleteTs());
         }
+        if (ancestorsBuilder_ == null) {
+          if (!other.ancestors_.isEmpty()) {
+            if (ancestors_.isEmpty()) {
+              ancestors_ = other.ancestors_;
+              bitField0_ = (bitField0_ & ~0x00000040);
+            } else {
+              ensureAncestorsIsMutable();
+              ancestors_.addAll(other.ancestors_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.ancestors_.isEmpty()) {
+            if (ancestorsBuilder_.isEmpty()) {
+              ancestorsBuilder_.dispose();
+              ancestorsBuilder_ = null;
+              ancestors_ = other.ancestors_;
+              bitField0_ = (bitField0_ & ~0x00000040);
+              ancestorsBuilder_ = 
+                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getAncestorsFieldBuilder() : null;
+            } else {
+              ancestorsBuilder_.addAllMessages(other.ancestors_);
+            }
+          }
+        }
         if (tstMapBuilder_ == null) {
           if (!other.tstMap_.isEmpty()) {
             if (tstMap_.isEmpty()) {
               tstMap_ = other.tstMap_;
-              bitField0_ = (bitField0_ & ~0x00000040);
+              bitField0_ = (bitField0_ & ~0x00000080);
             } else {
               ensureTstMapIsMutable();
               tstMap_.addAll(other.tstMap_);
@@ -4471,7 +2732,7 @@ public final class BackupProtos {
               tstMapBuilder_.dispose();
               tstMapBuilder_ = null;
               tstMap_ = other.tstMap_;
-              bitField0_ = (bitField0_ & ~0x00000040);
+              bitField0_ = (bitField0_ & ~0x00000080);
               tstMapBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getTstMapFieldBuilder() : null;
@@ -4480,71 +2741,25 @@ public final class BackupProtos {
             }
           }
         }
-        if (dependentBackupImageBuilder_ == null) {
-          if (!other.dependentBackupImage_.isEmpty()) {
-            if (dependentBackupImage_.isEmpty()) {
-              dependentBackupImage_ = other.dependentBackupImage_;
-              bitField0_ = (bitField0_ & ~0x00000080);
-            } else {
-              ensureDependentBackupImageIsMutable();
-              dependentBackupImage_.addAll(other.dependentBackupImage_);
-            }
-            onChanged();
-          }
-        } else {
-          if (!other.dependentBackupImage_.isEmpty()) {
-            if (dependentBackupImageBuilder_.isEmpty()) {
-              dependentBackupImageBuilder_.dispose();
-              dependentBackupImageBuilder_ = null;
-              dependentBackupImage_ = other.dependentBackupImage_;
-              bitField0_ = (bitField0_ & ~0x00000080);
-              dependentBackupImageBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                   getDependentBackupImageFieldBuilder() : null;
-            } else {
-              dependentBackupImageBuilder_.addAllMessages(other.dependentBackupImage_);
-            }
-          }
-        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
 
       public final boolean isInitialized() {
-        if (!hasVersion()) {
-          
-          return false;
-        }
-        if (!hasBackupId()) {
-          
-          return false;
-        }
-        if (!hasType()) {
-          
-          return false;
-        }
-        if (!hasStartTs()) {
-          
-          return false;
-        }
-        if (!hasCompleteTs()) {
-          
-          return false;
-        }
         for (int i = 0; i < getTableListCount(); i++) {
           if (!getTableList(i).isInitialized()) {
             
             return false;
           }
         }
-        for (int i = 0; i < getTstMapCount(); i++) {
-          if (!getTstMap(i).isInitialized()) {
+        for (int i = 0; i < getAncestorsCount(); i++) {
+          if (!getAncestors(i).isInitialized()) {
             
             return false;
           }
         }
-        for (int i = 0; i < getDependentBackupImageCount(); i++) {
-          if (!getDependentBackupImage(i).isInitialized()) {
+        for (int i = 0; i < getTstMapCount(); i++) {
+          if (!getTstMap(i).isInitialized()) {
             
             return false;
           }
@@ -4556,11 +2771,11 @@ public final class BackupProtos {
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest parsedMessage = null;
+        org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupManifest) e.getUnfinishedMessage();
+          parsedMessage = (org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage) e.getUnfinishedMessage();
           throw e;
         } finally {
           if (parsedMessage != null) {
@@ -4571,90 +2786,16 @@ public final class BackupProtos {
       }
       private int bitField0_;
 
-      // required string version = 1;
-      private java.lang.Object version_ = "";
+      // optional string backup_id = 1;
+      private java.lang.Object backupId_ = "";
       /**
-       * <code>required string version = 1;</code>
+       * <code>optional string backup_id = 1;</code>
        */
-      public boolean hasVersion() {
+      public boolean hasBackupId() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string version = 1;</code>
-       */
-      public java.lang.String getVersion() {
-        java.lang.Object ref = version_;
-        if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
-              .toStringUtf8();
-          version_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>required string version = 1;</code>
-       */
-      public com.google.protobuf.ByteString
-          getVersionBytes() {
-        java.lang.Object ref = version_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          version_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>required string version = 1;</code>
-       */
-      public Builder setVersion(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        version_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string version = 1;</code>
-       */
-      public Builder clearVersion() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        version_ = getDefaultInstance().getVersion();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>required string version = 1;</code>
-       */
-      public Builder setVersionBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        version_ = value;
-        onChanged();
-        return this;
-      }
-
-      // required string backup_id = 2;
-      private java.lang.Object backupId_ = "";
-      /**
-       * <code>required string backup_id = 2;</code>
-       */
-      public boolean hasBackupId() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <code>required string backup_id = 2;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public java.lang.String getBackupId() {
         java.lang.Object ref = backupId_;
@@ -4668,7 +2809,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string backup_id = 2;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public com.google.protobuf.ByteString
           getBackupIdBytes() {
@@ -4684,73 +2825,147 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string backup_id = 2;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public Builder setBackupId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000002;
+  bitField0_ |= 0x00000001;
         backupId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required string backup_id = 2;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public Builder clearBackupId() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000001);
         backupId_ = getDefaultInstance().getBackupId();
         onChanged();
         return this;
       }
       /**
-       * <code>required string backup_id = 2;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public Builder setBackupIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000002;
+  bitField0_ |= 0x00000001;
         backupId_ = value;
         onChanged();
         return this;
       }
 
-      // required .hbase.pb.BackupType type = 3;
-      private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType type_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
+      // optional .hbase.pb.BackupType backup_type = 2;
+      private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
       /**
-       * <code>required .hbase.pb.BackupType type = 3;</code>
+       * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
        */
-      public boolean hasType() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+      public boolean hasBackupType() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required .hbase.pb.BackupType type = 3;</code>
+       * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
        */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getType() {
-        return type_;
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getBackupType() {
+        return backupType_;
       }
       /**
-       * <code>required .hbase.pb.BackupType type = 3;</code>
+       * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
        */
-      public Builder setType(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType value) {
+      public Builder setBackupType(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType value) {
         if (value == null) {
           throw new NullPointerException();
         }
-        bitField0_ |= 0x00000004;
-        type_ = value;
+        bitField0_ |= 0x00000002;
+        backupType_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required .hbase.pb.BackupType type = 3;</code>
+       * <code>optional .hbase.pb.BackupType backup_type = 2;</code>
        */
-      public Builder clearType() {
+      public Builder clearBackupType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        backupType_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
+        onChanged();
+        return this;
+      }
+
+      // optional string root_dir = 3;
+      private java.lang.Object rootDir_ = "";
+      /**
+       * <code>optional string root_dir = 3;</code>
+       */
+      public boolean hasRootDir() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional string root_dir = 3;</code>
+       */
+      public java.lang.String getRootDir() {
+        java.lang.Object ref = rootDir_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
+          rootDir_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string root_dir = 3;</code>
+       */
+      public com.google.protobuf.ByteString
+          getRootDirBytes() {
+        java.lang.Object ref = rootDir_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          rootDir_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string root_dir = 3;</code>
+       */
+      public Builder setRootDir(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        rootDir_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string root_dir = 3;</code>
+       */
+      public Builder clearRootDir() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        type_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
+        rootDir_ = getDefaultInstance().getRootDir();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string root_dir = 3;</code>
+       */
+      public Builder setRootDirBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        rootDir_ = value;
         onChanged();
         return this;
       }
@@ -4995,22 +3210,22 @@ public final class BackupProtos {
         return tableListBuilder_;
       }
 
-      // required uint64 start_ts = 5;
+      // optional uint64 start_ts = 5;
       private long startTs_ ;
       /**
-       * <code>required uint64 start_ts = 5;</code>
+       * <code>optional uint64 start_ts = 5;</code>
        */
       public boolean hasStartTs() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       /**
-       * <code>required uint64 start_ts = 5;</code>
+       * <code>optional uint64 start_ts = 5;</code>
        */
       public long getStartTs() {
         return startTs_;
       }
       /**
-       * <code>required uint64 start_ts = 5;</code>
+       * <code>optional uint64 start_ts = 5;</code>
        */
       public Builder setStartTs(long value) {
         bitField0_ |= 0x00000010;
@@ -5019,7 +3234,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required uint64 start_ts = 5;</code>
+       * <code>optional uint64 start_ts = 5;</code>
        */
       public Builder clearStartTs() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -5028,22 +3243,22 @@ public final class BackupProtos {
         return this;
       }
 
-      // required uint64 complete_ts = 6;
+      // optional uint64 complete_ts = 6;
       private long completeTs_ ;
       /**
-       * <code>required uint64 complete_ts = 6;</code>
+       * <code>optional uint64 complete_ts = 6;</code>
        */
       public boolean hasCompleteTs() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       /**
-       * <code>required uint64 complete_ts = 6;</code>
+       * <code>optional uint64 complete_ts = 6;</code>
        */
       public long getCompleteTs() {
         return completeTs_;
       }
       /**
-       * <code>required uint64 complete_ts = 6;</code>
+       * <code>optional uint64 complete_ts = 6;</code>
        */
       public Builder setCompleteTs(long value) {
         bitField0_ |= 0x00000020;
@@ -5052,7 +3267,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required uint64 complete_ts = 6;</code>
+       * <code>optional uint64 complete_ts = 6;</code>
        */
       public Builder clearCompleteTs() {
         bitField0_ = (bitField0_ & ~0x00000020);
@@ -5061,13 +3276,253 @@ public final class BackupProtos {
         return this;
       }
 
-      // repeated .hbase.pb.TableServerTimestamp tst_map = 7;
+      // repeated .hbase.pb.BackupImage ancestors = 7;
+      private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> ancestors_ =
+        java.util.Collections.emptyList();
+      private void ensureAncestorsIsMutable() {
+        if (!((bitField0_ & 0x00000040) == 0x00000040)) {
+          ancestors_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage>(ancestors_);
+          bitField0_ |= 0x00000040;
+         }
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilder<
+          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> ancestorsBuilder_;
+
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> getAncestorsList() {
+        if (ancestorsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(ancestors_);
+        } else {
+          return ancestorsBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public int getAncestorsCount() {
+        if (ancestorsBuilder_ == null) {
+          return ancestors_.size();
+        } else {
+          return ancestorsBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getAncestors(int index) {
+        if (ancestorsBuilder_ == null) {
+          return ancestors_.get(index);
+        } else {
+          return ancestorsBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder setAncestors(
+          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
+        if (ancestorsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAncestorsIsMutable();
+          ancestors_.set(index, value);
+          onChanged();
+        } else {
+          ancestorsBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder setAncestors(
+          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
+        if (ancestorsBuilder_ == null) {
+          ensureAncestorsIsMutable();
+          ancestors_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          ancestorsBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder addAncestors(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
+        if (ancestorsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAncestorsIsMutable();
+          ancestors_.add(value);
+          onChanged();
+        } else {
+          ancestorsBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder addAncestors(
+          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
+        if (ancestorsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAncestorsIsMutable();
+          ancestors_.add(index, value);
+          onChanged();
+        } else {
+          ancestorsBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder addAncestors(
+          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
+        if (ancestorsBuilder_ == null) {
+          ensureAncestorsIsMutable();
+          ancestors_.add(builderForValue.build());
+          onChanged();
+        } else {
+          ancestorsBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder addAncestors(
+          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
+        if (ancestorsBuilder_ == null) {
+          ensureAncestorsIsMutable();
+          ancestors_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          ancestorsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder addAllAncestors(
+          java.lang.Iterable<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> values) {
+        if (ancestorsBuilder_ == null) {
+          ensureAncestorsIsMutable();
+          super.addAll(values, ancestors_);
+          onChanged();
+        } else {
+          ancestorsBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder clearAncestors() {
+        if (ancestorsBuilder_ == null) {
+          ancestors_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000040);
+          onChanged();
+        } else {
+          ancestorsBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public Builder removeAncestors(int index) {
+        if (ancestorsBuilder_ == null) {
+          ensureAncestorsIsMutable();
+          ancestors_.remove(index);
+          onChanged();
+        } else {
+          ancestorsBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder getAncestorsBuilder(
+          int index) {
+        return getAncestorsFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getAncestorsOrBuilder(
+          int index) {
+        if (ancestorsBuilder_ == null) {
+          return ancestors_.get(index);  } else {
+          return ancestorsBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
+           getAncestorsOrBuilderList() {
+        if (ancestorsBuilder_ != null) {
+          return ancestorsBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(ancestors_);
+        }
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder addAncestorsBuilder() {
+        return getAncestorsFieldBuilder().addBuilder(
+            org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder addAncestorsBuilder(
+          int index) {
+        return getAncestorsFieldBuilder().addBuilder(
+            index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .hbase.pb.BackupImage ancestors = 7;</code>
+       */
+      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder> 
+           getAncestorsBuilderList() {
+        return getAncestorsFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilder<
+          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
+          getAncestorsFieldBuilder() {
+        if (ancestorsBuilder_ == null) {
+          ancestorsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+              org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder>(
+                  ancestors_,
+                  ((bitField0_ & 0x00000040) == 0x00000040),
+                  getParentForChildren(),
+                  isClean());
+          ancestors_ = null;
+        }
+        return ancestorsBuilder_;
+      }
+
+      // repeated .hbase.pb.TableServerTimestamp tst_map = 8;
       private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp> tstMap_ =
         java.util.Collections.emptyList();
       private void ensureTstMapIsMutable() {
-        if (!((bitField0_ & 0x00000040) == 0x00000040)) {
+        if (!((bitField0_ & 0x00000080) == 0x00000080)) {
           tstMap_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp>(tstMap_);
-          bitField0_ |= 0x00000040;
+          bitField0_ |= 0x00000080;
          }
       }
 
@@ -5075,7 +3530,7 @@ public final class BackupProtos {
           org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder> tstMapBuilder_;
 
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp> getTstMapList() {
         if (tstMapBuilder_ == null) {
@@ -5085,7 +3540,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public int getTstMapCount() {
         if (tstMapBuilder_ == null) {
@@ -5095,7 +3550,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp getTstMap(int index) {
         if (tstMapBuilder_ == null) {
@@ -5105,7 +3560,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder setTstMap(
           int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp value) {
@@ -5122,7 +3577,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder setTstMap(
           int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder builderForValue) {
@@ -5136,7 +3591,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder addTstMap(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp value) {
         if (tstMapBuilder_ == null) {
@@ -5152,7 +3607,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder addTstMap(
           int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp value) {
@@ -5169,7 +3624,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder addTstMap(
           org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder builderForValue) {
@@ -5183,7 +3638,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder addTstMap(
           int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder builderForValue) {
@@ -5197,7 +3652,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder addAllTstMap(
           java.lang.Iterable<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp> values) {
@@ -5211,12 +3666,12 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder clearTstMap() {
         if (tstMapBuilder_ == null) {
           tstMap_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000040);
+          bitField0_ = (bitField0_ & ~0x00000080);
           onChanged();
         } else {
           tstMapBuilder_.clear();
@@ -5224,7 +3679,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public Builder removeTstMap(int index) {
         if (tstMapBuilder_ == null) {
@@ -5237,14 +3692,14 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder getTstMapBuilder(
           int index) {
         return getTstMapFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder getTstMapOrBuilder(
           int index) {
@@ -5254,7 +3709,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder> 
            getTstMapOrBuilderList() {
@@ -5265,14 +3720,14 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder addTstMapBuilder() {
         return getTstMapFieldBuilder().addBuilder(
             org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.getDefaultInstance());
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder addTstMapBuilder(
           int index) {
@@ -5280,7 +3735,7 @@ public final class BackupProtos {
             index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.getDefaultInstance());
       }
       /**
-       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 7;</code>
+       * <code>repeated .hbase.pb.TableServerTimestamp tst_map = 8;</code>
        */
       public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder> 
            getTstMapBuilderList() {
@@ -5293,7 +3748,7 @@ public final class BackupProtos {
           tstMapBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestamp.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.TableServerTimestampOrBuilder>(
                   tstMap_,
-                  ((bitField0_ & 0x00000040) == 0x00000040),
+                  ((bitField0_ & 0x00000080) == 0x00000080),
                   getParentForChildren(),
                   isClean());
           tstMap_ = null;
@@ -5301,285 +3756,45 @@ public final class BackupProtos {
         return tstMapBuilder_;
       }
 
-      // repeated .hbase.pb.BackupImage dependent_backup_image = 8;
-      private java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> dependentBackupImage_ =
-        java.util.Collections.emptyList();
-      private void ensureDependentBackupImageIsMutable() {
-        if (!((bitField0_ & 0x00000080) == 0x00000080)) {
-          dependentBackupImage_ = new java.util.ArrayList<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage>(dependentBackupImage_);
-          bitField0_ |= 0x00000080;
-         }
-      }
-
-      private com.google.protobuf.RepeatedFieldBuilder<
-          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> dependentBackupImageBuilder_;
-
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> getDependentBackupImageList() {
-        if (dependentBackupImageBuilder_ == null) {
-          return java.util.Collections.unmodifiableList(dependentBackupImage_);
-        } else {
-          return dependentBackupImageBuilder_.getMessageList();
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public int getDependentBackupImageCount() {
-        if (dependentBackupImageBuilder_ == null) {
-          return dependentBackupImage_.size();
-        } else {
-          return dependentBackupImageBuilder_.getCount();
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage getDependentBackupImage(int index) {
-        if (dependentBackupImageBuilder_ == null) {
-          return dependentBackupImage_.get(index);
-        } else {
-          return dependentBackupImageBuilder_.getMessage(index);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder setDependentBackupImage(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
-        if (dependentBackupImageBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureDependentBackupImageIsMutable();
-          dependentBackupImage_.set(index, value);
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.setMessage(index, value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder setDependentBackupImage(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
-        if (dependentBackupImageBuilder_ == null) {
-          ensureDependentBackupImageIsMutable();
-          dependentBackupImage_.set(index, builderForValue.build());
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.setMessage(index, builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder addDependentBackupImage(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
-        if (dependentBackupImageBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureDependentBackupImageIsMutable();
-          dependentBackupImage_.add(value);
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.addMessage(value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder addDependentBackupImage(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage value) {
-        if (dependentBackupImageBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          ensureDependentBackupImageIsMutable();
-          dependentBackupImage_.add(index, value);
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.addMessage(index, value);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder addDependentBackupImage(
-          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
-        if (dependentBackupImageBuilder_ == null) {
-          ensureDependentBackupImageIsMutable();
-          dependentBackupImage_.add(builderForValue.build());
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.addMessage(builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder addDependentBackupImage(
-          int index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder builderForValue) {
-        if (dependentBackupImageBuilder_ == null) {
-          ensureDependentBackupImageIsMutable();
-          dependentBackupImage_.add(index, builderForValue.build());
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.addMessage(index, builderForValue.build());
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder addAllDependentBackupImage(
-          java.lang.Iterable<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage> values) {
-        if (dependentBackupImageBuilder_ == null) {
-          ensureDependentBackupImageIsMutable();
-          super.addAll(values, dependentBackupImage_);
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.addAllMessages(values);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder clearDependentBackupImage() {
-        if (dependentBackupImageBuilder_ == null) {
-          dependentBackupImage_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000080);
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.clear();
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public Builder removeDependentBackupImage(int index) {
-        if (dependentBackupImageBuilder_ == null) {
-          ensureDependentBackupImageIsMutable();
-          dependentBackupImage_.remove(index);
-          onChanged();
-        } else {
-          dependentBackupImageBuilder_.remove(index);
-        }
-        return this;
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder getDependentBackupImageBuilder(
-          int index) {
-        return getDependentBackupImageFieldBuilder().getBuilder(index);
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder getDependentBackupImageOrBuilder(
-          int index) {
-        if (dependentBackupImageBuilder_ == null) {
-          return dependentBackupImage_.get(index);  } else {
-          return dependentBackupImageBuilder_.getMessageOrBuilder(index);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public java.util.List<? extends org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-           getDependentBackupImageOrBuilderList() {
-        if (dependentBackupImageBuilder_ != null) {
-          return dependentBackupImageBuilder_.getMessageOrBuilderList();
-        } else {
-          return java.util.Collections.unmodifiableList(dependentBackupImage_);
-        }
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder addDependentBackupImageBuilder() {
-        return getDependentBackupImageFieldBuilder().addBuilder(
-            org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance());
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder addDependentBackupImageBuilder(
-          int index) {
-        return getDependentBackupImageFieldBuilder().addBuilder(
-            index, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.getDefaultInstance());
-      }
-      /**
-       * <code>repeated .hbase.pb.BackupImage dependent_backup_image = 8;</code>
-       */
-      public java.util.List<org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder> 
-           getDependentBackupImageBuilderList() {
-        return getDependentBackupImageFieldBuilder().getBuilderList();
-      }
-      private com.google.protobuf.RepeatedFieldBuilder<
-          org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder> 
-          getDependentBackupImageFieldBuilder() {
-        if (dependentBackupImageBuilder_ == null) {
-          dependentBackupImageBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-              org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImage.Builder, org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupImageOrBuilder>(
-                  dependentBackupImage_,
-                  ((bitField0_ & 0x00000080) == 0x00000080),
-                  getParentForChildren(),
-                  isClean());
-          dependentBackupImage_ = null;
-        }
-        return dependentBackupImageBuilder_;
-      }
-
-      // @@protoc_insertion_point(builder_scope:hbase.pb.BackupManifest)
+      // @@protoc_insertion_point(builder_scope:hbase.pb.BackupImage)
     }
 
     static {
-      defaultInstance = new BackupManifest(true);
+      defaultInstance = new BackupImage(true);
       defaultInstance.initFields();
     }
 
-    // @@protoc_insertion_point(class_scope:hbase.pb.BackupManifest)
+    // @@protoc_insertion_point(class_scope:hbase.pb.BackupImage)
   }
 
   public interface TableBackupStatusOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // required .hbase.pb.TableName table = 1;
+    // optional .hbase.pb.TableName table = 1;
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     boolean hasTable();
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTable();
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableOrBuilder();
 
-    // required string target_dir = 2;
+    // optional string target_dir = 2;
     /**
-     * <code>required string target_dir = 2;</code>
+     * <code>optional string target_dir = 2;</code>
      */
     boolean hasTargetDir();
     /**
-     * <code>required string target_dir = 2;</code>
+     * <code>optional string target_dir = 2;</code>
      */
     java.lang.String getTargetDir();
     /**
-     * <code>required string target_dir = 2;</code>
+     * <code>optional string target_dir = 2;</code>
      */
     com.google.protobuf.ByteString
         getTargetDirBytes();
@@ -5601,6 +3816,14 @@ public final class BackupProtos {
   }
   /**
    * Protobuf type {@code hbase.pb.TableBackupStatus}
+   *
+   * <pre>
+   *
+   *message BackupManifest {
+   *repeated TableServerTimestamp tst_map = 1;
+   *repeated BackupImage dependent_backup_image = 2;
+   *}
+   * </pre>
    */
   public static final class TableBackupStatus extends
       com.google.protobuf.GeneratedMessage
@@ -5713,39 +3936,39 @@ public final class BackupProtos {
     }
 
     private int bitField0_;
-    // required .hbase.pb.TableName table = 1;
+    // optional .hbase.pb.TableName table = 1;
     public static final int TABLE_FIELD_NUMBER = 1;
     private org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName table_;
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     public boolean hasTable() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTable() {
       return table_;
     }
     /**
-     * <code>required .hbase.pb.TableName table = 1;</code>
+     * <code>optional .hbase.pb.TableName table = 1;</code>
      */
     public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableOrBuilder() {
       return table_;
     }
 
-    // required string target_dir = 2;
+    // optional string target_dir = 2;
     public static final int TARGET_DIR_FIELD_NUMBER = 2;
     private java.lang.Object targetDir_;
     /**
-     * <code>required string target_dir = 2;</code>
+     * <code>optional string target_dir = 2;</code>
      */
     public boolean hasTargetDir() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required string target_dir = 2;</code>
+     * <code>optional string target_dir = 2;</code>
      */
     public java.lang.String getTargetDir() {
       java.lang.Object ref = targetDir_;
@@ -5762,7 +3985,7 @@ public final class BackupProtos {
       }
     }
     /**
-     * <code>required string target_dir = 2;</code>
+     * <code>optional string target_dir = 2;</code>
      */
     public com.google.protobuf.ByteString
         getTargetDirBytes() {
@@ -5831,17 +4054,11 @@ public final class BackupProtos {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
 
-      if (!hasTable()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasTargetDir()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!getTable().isInitialized()) {
-        memoizedIsInitialized = 0;
-        return false;
+      if (hasTable()) {
+        if (!getTable().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
       }
       memoizedIsInitialized = 1;
       return true;
@@ -6016,6 +4233,14 @@ public final class BackupProtos {
     }
     /**
      * Protobuf type {@code hbase.pb.TableBackupStatus}
+     *
+     * <pre>
+     *
+     *message BackupManifest {
+     *repeated TableServerTimestamp tst_map = 1;
+     *repeated BackupImage dependent_backup_image = 2;
+     *}
+     * </pre>
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
@@ -6141,17 +4366,11 @@ public final class BackupProtos {
       }
 
       public final boolean isInitialized() {
-        if (!hasTable()) {
-          
-          return false;
-        }
-        if (!hasTargetDir()) {
-          
-          return false;
-        }
-        if (!getTable().isInitialized()) {
-          
-          return false;
+        if (hasTable()) {
+          if (!getTable().isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -6175,18 +4394,18 @@ public final class BackupProtos {
       }
       private int bitField0_;
 
-      // required .hbase.pb.TableName table = 1;
+      // optional .hbase.pb.TableName table = 1;
       private org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName table_ = org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> tableBuilder_;
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public boolean hasTable() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName getTable() {
         if (tableBuilder_ == null) {
@@ -6196,7 +4415,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder setTable(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName value) {
         if (tableBuilder_ == null) {
@@ -6212,7 +4431,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder setTable(
           org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder builderForValue) {
@@ -6226,7 +4445,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder mergeTable(org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName value) {
         if (tableBuilder_ == null) {
@@ -6245,7 +4464,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public Builder clearTable() {
         if (tableBuilder_ == null) {
@@ -6258,7 +4477,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder getTableBuilder() {
         bitField0_ |= 0x00000001;
@@ -6266,7 +4485,7 @@ public final class BackupProtos {
         return getTableFieldBuilder().getBuilder();
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder getTableOrBuilder() {
         if (tableBuilder_ != null) {
@@ -6276,7 +4495,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required .hbase.pb.TableName table = 1;</code>
+       * <code>optional .hbase.pb.TableName table = 1;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableName.Builder, org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.TableNameOrBuilder> 
@@ -6292,16 +4511,16 @@ public final class BackupProtos {
         return tableBuilder_;
       }
 
-      // required string target_dir = 2;
+      // optional string target_dir = 2;
       private java.lang.Object targetDir_ = "";
       /**
-       * <code>required string target_dir = 2;</code>
+       * <code>optional string target_dir = 2;</code>
        */
       public boolean hasTargetDir() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required string target_dir = 2;</code>
+       * <code>optional string target_dir = 2;</code>
        */
       public java.lang.String getTargetDir() {
         java.lang.Object ref = targetDir_;
@@ -6315,7 +4534,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string target_dir = 2;</code>
+       * <code>optional string target_dir = 2;</code>
        */
       public com.google.protobuf.ByteString
           getTargetDirBytes() {
@@ -6331,7 +4550,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string target_dir = 2;</code>
+       * <code>optional string target_dir = 2;</code>
        */
       public Builder setTargetDir(
           java.lang.String value) {
@@ -6344,7 +4563,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required string target_dir = 2;</code>
+       * <code>optional string target_dir = 2;</code>
        */
       public Builder clearTargetDir() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -6353,7 +4572,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required string target_dir = 2;</code>
+       * <code>optional string target_dir = 2;</code>
        */
       public Builder setTargetDirBytes(
           com.google.protobuf.ByteString value) {
@@ -6454,42 +4673,42 @@ public final class BackupProtos {
   public interface BackupInfoOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // required string backup_id = 1;
+    // optional string backup_id = 1;
     /**
-     * <code>required string backup_id = 1;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     boolean hasBackupId();
     /**
-     * <code>required string backup_id = 1;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     java.lang.String getBackupId();
     /**
-     * <code>required string backup_id = 1;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     com.google.protobuf.ByteString
         getBackupIdBytes();
 
-    // required .hbase.pb.BackupType type = 2;
+    // optional .hbase.pb.BackupType type = 2;
     /**
-     * <code>required .hbase.pb.BackupType type = 2;</code>
+     * <code>optional .hbase.pb.BackupType type = 2;</code>
      */
     boolean hasType();
     /**
-     * <code>required .hbase.pb.BackupType type = 2;</code>
+     * <code>optional .hbase.pb.BackupType type = 2;</code>
      */
     org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getType();
 
-    // required string target_root_dir = 3;
+    // optional string target_root_dir = 3;
     /**
-     * <code>required string target_root_dir = 3;</code>
+     * <code>optional string target_root_dir = 3;</code>
      */
     boolean hasTargetRootDir();
     /**
-     * <code>required string target_root_dir = 3;</code>
+     * <code>optional string target_root_dir = 3;</code>
      */
     java.lang.String getTargetRootDir();
     /**
-     * <code>required string target_root_dir = 3;</code>
+     * <code>optional string target_root_dir = 3;</code>
      */
     com.google.protobuf.ByteString
         getTargetRootDirBytes();
@@ -6599,23 +4818,23 @@ public final class BackupProtos {
     com.google.protobuf.ByteString
         getJobIdBytes();
 
-    // required uint32 workers_number = 12;
+    // optional uint32 workers_number = 12;
     /**
-     * <code>required uint32 workers_number = 12;</code>
+     * <code>optional uint32 workers_number = 12;</code>
      */
     boolean hasWorkersNumber();
     /**
-     * <code>required uint32 workers_number = 12;</code>
+     * <code>optional uint32 workers_number = 12;</code>
      */
     int getWorkersNumber();
 
-    // required uint64 bandwidth = 13;
+    // optional uint64 bandwidth = 13;
     /**
-     * <code>required uint64 bandwidth = 13;</code>
+     * <code>optional uint64 bandwidth = 13;</code>
      */
     boolean hasBandwidth();
     /**
-     * <code>required uint64 bandwidth = 13;</code>
+     * <code>optional uint64 bandwidth = 13;</code>
      */
     long getBandwidth();
   }
@@ -7026,17 +5245,17 @@ public final class BackupProtos {
     }
 
     private int bitField0_;
-    // required string backup_id = 1;
+    // optional string backup_id = 1;
     public static final int BACKUP_ID_FIELD_NUMBER = 1;
     private java.lang.Object backupId_;
     /**
-     * <code>required string backup_id = 1;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     public boolean hasBackupId() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string backup_id = 1;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     public java.lang.String getBackupId() {
       java.lang.Object ref = backupId_;
@@ -7053,7 +5272,7 @@ public final class BackupProtos {
       }
     }
     /**
-     * <code>required string backup_id = 1;</code>
+     * <code>optional string backup_id = 1;</code>
      */
     public com.google.protobuf.ByteString
         getBackupIdBytes() {
@@ -7069,33 +5288,33 @@ public final class BackupProtos {
       }
     }
 
-    // required .hbase.pb.BackupType type = 2;
+    // optional .hbase.pb.BackupType type = 2;
     public static final int TYPE_FIELD_NUMBER = 2;
     private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType type_;
     /**
-     * <code>required .hbase.pb.BackupType type = 2;</code>
+     * <code>optional .hbase.pb.BackupType type = 2;</code>
      */
     public boolean hasType() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required .hbase.pb.BackupType type = 2;</code>
+     * <code>optional .hbase.pb.BackupType type = 2;</code>
      */
     public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getType() {
       return type_;
     }
 
-    // required string target_root_dir = 3;
+    // optional string target_root_dir = 3;
     public static final int TARGET_ROOT_DIR_FIELD_NUMBER = 3;
     private java.lang.Object targetRootDir_;
     /**
-     * <code>required string target_root_dir = 3;</code>
+     * <code>optional string target_root_dir = 3;</code>
      */
     public boolean hasTargetRootDir() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>required string target_root_dir = 3;</code>
+     * <code>optional string target_root_dir = 3;</code>
      */
     public java.lang.String getTargetRootDir() {
       java.lang.Object ref = targetRootDir_;
@@ -7112,7 +5331,7 @@ public final class BackupProtos {
       }
     }
     /**
-     * <code>required string target_root_dir = 3;</code>
+     * <code>optional string target_root_dir = 3;</code>
      */
     public com.google.protobuf.ByteString
         getTargetRootDirBytes() {
@@ -7330,33 +5549,33 @@ public final class BackupProtos {
       }
     }
 
-    // required uint32 workers_number = 12;
+    // optional uint32 workers_number = 12;
     public static final int WORKERS_NUMBER_FIELD_NUMBER = 12;
     private int workersNumber_;
     /**
-     * <code>required uint32 workers_number = 12;</code>
+     * <code>optional uint32 workers_number = 12;</code>
      */
     public boolean hasWorkersNumber() {
       return ((bitField0_ & 0x00000400) == 0x00000400);
     }
     /**
-     * <code>required uint32 workers_number = 12;</code>
+     * <code>optional uint32 workers_number = 12;</code>
      */
     public int getWorkersNumber() {
       return workersNumber_;
     }
 
-    // required uint64 bandwidth = 13;
+    // optional uint64 bandwidth = 13;
     public static final int BANDWIDTH_FIELD_NUMBER = 13;
     private long bandwidth_;
     /**
-     * <code>required uint64 bandwidth = 13;</code>
+     * <code>optional uint64 bandwidth = 13;</code>
      */
     public boolean hasBandwidth() {
       return ((bitField0_ & 0x00000800) == 0x00000800);
     }
     /**
-     * <code>required uint64 bandwidth = 13;</code>
+     * <code>optional uint64 bandwidth = 13;</code>
      */
     public long getBandwidth() {
       return bandwidth_;
@@ -7382,26 +5601,6 @@ public final class BackupProtos {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
 
-      if (!hasBackupId()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasType()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasTargetRootDir()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasWorkersNumber()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasBandwidth()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
       for (int i = 0; i < getTableBackupStatusCount(); i++) {
         if (!getTableBackupStatus(i).isInitialized()) {
           memoizedIsInitialized = 0;
@@ -7981,26 +6180,6 @@ public final class BackupProtos {
       }
 
       public final boolean isInitialized() {
-        if (!hasBackupId()) {
-          
-          return false;
-        }
-        if (!hasType()) {
-          
-          return false;
-        }
-        if (!hasTargetRootDir()) {
-          
-          return false;
-        }
-        if (!hasWorkersNumber()) {
-          
-          return false;
-        }
-        if (!hasBandwidth()) {
-          
-          return false;
-        }
         for (int i = 0; i < getTableBackupStatusCount(); i++) {
           if (!getTableBackupStatus(i).isInitialized()) {
             
@@ -8029,16 +6208,16 @@ public final class BackupProtos {
       }
       private int bitField0_;
 
-      // required string backup_id = 1;
+      // optional string backup_id = 1;
       private java.lang.Object backupId_ = "";
       /**
-       * <code>required string backup_id = 1;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public boolean hasBackupId() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string backup_id = 1;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public java.lang.String getBackupId() {
         java.lang.Object ref = backupId_;
@@ -8052,7 +6231,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string backup_id = 1;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public com.google.protobuf.ByteString
           getBackupIdBytes() {
@@ -8068,7 +6247,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string backup_id = 1;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public Builder setBackupId(
           java.lang.String value) {
@@ -8081,7 +6260,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required string backup_id = 1;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public Builder clearBackupId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -8090,7 +6269,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required string backup_id = 1;</code>
+       * <code>optional string backup_id = 1;</code>
        */
       public Builder setBackupIdBytes(
           com.google.protobuf.ByteString value) {
@@ -8103,22 +6282,22 @@ public final class BackupProtos {
         return this;
       }
 
-      // required .hbase.pb.BackupType type = 2;
+      // optional .hbase.pb.BackupType type = 2;
       private org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType type_ = org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType.FULL;
       /**
-       * <code>required .hbase.pb.BackupType type = 2;</code>
+       * <code>optional .hbase.pb.BackupType type = 2;</code>
        */
       public boolean hasType() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required .hbase.pb.BackupType type = 2;</code>
+       * <code>optional .hbase.pb.BackupType type = 2;</code>
        */
       public org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType getType() {
         return type_;
       }
       /**
-       * <code>required .hbase.pb.BackupType type = 2;</code>
+       * <code>optional .hbase.pb.BackupType type = 2;</code>
        */
       public Builder setType(org.apache.hadoop.hbase.protobuf.generated.BackupProtos.BackupType value) {
         if (value == null) {
@@ -8130,7 +6309,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required .hbase.pb.BackupType type = 2;</code>
+       * <code>optional .hbase.pb.BackupType type = 2;</code>
        */
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -8139,16 +6318,16 @@ public final class BackupProtos {
         return this;
       }
 
-      // required string target_root_dir = 3;
+      // optional string target_root_dir = 3;
       private java.lang.Object targetRootDir_ = "";
       /**
-       * <code>required string target_root_dir = 3;</code>
+       * <code>optional string target_root_dir = 3;</code>
        */
       public boolean hasTargetRootDir() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required string target_root_dir = 3;</code>
+       * <code>optional string target_root_dir = 3;</code>
        */
       public java.lang.String getTargetRootDir() {
         java.lang.Object ref = targetRootDir_;
@@ -8162,7 +6341,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string target_root_dir = 3;</code>
+       * <code>optional string target_root_dir = 3;</code>
        */
       public com.google.protobuf.ByteString
           getTargetRootDirBytes() {
@@ -8178,7 +6357,7 @@ public final class BackupProtos {
         }
       }
       /**
-       * <code>required string target_root_dir = 3;</code>
+       * <code>optional string target_root_dir = 3;</code>
        */
       public Builder setTargetRootDir(
           java.lang.String value) {
@@ -8191,7 +6370,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required string target_root_dir = 3;</code>
+       * <code>optional string target_root_dir = 3;</code>
        */
       public Builder clearTargetRootDir() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -8200,7 +6379,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required string target_root_dir = 3;</code>
+       * <code>optional string target_root_dir = 3;</code>
        */
       public Builder setTargetRootDirBytes(
           com.google.protobuf.ByteString value) {
@@ -8772,22 +6951,22 @@ public final class BackupProtos {
         return this;
       }
 
-      // required uint32 workers_number = 12;
+      // optional uint32 workers_number = 12;
       private int workersNumber_ ;
       /**
-       * <code>required uint32 workers_number = 12;</code>
+       * <code>optional uint32 workers_number = 12;</code>
        */
       public boolean hasWorkersNumber() {
         return ((bitField0_ & 0x00000800) == 0x00000800);
       }
       /**
-       * <code>required uint32 workers_number = 12;</code>
+       * <code>optional uint32 workers_number = 12;</code>
        */
       public int getWorkersNumber() {
         return workersNumber_;
       }
       /**
-       * <code>required uint32 workers_number = 12;</code>
+       * <code>optional uint32 workers_number = 12;</code>
        */
       public Builder setWorkersNumber(int value) {
         bitField0_ |= 0x00000800;
@@ -8796,7 +6975,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required uint32 workers_number = 12;</code>
+       * <code>optional uint32 workers_number = 12;</code>
        */
       public Builder clearWorkersNumber() {
         bitField0_ = (bitField0_ & ~0x00000800);
@@ -8805,22 +6984,22 @@ public final class BackupProtos {
         return this;
       }
 
-      // required uint64 bandwidth = 13;
+      // optional uint64 bandwidth = 13;
       private long bandwidth_ ;
       /**
-       * <code>required uint64 bandwidth = 13;</code>
+       * <code>optional uint64 bandwidth = 13;</code>
        */
       public boolean hasBandwidth() {
         return ((bitField0_ & 0x00001000) == 0x00001000);
       }
       /**
-       * <code>required uint64 bandwidth = 13;</code>
+       * <code>optional uint64 bandwidth = 13;</code>
        */
       public long getBandwidth() {
         return bandwidth_;
       }
       /**
-       * <code>required uint64 bandwidth = 13;</code>
+       * <code>optional uint64 bandwidth = 13;</code>
        */
       public Builder setBandwidth(long value) {
         bitField0_ |= 0x00001000;
@@ -8829,7 +7008,7 @@ public final class BackupProtos {
         return this;
       }
       /**
-       * <code>required uint64 bandwidth = 13;</code>
+       * <code>optional uint64 bandwidth = 13;</code>
        */
       public Builder clearBandwidth() {
         bitField0_ = (bitField0_ & ~0x00001000);
@@ -8850,11 +7029,6 @@ public final class BackupProtos {
   }
 
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_hbase_pb_BackupImage_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_hbase_pb_BackupImage_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_hbase_pb_ServerTimestamp_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -8865,10 +7039,10 @@ public final class BackupProtos {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_hbase_pb_TableServerTimestamp_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_hbase_pb_BackupManifest_descriptor;
+    internal_static_hbase_pb_BackupImage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_hbase_pb_BackupManifest_fieldAccessorTable;
+      internal_static_hbase_pb_BackupImage_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_hbase_pb_TableBackupStatus_descriptor;
   private static
@@ -8888,82 +7062,71 @@ public final class BackupProtos {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\014Backup.proto\022\010hbase.pb\032\013HBase.proto\"\327\001" +
-      "\n\013BackupImage\022\021\n\tbackup_id\030\001 \002(\t\022)\n\013back" +
-      "up_type\030\002 \002(\0162\024.hbase.pb.BackupType\022\020\n\010r" +
-      "oot_dir\030\003 \002(\t\022\'\n\ntable_list\030\004 \003(\0132\023.hbas" +
-      "e.pb.TableName\022\020\n\010start_ts\030\005 \002(\004\022\023\n\013comp" +
-      "lete_ts\030\006 \002(\004\022(\n\tancestors\030\007 \003(\0132\025.hbase" +
-      ".pb.BackupImage\"4\n\017ServerTimestamp\022\016\n\006se" +
-      "rver\030\001 \002(\t\022\021\n\ttimestamp\030\002 \002(\004\"o\n\024TableSe" +
-      "rverTimestamp\022\"\n\005table\030\001 \002(\0132\023.hbase.pb." +
-      "TableName\0223\n\020server_timestamp\030\002 \003(\0132\031.hb",
-      "ase.pb.ServerTimestamp\"\220\002\n\016BackupManifes" +
-      "t\022\017\n\007version\030\001 \002(\t\022\021\n\tbackup_id\030\002 \002(\t\022\"\n" +
-      "\004type\030\003 \002(\0162\024.hbase.pb.BackupType\022\'\n\ntab" +
-      "le_list\030\004 \003(\0132\023.hbase.pb.TableName\022\020\n\010st" +
-      "art_ts\030\005 \002(\004\022\023\n\013complete_ts\030\006 \002(\004\022/\n\007tst" +
-      "_map\030\007 \003(\0132\036.hbase.pb.TableServerTimesta" +
-      "mp\0225\n\026dependent_backup_image\030\010 \003(\0132\025.hba" +
-      "se.pb.BackupImage\"]\n\021TableBackupStatus\022\"" +
-      "\n\005table\030\001 \002(\0132\023.hbase.pb.TableName\022\022\n\nta" +
-      "rget_dir\030\002 \002(\t\022\020\n\010snapshot\030\003 \001(\t\"\320\004\n\nBac",
-      "kupInfo\022\021\n\tbackup_id\030\001 \002(\t\022\"\n\004type\030\002 \002(\016" +
-      "2\024.hbase.pb.BackupType\022\027\n\017target_root_di" +
-      "r\030\003 \002(\t\022/\n\005state\030\004 \001(\0162 .hbase.pb.Backup" +
-      "Info.BackupState\022/\n\005phase\030\005 \001(\0162 .hbase." +
-      "pb.BackupInfo.BackupPhase\022\026\n\016failed_mess" +
-      "age\030\006 \001(\t\0228\n\023table_backup_status\030\007 \003(\0132\033" +
-      ".hbase.pb.TableBackupStatus\022\020\n\010start_ts\030" +
-      "\010 \001(\004\022\016\n\006end_ts\030\t \001(\004\022\020\n\010progress\030\n \001(\r\022" +
-      "\016\n\006job_id\030\013 \001(\t\022\026\n\016workers_number\030\014 \002(\r\022" +
-      "\021\n\tbandwidth\030\r \002(\004\"P\n\013BackupState\022\013\n\007WAI",
-      "TING\020\000\022\013\n\007RUNNING\020\001\022\014\n\010COMPLETE\020\002\022\n\n\006FAI" +
-      "LED\020\003\022\r\n\tCANCELLED\020\004\"}\n\013BackupPhase\022\013\n\007R" +
-      "EQUEST\020\000\022\014\n\010SNAPSHOT\020\001\022\027\n\023PREPARE_INCREM" +
-      "ENTAL\020\002\022\020\n\014SNAPSHOTCOPY\020\003\022\024\n\020INCREMENTAL" +
-      "_COPY\020\004\022\022\n\016STORE_MANIFEST\020\005*\'\n\nBackupTyp" +
-      "e\022\010\n\004FULL\020\000\022\017\n\013INCREMENTAL\020\001BB\n*org.apac" +
-      "he.hadoop.hbase.protobuf.generatedB\014Back" +
-      "upProtosH\001\210\001\001\240\001\001"
+      "\n\014Backup.proto\022\010hbase.pb\032\013HBase.proto\"J\n" +
+      "\017ServerTimestamp\022$\n\006server\030\001 \001(\0132\024.hbase" +
+      ".pb.ServerName\022\021\n\ttimestamp\030\002 \001(\004\"o\n\024Tab" +
+      "leServerTimestamp\022\"\n\005table\030\001 \001(\0132\023.hbase" +
+      ".pb.TableName\0223\n\020server_timestamp\030\002 \003(\0132" +
+      "\031.hbase.pb.ServerTimestamp\"\210\002\n\013BackupIma" +
+      "ge\022\021\n\tbackup_id\030\001 \001(\t\022)\n\013backup_type\030\002 \001" +
+      "(\0162\024.hbase.pb.BackupType\022\020\n\010root_dir\030\003 \001" +
+      "(\t\022\'\n\ntable_list\030\004 \003(\0132\023.hbase.pb.TableN" +
+      "ame\022\020\n\010start_ts\030\005 \001(\004\022\023\n\013complete_ts\030\006 \001",
+      "(\004\022(\n\tancestors\030\007 \003(\0132\025.hbase.pb.BackupI" +
+      "mage\022/\n\007tst_map\030\010 \003(\0132\036.hbase.pb.TableSe" +
+      "rverTimestamp\"]\n\021TableBackupStatus\022\"\n\005ta" +
+      "ble\030\001 \001(\0132\023.hbase.pb.TableName\022\022\n\ntarget" +
+      "_dir\030\002 \001(\t\022\020\n\010snapshot\030\003 \001(\t\"\320\004\n\nBackupI" +
+      "nfo\022\021\n\tbackup_id\030\001 \001(\t\022\"\n\004type\030\002 \001(\0162\024.h" +
+      "base.pb.BackupType\022\027\n\017target_root_dir\030\003 " +
+      "\001(\t\022/\n\005state\030\004 \001(\0162 .hbase.pb.BackupInfo" +
+      ".BackupState\022/\n\005phase\030\005 \001(\0162 .hbase.pb.B" +
+      "ackupInfo.BackupPhase\022\026\n\016failed_message\030",
+      "\006 \001(\t\0228\n\023table_backup_status\030\007 \003(\0132\033.hba" +
+      "se.pb.TableBackupStatus\022\020\n\010start_ts\030\010 \001(" +
+      "\004\022\016\n\006end_ts\030\t \001(\004\022\020\n\010progress\030\n \001(\r\022\016\n\006j" +
+      "ob_id\030\013 \001(\t\022\026\n\016workers_number\030\014 \001(\r\022\021\n\tb" +
+      "andwidth\030\r \001(\004\"P\n\013BackupState\022\013\n\007WAITING" +
+      "\020\000\022\013\n\007RUNNING\020\001\022\014\n\010COMPLETE\020\002\022\n\n\006FAILED\020" +
+      "\003\022\r\n\tCANCELLED\020\004\"}\n\013BackupPhase\022\013\n\007REQUE" +
+      "ST\020\000\022\014\n\010SNAPSHOT\020\001\022\027\n\023PREPARE_INCREMENTA" +
+      "L\020\002\022\020\n\014SNAPSHOTCOPY\020\003\022\024\n\020INCREMENTAL_COP" +
+      "Y\020\004\022\022\n\016STORE_MANIFEST\020\005*\'\n\nBackupType\022\010\n",
+      "\004FULL\020\000\022\017\n\013INCREMENTAL\020\001BB\n*org.apache.h" +
+      "adoop.hbase.protobuf.generatedB\014BackupPr" +
+      "otosH\001\210\001\001\240\001\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
             com.google.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
-          internal_static_hbase_pb_BackupImage_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_hbase_pb_BackupImage_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_hbase_pb_BackupImage_descriptor,
-              new java.lang.String[] { "BackupId", "BackupType", "RootDir", "TableList", "StartTs", "CompleteTs", "Ancestors", });
           internal_static_hbase_pb_ServerTimestamp_descriptor =
-            getDescriptor().getMessageTypes().get(1);
+            getDescriptor().getMessageTypes().get(0);
           internal_static_hbase_pb_ServerTimestamp_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_hbase_pb_ServerTimestamp_descriptor,
               new java.lang.String[] { "Server", "Timestamp", });
           internal_static_hbase_pb_TableServerTimestamp_descriptor =
-            getDescriptor().getMessageTypes().get(2);
+            getDescriptor().getMessageTypes().get(1);
           internal_static_hbase_pb_TableServerTimestamp_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_hbase_pb_TableServerTimestamp_descriptor,
               new java.lang.String[] { "Table", "ServerTimestamp", });
-          internal_static_hbase_pb_BackupManifest_descriptor =
-            getDescriptor().getMessageTypes().get(3);
-          internal_static_hbase_pb_BackupManifest_fieldAccessorTable = new
+          internal_static_hbase_pb_BackupImage_descriptor =
+            getDescriptor().getMessageTypes().get(2);
+          internal_static_hbase_pb_BackupImage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_hbase_pb_BackupManifest_descriptor,
-              new java.lang.String[] { "Version", "BackupId", "Type", "TableList", "StartTs", "CompleteTs", "TstMap", "DependentBackupImage", });
+              internal_static_hbase_pb_BackupImage_descriptor,
+              new java.lang.String[] { "BackupId", "BackupType", "RootDir", "TableList", "StartTs", "CompleteTs", "Ancestors", "TstMap", });
           internal_static_hbase_pb_TableBackupStatus_descriptor =
-            getDescriptor().getMessageTypes().get(4);
+            getDescriptor().getMessageTypes().get(3);
           internal_static_hbase_pb_TableBackupStatus_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_hbase_pb_TableBackupStatus_descriptor,
               new java.lang.String[] { "Table", "TargetDir", "Snapshot", });
           internal_static_hbase_pb_BackupInfo_descriptor =
-            getDescriptor().getMessageTypes().get(5);
+            getDescriptor().getMessageTypes().get(4);
           internal_static_hbase_pb_BackupInfo_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_hbase_pb_BackupInfo_descriptor,

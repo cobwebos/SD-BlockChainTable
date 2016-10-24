@@ -9,7 +9,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * Unless optional by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -27,70 +27,42 @@ option optimize_for = SPEED;
 
 import "HBase.proto";
 
-/*enum FullTableBackupState {
-  PRE_SNAPSHOT_TABLE = 1;
-  SNAPSHOT_TABLES = 2;
-  SNAPSHOT_COPY = 3;
-  BACKUP_COMPLETE = 4;
-}
-
-enum IncrementalTableBackupState {
-  PREPARE_INCREMENTAL = 1;
-  INCREMENTAL_COPY = 2;
-  INCR_BACKUP_COMPLETE = 3;
-}
-
-message SnapshotTableStateData {
-  required TableName table = 1;
-  required string snapshotName = 2;
-}
-*/
 enum BackupType {
   FULL = 0;
   INCREMENTAL = 1;
 }
 
-message BackupImage {
-  required string backup_id = 1;
-  required BackupType backup_type = 2;
-  required string root_dir = 3;
-  repeated TableName table_list = 4;
-  required uint64 start_ts = 5;
-  required uint64 complete_ts = 6;
-  repeated BackupImage ancestors = 7; 
-}
-
 message ServerTimestamp {
-  required string server = 1;
-  required uint64 timestamp = 2;
+  optional ServerName server = 1;
+  optional uint64 timestamp = 2;
 }
 
 message TableServerTimestamp {
-  required TableName table = 1;
+  optional TableName table = 1;
   repeated ServerTimestamp server_timestamp = 2;
 }
 
-message BackupManifest {
-  required string version = 1;
-  required string backup_id = 2;
-  required BackupType type = 3;
+message BackupImage {
+  optional string backup_id = 1;
+  optional BackupType backup_type = 2;
+  optional string root_dir = 3;
   repeated TableName table_list = 4;
-  required uint64 start_ts = 5;
-  required uint64 complete_ts = 6;
-  repeated TableServerTimestamp tst_map = 7;
-  repeated BackupImage dependent_backup_image = 8;
+  optional uint64 start_ts = 5;
+  optional uint64 complete_ts = 6;
+  repeated BackupImage ancestors = 7; 
+  repeated TableServerTimestamp tst_map = 8;  
 }
 
 message TableBackupStatus {
-  required TableName table = 1;
-  required string target_dir = 2;
+  optional TableName table = 1;
+  optional string target_dir = 2;
   optional string snapshot = 3; 	
 }
 
 message BackupInfo {
-  required string backup_id = 1;
-  required BackupType type = 2;
-  required string target_root_dir = 3;
+  optional string backup_id = 1;
+  optional BackupType type = 2;
+  optional string target_root_dir = 3;
   optional BackupState state = 4;
   optional BackupPhase phase = 5;
   optional string failed_message = 6;
@@ -99,8 +71,8 @@ message BackupInfo {
   optional uint64  end_ts = 9;
   optional uint32 progress = 10; 
   optional string job_id = 11;
-  required uint32 workers_number = 12;
-  required uint64 bandwidth = 13;
+  optional uint32 workers_number = 12;
+  optional uint64 bandwidth = 13;
   
   enum BackupState {
     WAITING = 0;
@@ -119,9 +91,3 @@ message BackupInfo {
     STORE_MANIFEST = 5;
   } 
 }
-/*
-message BackupProcContext {
-  required BackupInfo ctx = 1;
-  repeated ServerTimestamp server_timestamp = 2;
-}
-*/

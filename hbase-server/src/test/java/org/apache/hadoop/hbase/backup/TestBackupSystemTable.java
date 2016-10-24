@@ -269,9 +269,9 @@ public class TestBackupSystemTable {
 
     HashMap<String, Long> rsTimestampMap = new HashMap<String, Long>();
 
-    rsTimestampMap.put("rs1", 100L);
-    rsTimestampMap.put("rs2", 101L);
-    rsTimestampMap.put("rs3", 103L);
+    rsTimestampMap.put("rs1:100", 100L);
+    rsTimestampMap.put("rs2:100", 101L);
+    rsTimestampMap.put("rs3:100", 103L);
 
     table.writeRegionServerLogTimestamp(tables, rsTimestampMap, "root");
 
@@ -282,9 +282,9 @@ public class TestBackupSystemTable {
     for (TableName t : tables) {
       HashMap<String, Long> rstm = result.get(t);
       assertNotNull(rstm);
-      assertEquals(rstm.get("rs1"), new Long(100L));
-      assertEquals(rstm.get("rs2"), new Long(101L));
-      assertEquals(rstm.get("rs3"), new Long(103L));
+      assertEquals(rstm.get("rs1:100"), new Long(100L));
+      assertEquals(rstm.get("rs2:100"), new Long(101L));
+      assertEquals(rstm.get("rs3:100"), new Long(103L));
     }
 
     Set<TableName> tables1 = new TreeSet<>();
@@ -295,9 +295,9 @@ public class TestBackupSystemTable {
 
     HashMap<String, Long> rsTimestampMap1 = new HashMap<String, Long>();
 
-    rsTimestampMap1.put("rs1", 200L);
-    rsTimestampMap1.put("rs2", 201L);
-    rsTimestampMap1.put("rs3", 203L);
+    rsTimestampMap1.put("rs1:100", 200L);
+    rsTimestampMap1.put("rs2:100", 201L);
+    rsTimestampMap1.put("rs3:100", 203L);
 
     table.writeRegionServerLogTimestamp(tables1, rsTimestampMap1, "root");
 
@@ -309,22 +309,22 @@ public class TestBackupSystemTable {
       HashMap<String, Long> rstm = result.get(t);
       assertNotNull(rstm);
       if (t.equals(TableName.valueOf("t3")) == false) {
-        assertEquals(rstm.get("rs1"), new Long(100L));
-        assertEquals(rstm.get("rs2"), new Long(101L));
-        assertEquals(rstm.get("rs3"), new Long(103L));
+        assertEquals(rstm.get("rs1:100"), new Long(100L));
+        assertEquals(rstm.get("rs2:100"), new Long(101L));
+        assertEquals(rstm.get("rs3:100"), new Long(103L));
       } else {
-        assertEquals(rstm.get("rs1"), new Long(200L));
-        assertEquals(rstm.get("rs2"), new Long(201L));
-        assertEquals(rstm.get("rs3"), new Long(203L));
+        assertEquals(rstm.get("rs1:100"), new Long(200L));
+        assertEquals(rstm.get("rs2:100"), new Long(201L));
+        assertEquals(rstm.get("rs3:100"), new Long(203L));
       }
     }
 
     for (TableName t : tables1) {
       HashMap<String, Long> rstm = result.get(t);
       assertNotNull(rstm);
-      assertEquals(rstm.get("rs1"), new Long(200L));
-      assertEquals(rstm.get("rs2"), new Long(201L));
-      assertEquals(rstm.get("rs3"), new Long(203L));
+      assertEquals(rstm.get("rs1:100"), new Long(200L));
+      assertEquals(rstm.get("rs2:100"), new Long(201L));
+      assertEquals(rstm.get("rs3:100"), new Long(203L));
     }
 
     cleanBackupTable();

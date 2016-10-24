@@ -36,18 +36,16 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-import org.apache.hadoop.hbase.exceptions.DeserializationException;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
-
-import com.google.protobuf.InvalidProtocolBufferException;
 
 
 /**
@@ -64,9 +62,6 @@ public class BackupManifest {
   // manifest file name
   public static final String MANIFEST_FILE_NAME = ".backup.manifest";
 
-  // manifest file version, current is 1.0
-  public static final String MANIFEST_VERSION = "1.0";
-
   // backup image, the dependency graph is made up by series of backup images
 
   public static class BackupImage implements Comparable<BackupImage> {
@@ -78,7 +73,8 @@ public class BackupManifest {
     private long startTs;
     private long completeTs;
     private ArrayList<BackupImage> ancestors;
-
+    private HashMap<TableName, HashMap<String, Long>> incrTimeRanges;
+    
     public BackupImage() {
       super();
     }
@@ -114,6 +110,7 @@ public class BackupManifest {
       for(BackupProtos.BackupImage img: ancestorList) {
         image.addAncestor(fromProto(img));
       }
+      image.setIncrTimeRanges(loadIncrementalTimestampMap(im));
       return image;
     }
 
@@ -138,10 +135,62 @@ public class BackupManifest {
           builder.addAncestors(im.toProto());
         }
       }
-
+      
+      setIncrementalTimestampMap(builder);      
       return builder.build();
     }
 
+    
+    private static HashMap<TableName, HashMap<String, Long>> 
+        loadIncrementalTimestampMap(BackupProtos.BackupImage proto) {
+      List<BackupProtos.TableServerTimestamp> list = proto.getTstMapList();
+      
+      HashMap<TableName, HashMap<String, Long>> incrTimeRanges = 
+          new HashMap<TableName, HashMap<String, Long>>();
+      if(list == null || list.size() == 0) return incrTimeRanges;
+      for(BackupProtos.TableServerTimestamp tst: list){
+        TableName tn = ProtobufUtil.toTableName(tst.getTable());
+        HashMap<String, Long> map = incrTimeRanges.get(tn);
+        if(map == null){
+          map = new HashMap<String, Long>();
+          incrTimeRanges.put(tn, map);
+        }
+        List<BackupProtos.ServerTimestamp> listSt = tst.getServerTimestampList();
+        for(BackupProtos.ServerTimestamp stm: listSt) {
+          ServerName sn = ProtobufUtil.toServerName(stm.getServer());
+          map.put(sn.getHostname() +":" + sn.getPort(), stm.getTimestamp());
+        }
+      }
+      return incrTimeRanges;
+    }
+
+    
+    private void setIncrementalTimestampMap(BackupProtos.BackupImage.Builder builder) {
+      if (this.incrTimeRanges == null) {
+        return;
+      }
+      for (Entry<TableName, HashMap<String,Long>> entry: this.incrTimeRanges.entrySet()) {
+        TableName key = entry.getKey();
+        HashMap<String, Long> value = entry.getValue();
+        BackupProtos.TableServerTimestamp.Builder tstBuilder =
+            BackupProtos.TableServerTimestamp.newBuilder();
+        tstBuilder.setTable(ProtobufUtil.toProtoTableName(key));
+
+        for (Map.Entry<String, Long> entry2 : value.entrySet()) {
+          String s = entry2.getKey();
+          BackupProtos.ServerTimestamp.Builder stBuilder = BackupProtos.ServerTimestamp.newBuilder();
+          HBaseProtos.ServerName.Builder snBuilder = HBaseProtos.ServerName.newBuilder();
+          ServerName sn = ServerName.parseServerName(s);
+          snBuilder.setHostName(sn.getHostname());
+          snBuilder.setPort(sn.getPort());
+          stBuilder.setServer(snBuilder.build());        
+          stBuilder.setTimestamp(entry2.getValue());
+          tstBuilder.addServerTimestamp(stBuilder.build());
+        }
+        builder.addTstMap(tstBuilder.build());
+      }
+    } 
+    
     public String getBackupId() {
       return backupId;
     }
@@ -253,10 +302,15 @@ public class BackupManifest {
       }
       return hash;
     }
-  }
 
-  // manifest version
-  private String version = MANIFEST_VERSION;
+    public HashMap<TableName, HashMap<String, Long>> getIncrTimeRanges() {
+      return incrTimeRanges;
+    }
+
+    public void setIncrTimeRanges(HashMap<TableName, HashMap<String, Long>> incrTimeRanges) {
+      this.incrTimeRanges = incrTimeRanges;
+    }
+  }
 
   // hadoop hbase configuration
   protected Configuration config = null;
@@ -290,7 +344,8 @@ public class BackupManifest {
   private Map<TableName, HashMap<String, Long>> incrTimeRanges;
 
   // dependency of this backup, including all the dependent images to do PIT recovery
-  private Map<String, BackupImage> dependency;
+  //private Map<String, BackupImage> dependency;
+  private BackupImage backupImage;
   
   /**
    * Construct manifest for a ongoing backup.
@@ -306,6 +361,8 @@ public class BackupManifest {
     this.startTs = backupCtx.getStartTs();
     this.completeTs = backupCtx.getEndTs();
     this.loadTableList(backupCtx.getTableNames());
+    this.backupImage = new BackupImage(this.backupId, this.type, this.rootDir, tableList, this.startTs,
+     this.completeTs);
   }
   
   
@@ -326,6 +383,8 @@ public class BackupManifest {
     List<TableName> tables = new ArrayList<TableName>();
     tables.add(table);
     this.loadTableList(tables);
+    this.backupImage = new BackupImage(this.backupId, this.type, this.rootDir, tableList, this.startTs,
+      this.completeTs);
   }
 
   /**
@@ -372,15 +431,13 @@ public class BackupManifest {
           long len = subFile.getLen();
           byte[] pbBytes = new byte[(int) len];
           in.readFully(pbBytes);
-          BackupProtos.BackupManifest proto = null;
+          BackupProtos.BackupImage proto = null;
           try{
-            proto = parseFrom(pbBytes);
+            proto = BackupProtos.BackupImage.parseFrom(pbBytes);
           } catch(Exception e){
             throw new BackupException(e);
           }
-          this.version = proto.getVersion();
-          this.backupId = proto.getBackupId();
-          this.type = BackupType.valueOf(proto.getType().name());
+          this.backupImage = BackupImage.fromProto(proto);
           // Here the parameter backupDir is where the manifest file is.
           // There should always be a manifest file under:
           // backupRootDir/namespace/table/backupId/.backup.manifest
@@ -392,13 +449,12 @@ public class BackupManifest {
           } else {
             this.rootDir = p.getParent().getParent().toString();
           }
-
-          loadTableList(proto);
-          this.startTs = proto.getStartTs();
-          this.completeTs = proto.getCompleteTs();
-          loadIncrementalTimestampMap(proto);
-          loadDependency(proto);
-          //TODO: merge will be implemented by future jira
+          this.backupId = this.backupImage.getBackupId();
+          this.startTs = this.backupImage.getStartTs();
+          this.completeTs = this.backupImage.getCompleteTs();
+          this.type = this.backupImage.getType();
+          this.tableList = (ArrayList<TableName>)this.backupImage.getTableNames();
+          this.incrTimeRanges = this.backupImage.getIncrTimeRanges();
           LOG.debug("Loaded manifest instance from manifest file: "
               + BackupClientUtil.getPath(subFile.getPath()));
           return;
@@ -409,50 +465,6 @@ public class BackupManifest {
 
     } catch (IOException e) {
       throw new BackupException(e.getMessage());
-    }
-  }
-  
-  private void loadIncrementalTimestampMap(BackupProtos.BackupManifest proto) {
-    List<BackupProtos.TableServerTimestamp> list = proto.getTstMapList();
-    if(list == null || list.size() == 0) return;
-    this.incrTimeRanges = new HashMap<TableName, HashMap<String, Long>>();
-    for(BackupProtos.TableServerTimestamp tst: list){
-      TableName tn = ProtobufUtil.toTableName(tst.getTable());
-      HashMap<String, Long> map = this.incrTimeRanges.get(tn);
-      if(map == null){
-        map = new HashMap<String, Long>();
-        this.incrTimeRanges.put(tn, map);
-      }
-      List<BackupProtos.ServerTimestamp> listSt = tst.getServerTimestampList();
-      for(BackupProtos.ServerTimestamp stm: listSt) {
-        map.put(stm.getServer(), stm.getTimestamp());
-      }
-    }
-  }
-
-  private void loadDependency(BackupProtos.BackupManifest proto) {
-    if(LOG.isDebugEnabled()) {
-      LOG.debug("load dependency for: "+proto.getBackupId());
-    }
-
-    dependency = new HashMap<String, BackupImage>();
-    List<BackupProtos.BackupImage> list = proto.getDependentBackupImageList();
-    for (BackupProtos.BackupImage im : list) {
-      BackupImage bim = BackupImage.fromProto(im);
-      if(im.getBackupId() != null){
-        dependency.put(im.getBackupId(), bim);
-      } else{
-        LOG.warn("Load dependency for backup manifest: "+ backupId+ 
-          ". Null backup id in dependent image");
-      }
-    }
-  }
-
-  private void loadTableList(BackupProtos.BackupManifest proto) {
-    this.tableList = new ArrayList<TableName>();
-    List<HBaseProtos.TableName> list = proto.getTableListList();
-    for (HBaseProtos.TableName name: list) {
-      this.tableList.add(ProtobufUtil.toTableName(name));
     }
   }
 
@@ -498,8 +510,7 @@ public class BackupManifest {
    */
 
   public void store(Configuration conf) throws BackupException {
-    byte[] data = toByteArray();
-
+    byte[] data = backupImage.toProto().toByteArray();
     // write the file, overwrite if already exist
     Path manifestFilePath =
         new Path(new Path((this.tableBackupDir != null ? this.tableBackupDir : this.logBackupDir))
@@ -517,87 +528,11 @@ public class BackupManifest {
   }
 
   /**
-   * Protobuf serialization
-   * @return The filter serialized using pb
-   */
-  public byte[] toByteArray() {
-    BackupProtos.BackupManifest.Builder builder = BackupProtos.BackupManifest.newBuilder();
-    builder.setVersion(this.version);
-    builder.setBackupId(this.backupId);
-    builder.setType(BackupProtos.BackupType.valueOf(this.type.name()));
-    setTableList(builder);
-    builder.setStartTs(this.startTs);
-    builder.setCompleteTs(this.completeTs);
-    setIncrementalTimestampMap(builder);
-    setDependencyMap(builder);
-    return builder.build().toByteArray();
-  }
-
-  private void setIncrementalTimestampMap(BackupProtos.BackupManifest.Builder builder) {
-    if (this.incrTimeRanges == null) {
-      return;
-    }
-    for (Entry<TableName, HashMap<String,Long>> entry: this.incrTimeRanges.entrySet()) {
-      TableName key = entry.getKey();
-      HashMap<String, Long> value = entry.getValue();
-      BackupProtos.TableServerTimestamp.Builder tstBuilder =
-          BackupProtos.TableServerTimestamp.newBuilder();
-      tstBuilder.setTable(ProtobufUtil.toProtoTableName(key));
-
-      for (Map.Entry<String, Long> entry2 : value.entrySet()) {
-        String s = entry2.getKey();
-        BackupProtos.ServerTimestamp.Builder stBuilder = BackupProtos.ServerTimestamp.newBuilder();
-        stBuilder.setServer(s);
-        stBuilder.setTimestamp(entry2.getValue());
-        tstBuilder.addServerTimestamp(stBuilder.build());
-      }
-      builder.addTstMap(tstBuilder.build());
-    }
-  }
-
-  private void setDependencyMap(BackupProtos.BackupManifest.Builder builder) {
-    for (BackupImage image: getDependency().values()) {
-      builder.addDependentBackupImage(image.toProto());
-    }
-  }
-
-  private void setTableList(BackupProtos.BackupManifest.Builder builder) {
-    for(TableName name: tableList){
-      builder.addTableList(ProtobufUtil.toProtoTableName(name));
-    }
-  }
-
-  /**
-   * Parse protobuf from byte array
-   * @param pbBytes A pb serialized BackupManifest instance
-   * @return An instance of  made from <code>bytes</code>
-   * @throws DeserializationException
-   */
-  private static BackupProtos.BackupManifest parseFrom(final byte[] pbBytes)
-      throws DeserializationException {
-    BackupProtos.BackupManifest proto;
-    try {
-      proto = BackupProtos.BackupManifest.parseFrom(pbBytes);
-    } catch (InvalidProtocolBufferException e) {
-      throw new DeserializationException(e);
-    }
-    return proto;
-  }
-
-  /**
-   * Get manifest file version
-   * @return version
-   */
-  public String getVersion() {
-    return version;
-  }
-
-  /**
    * Get this backup image.
    * @return the backup image.
    */
   public BackupImage getBackupImage() {
-    return this.getDependency().get(this.backupId);
+    return backupImage;
   }
 
   /**
@@ -605,25 +540,7 @@ public class BackupManifest {
    * @param image The direct dependent backup image
    */
   public void addDependentImage(BackupImage image) {
-    this.getDependency().get(this.backupId).addAncestor(image);
-    this.setDependencyMap(this.getDependency(), image);
-  }
-
-
-
-  /**
-   * Get all dependent backup images. The image of this backup is also contained.
-   * @return The dependent backup images map
-   */
-  public Map<String, BackupImage> getDependency() {
-    if (this.dependency == null) {
-      this.dependency = new HashMap<String, BackupImage>();
-      LOG.debug(this.rootDir + " " + this.backupId + " " + this.type);
-      this.dependency.put(this.backupId,
-        new BackupImage(this.backupId, this.type, this.rootDir, tableList, this.startTs,
-            this.completeTs));
-    }
-    return this.dependency;
+    this.backupImage.addAncestor(image);
   }
 
   /**
@@ -632,8 +549,8 @@ public class BackupManifest {
    */
   public void setIncrTimestampMap(HashMap<TableName, HashMap<String, Long>> incrTimestampMap) {
     this.incrTimeRanges = incrTimestampMap;
+    this.backupImage.setIncrTimeRanges(incrTimestampMap);
   }
-
 
   public Map<TableName, HashMap<String, Long>> getIncrTimestampMap() {
     if (this.incrTimeRanges == null) {
@@ -642,7 +559,6 @@ public class BackupManifest {
     return this.incrTimeRanges;
   }
 
-
   /**
    * Get the image list of this backup for restore in time order.
    * @param reverse If true, then output in reverse order, otherwise in time order from old to new
@@ -650,7 +566,8 @@ public class BackupManifest {
    */
   public ArrayList<BackupImage> getRestoreDependentList(boolean reverse) {
     TreeMap<Long, BackupImage> restoreImages = new TreeMap<Long, BackupImage>();
-    for (BackupImage image : this.getDependency().values()) {
+    restoreImages.put(backupImage.startTs, backupImage);
+    for (BackupImage image : backupImage.getAncestors()) {
       restoreImages.put(Long.valueOf(image.startTs), image);
     }
     return new ArrayList<BackupImage>(reverse ? (restoreImages.descendingMap().values())
@@ -694,23 +611,6 @@ public class BackupManifest {
       }
     }
     return tableImageList;
-  }
-
-
-  /**
-   * Recursively set the dependency map of the backup images.
-   * @param map The dependency map
-   * @param image The backup image
-   */
-  private void setDependencyMap(Map<String, BackupImage> map, BackupImage image) {
-    if (image == null) {
-      return;
-    } else {
-      map.put(image.getBackupId(), image);
-      for (BackupImage img : image.getAncestors()) {
-        setDependencyMap(map, img);
-      }
-    }
   }
 
   /**

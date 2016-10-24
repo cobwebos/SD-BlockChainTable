@@ -38,6 +38,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
@@ -55,6 +56,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
+import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 
 /**
  * This class provides 'hbase:backup' table API
@@ -498,7 +500,11 @@ public final class BackupSystemTable implements Closeable {
 
     for (Entry<String, Long> entry : map.entrySet()) {
       BackupProtos.ServerTimestamp.Builder builder = BackupProtos.ServerTimestamp.newBuilder();
-      builder.setServer(entry.getKey());
+      HBaseProtos.ServerName.Builder snBuilder = HBaseProtos.ServerName.newBuilder();
+      ServerName sn = ServerName.parseServerName(entry.getKey());
+      snBuilder.setHostName(sn.getHostname());
+      snBuilder.setPort(sn.getPort());
+      builder.setServer(snBuilder.build());
       builder.setTimestamp(entry.getValue());
       tstBuilder.addServerTimestamp(builder.build());
     }
@@ -511,7 +517,8 @@ public final class BackupSystemTable implements Closeable {
     HashMap<String, Long> map = new HashMap<String, Long>();
     List<BackupProtos.ServerTimestamp> list = proto.getServerTimestampList();
     for (BackupProtos.ServerTimestamp st : list) {
-      map.put(st.getServer(), st.getTimestamp());
+      ServerName sn = ProtobufUtil.toServerName(st.getServer());
+      map.put(sn.getHostname()+":"+sn.getPort(), st.getTimestamp());
     }
     return map;
   }
