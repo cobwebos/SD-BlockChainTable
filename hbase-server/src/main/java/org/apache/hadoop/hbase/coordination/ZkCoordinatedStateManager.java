@@ -27,6 +27,7 @@ import org.apache.hadoop.hbase.procedure.ProcedureMemberRpcs;
 import org.apache.hadoop.hbase.procedure.ZKProcedureCoordinatorRpcs;
 import org.apache.hadoop.hbase.procedure.ZKProcedureMemberRpcs;
 import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * ZooKeeper-based implementation of {@link org.apache.hadoop.hbase.CoordinatedStateManager}.
@@ -69,7 +70,7 @@ public class ZkCoordinatedStateManager extends BaseCoordinatedStateManager {
   }
 
   @Override
-  public ProcedureMemberRpcs getProcedureMemberRpcs(String procType) throws IOException {
+  public ProcedureMemberRpcs getProcedureMemberRpcs(String procType) throws KeeperException {
     return new ZKProcedureMemberRpcs(watcher, procType);
   }
 }

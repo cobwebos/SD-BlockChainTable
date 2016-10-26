@@ -60,66 +60,105 @@ public class BackupInfo implements Comparable<BackupInfo> {
      */
     public boolean apply(BackupInfo info);
   }
-  // backup status flag
+  
+  /** 
+   * Backup status flag
+   */
   public static enum BackupState {
     WAITING, RUNNING, COMPLETE, FAILED, ANY;
   }
 
-  // backup phase
+  /**
+   * Backup phase
+   */
   public static enum BackupPhase {
     SNAPSHOTCOPY, INCREMENTAL_COPY, STORE_MANIFEST;
   }
 
-  // backup id: a timestamp when we request the backup
+  /**
+   *  Backup id
+   */  
   private String backupId;
 
-  // backup type, full or incremental
+  /**
+   * Backup type, full or incremental
+   */
   private BackupType type;
 
-  // target root directory for storing the backup files
+  /**
+   *  Target root directory for storing the backup files
+   */
   private String targetRootDir;
 
-  // overall backup state
+  /**
+   *  Backup state
+   */
   private BackupState state;
 
-  // overall backup phase
+  /**
+   * Backup phase
+   */
   private BackupPhase phase;
 
-  // overall backup failure message
+  /**
+   * Backup failure message
+   */
   private String failedMsg;
 
-  // backup status map for all tables
+  /**
+   * Backup status map for all tables
+   */
   private Map<TableName, BackupStatus> backupStatusMap;
 
-  // actual start timestamp of the backup process
+  /**
+   * Actual start timestamp of a backup process
+   */
   private long startTs;
 
-  // actual end timestamp of the backup process, could be fail or complete
+  /**
+   * Actual end timestamp of the backup process
+   */
   private long endTs;
 
-  // the total bytes of incremental logs copied
+  /**
+   * Total bytes of incremental logs copied
+   */
   private long totalBytesCopied;
 
-  // for incremental backup, the location of the backed-up hlogs
+  /**
+   *  For incremental backup, a location of a backed-up hlogs
+   */
   private String hlogTargetDir = null;
 
-  // incremental backup file list
+  /**
+   * Incremental backup file list
+   */
   transient private List<String> incrBackupFileList;
 
-  // new region server log timestamps for table set after distributed log roll
-  // key - table name, value - map of RegionServer hostname -> last log rolled timestamp
+  /**
+   * New region server log timestamps for table set after distributed log roll
+   * key - table name, value - map of RegionServer hostname -> last log rolled timestamp
+   */
   transient private HashMap<TableName, HashMap<String, Long>> tableSetTimestampMap;
 
-  // backup progress in %% (0-100)
+  /**
+   * Backup progress in %% (0-100)
+   */
   private int progress;
 
-  // distributed job id
+  /**
+   *  Distributed job id
+   */
   private String jobId;
 
-  // Number of parallel workers. -1 - system defined
+  /**
+   *  Number of parallel workers. -1 - system defined
+   */
   private int workers = -1;
 
-  // Bandwidth per worker in MB per sec. -1 - unlimited
+  /**
+   * Bandwidth per worker in MB per sec. -1 - unlimited
+   */
   private long bandwidth = -1;
 
   public BackupInfo() {

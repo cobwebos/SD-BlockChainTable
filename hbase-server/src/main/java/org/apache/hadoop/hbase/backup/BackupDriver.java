@@ -27,11 +27,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.backup.impl.BackupCommands;
+import org.apache.hadoop.hbase.backup.util.LogUtils;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.util.AbstractHBaseTool;
 import org.apache.hadoop.hbase.util.FSUtils;
-import org.apache.hadoop.hbase.util.LogUtils;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -48,20 +48,12 @@ public class BackupDriver extends AbstractHBaseTool implements BackupRestoreCons
   }
 
   protected void init() throws IOException {
-    // define supported options
-    addOptNoArg(OPTION_DEBUG, OPTION_DEBUG_DESC);
-    addOptWithArg(OPTION_TABLE, OPTION_TABLE_DESC);
-    addOptWithArg(OPTION_BANDWIDTH, OPTION_BANDWIDTH_DESC);
-    addOptWithArg(OPTION_WORKERS, OPTION_WORKERS_DESC);
-    addOptWithArg(OPTION_RECORD_NUMBER, OPTION_RECORD_NUMBER_DESC);
-    addOptWithArg(OPTION_SET, OPTION_SET_DESC);
-    addOptWithArg(OPTION_PATH, OPTION_PATH_DESC);
-
     // disable irrelevant loggers to avoid it mess up command output
-    LogUtils.disableUselessLoggers(LOG);
+    LogUtils.disableZkAndClientLoggers(LOG);
   }
 
   private int parseAndRun(String[] args) throws IOException {
+
     String cmd = null;
     String[] remainArgs = null;
     if (args == null || args.length == 0) {
@@ -98,7 +90,7 @@ public class BackupDriver extends AbstractHBaseTool implements BackupRestoreCons
 
     // enable debug logging
     Logger backupClientLogger = Logger.getLogger("org.apache.hadoop.hbase.backup");
-    if (this.cmd.hasOption("debug")) {
+    if (this.cmd.hasOption(OPTION_DEBUG)) {
       backupClientLogger.setLevel(Level.DEBUG);
     } else {
       backupClientLogger.setLevel(Level.INFO);
@@ -122,6 +114,14 @@ public class BackupDriver extends AbstractHBaseTool implements BackupRestoreCons
 
   @Override
   protected void addOptions() {
+    // define supported options
+    addOptNoArg(OPTION_DEBUG, OPTION_DEBUG_DESC);
+    addOptWithArg(OPTION_TABLE, OPTION_TABLE_DESC);
+    addOptWithArg(OPTION_BANDWIDTH, OPTION_BANDWIDTH_DESC);
+    addOptWithArg(OPTION_WORKERS, OPTION_WORKERS_DESC);
+    addOptWithArg(OPTION_RECORD_NUMBER, OPTION_RECORD_NUMBER_DESC);
+    addOptWithArg(OPTION_SET, OPTION_SET_DESC);
+    addOptWithArg(OPTION_PATH, OPTION_PATH_DESC);
   }
 
   @Override
@@ -178,6 +178,7 @@ public class BackupDriver extends AbstractHBaseTool implements BackupRestoreCons
     return ret;
   }
 
+  @Override
   protected boolean sanityCheckOptions(CommandLine cmd) {
     boolean success = true;
     for (String reqOpt : requiredOptions) {

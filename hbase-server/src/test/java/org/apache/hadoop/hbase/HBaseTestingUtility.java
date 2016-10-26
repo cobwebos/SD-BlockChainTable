@@ -2087,8 +2087,8 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
       put.addColumn(f, new byte[]{0}, new byte[]{0});
       t.put(put);
     }
-  }  
-  
+  }
+
   public void verifyNumericRows(Table table, final byte[] f, int startRow, int endRow,
       int replicaId)
       throws IOException {
@@ -3188,7 +3188,7 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
     waitUntilAllRegionsAssigned(TableName.NAMESPACE_TABLE_NAME);
     waitUntilAllRegionsAssigned(TableName.BACKUP_TABLE_NAME);
   }
-  
+
   /**
    * Wait until all regions for a table in hbase:meta have a non-empty
    * info:server, or until timeout.  This means all regions have been deployed,
@@ -3486,6 +3486,7 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
     public PortAllocator(Random random) {
       this.random = random;
       this.portChecker = new AvailablePortChecker() {
+        @Override
         public boolean available(int port) {
           try {
             ServerSocket sock = new ServerSocket(port);
@@ -3645,7 +3646,7 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
     return createPreSplitLoadTestTable(conf, desc, new HColumnDescriptor[] {hcd},
         numRegionsPerServer);
   }
-  
+
   /**
    * Creates a pre-split table for load testing. If the table already exists,
    * logs a warning and continues.
@@ -3653,11 +3654,11 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
    */
   public static int createPreSplitLoadTestTable(Configuration conf,
       HTableDescriptor desc, HColumnDescriptor[] hcds, int numRegionsPerServer) throws IOException {
-    
-    return createPreSplitLoadTestTable(conf, desc, hcds, 
+
+    return createPreSplitLoadTestTable(conf, desc, hcds,
       new RegionSplitter.HexStringSplit(), numRegionsPerServer);
   }
-    
+
   /**
    * Creates a pre-split table for load testing. If the table already exists,
    * logs a warning and continues.

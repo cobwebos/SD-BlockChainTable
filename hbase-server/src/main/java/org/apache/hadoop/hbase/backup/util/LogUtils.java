@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hbase.util;
+package org.apache.hadoop.hbase.backup.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
@@ -31,7 +31,7 @@ public final class LogUtils {
    * Disables Zk- and HBase client logging
    * @param log
    */
-  public static void disableUselessLoggers(Log log) {
+  public static void disableZkAndClientLoggers(Log log) {
     // disable zookeeper log to avoid it mess up command output
     Logger zkLogger = Logger.getLogger("org.apache.zookeeper");
     zkLogger.setLevel(Level.OFF);

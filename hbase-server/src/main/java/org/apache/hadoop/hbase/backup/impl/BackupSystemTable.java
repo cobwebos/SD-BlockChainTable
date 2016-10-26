@@ -36,13 +36,12 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
-import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -57,6 +56,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.BackupProtos;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
+import org.apache.hadoop.hbase.util.Bytes;
 
 /**
  * This class provides 'hbase:backup' table API
@@ -88,6 +88,7 @@ public final class BackupSystemTable implements Closeable {
       return backupRoot;
     }
 
+    @Override
     public String toString() {
       return "/" + backupRoot + "/" + backupId + "/" + walFile;
     }
@@ -108,6 +109,7 @@ public final class BackupSystemTable implements Closeable {
     this.connection = conn;
   }
 
+  @Override
   public void close() {
     // do nothing
   }
@@ -235,7 +237,7 @@ public final class BackupSystemTable implements Closeable {
         String server =
             BackupSystemTableHelper.getServerNameForReadRegionServerLastLogRollResult(row);
         byte[] data = CellUtil.cloneValue(cell);
-        rsTimestampMap.put(server, Long.parseLong(new String(data)));
+        rsTimestampMap.put(server, Bytes.toLong(data));
       }
       return rsTimestampMap;
     }
@@ -278,7 +280,7 @@ public final class BackupSystemTable implements Closeable {
 
   /**
    * Get all backups history
-   * @return list of backup info 
+   * @return list of backup info
    * @throws IOException
    */
   public List<BackupInfo> getBackupHistory() throws IOException {
@@ -302,7 +304,7 @@ public final class BackupSystemTable implements Closeable {
     return list;
 
   }
-  
+
   /**
    * Get backup history records filtered by list
    * of filters.
@@ -349,7 +351,7 @@ public final class BackupSystemTable implements Closeable {
     }
     return history;
   }
-  
+
   /**
    * Get history for a table
    * @param name - table name
@@ -368,10 +370,10 @@ public final class BackupSystemTable implements Closeable {
     return tableHistory;
   }
 
-  public Map<TableName, ArrayList<BackupInfo>> 
+  public Map<TableName, ArrayList<BackupInfo>>
     getBackupHistoryForTableSet(Set<TableName> set, String backupRoot) throws IOException {
     List<BackupInfo> history = getBackupHistory(backupRoot);
-    Map<TableName, ArrayList<BackupInfo>> tableHistoryMap = 
+    Map<TableName, ArrayList<BackupInfo>> tableHistoryMap =
         new HashMap<TableName, ArrayList<BackupInfo>>();
     for (Iterator<BackupInfo> iterator = history.iterator(); iterator.hasNext();) {
       BackupInfo info = iterator.next();
@@ -379,7 +381,7 @@ public final class BackupSystemTable implements Closeable {
         continue;
       }
       List<TableName> tables = info.getTableNames();
-      for (TableName tableName: tables) {      
+      for (TableName tableName: tables) {
         if (set.contains(tableName)) {
           ArrayList<BackupInfo> list = tableHistoryMap.get(tableName);
           if (list == null) {
@@ -392,7 +394,7 @@ public final class BackupSystemTable implements Closeable {
     }
     return tableHistoryMap;
   }
-  
+
   /**
    * Get all backup session with a given status (in desc order by time)
    * @param status status

@@ -48,12 +48,12 @@ import org.apache.hadoop.hbase.util.Bytes;
 public final class BackupSystemTableHelper {
 
   /**
-   * hbase:backup schema: 
-   * 1. Backup sessions rowkey= "session:" + backupId; value = serialized BackupContext 
-   * 2. Backup start code rowkey = "startcode:" + backupRoot; value = startcode 
-   * 3. Incremental backup set rowkey="incrbackupset:" + backupRoot; value=[list of tables] 
+   * hbase:backup schema:
+   * 1. Backup sessions rowkey= "session:" + backupId; value = serialized BackupContext
+   * 2. Backup start code rowkey = "startcode:" + backupRoot; value = startcode
+   * 3. Incremental backup set rowkey="incrbackupset:" + backupRoot; value=[list of tables]
    * 4. Table-RS-timestamp map rowkey="trslm:"+ backupRoot+table_name; value = map[RS-> last WAL
-   * timestamp] 
+   * timestamp]
    * 5. RS - WAL ts map rowkey="rslogts:"+backupRoot +server; value = last WAL timestamp
    * 6. WALs recorded rowkey="wals:"+WAL unique file name; value = backupId and full WAL file name
    */
@@ -83,7 +83,8 @@ public final class BackupSystemTableHelper {
    */
   static Put createPutForBackupContext(BackupInfo context) throws IOException {
     Put put = new Put(rowkey(BACKUP_INFO_PREFIX, context.getBackupId()));
-    put.addColumn(BackupSystemTable.SESSIONS_FAMILY, "context".getBytes(), context.toByteArray());
+    put.addColumn(BackupSystemTable.SESSIONS_FAMILY, Bytes.toBytes("context"),
+      context.toByteArray());
     return put;
   }
 
@@ -143,7 +144,8 @@ public final class BackupSystemTableHelper {
    */
   static Put createPutForStartCode(String startCode, String rootPath) {
     Put put = new Put(rowkey(START_CODE_ROW, rootPath));
-    put.addColumn(BackupSystemTable.META_FAMILY, "startcode".getBytes(), startCode.getBytes());
+    put.addColumn(BackupSystemTable.META_FAMILY, Bytes.toBytes("startcode"),
+      Bytes.toBytes(startCode));
     return put;
   }
 
@@ -190,7 +192,7 @@ public final class BackupSystemTableHelper {
    */
   static Scan createScanForBackupHistory() {
     Scan scan = new Scan();
-    byte[] startRow = BACKUP_INFO_PREFIX.getBytes();
+    byte[] startRow = Bytes.toBytes(BACKUP_INFO_PREFIX);
     byte[] stopRow = Arrays.copyOf(startRow, startRow.length);
     stopRow[stopRow.length - 1] = (byte) (stopRow[stopRow.length - 1] + 1);
     scan.setStartRow(startRow);
@@ -220,7 +222,7 @@ public final class BackupSystemTableHelper {
   static Put createPutForWriteRegionServerLogTimestamp(TableName table, byte[] smap,
       String backupRoot) {
     Put put = new Put(rowkey(TABLE_RS_LOG_MAP_PREFIX, backupRoot, NULL, table.getNameAsString()));
-    put.addColumn(BackupSystemTable.META_FAMILY, "log-roll-map".getBytes(), smap);
+    put.addColumn(BackupSystemTable.META_FAMILY, Bytes.toBytes("log-roll-map"), smap);
     return put;
   }
 
@@ -246,7 +248,7 @@ public final class BackupSystemTableHelper {
    * @return table name
    */
   static String getTableNameForReadLogTimestampMap(byte[] cloneRow) {
-    String s = new String(cloneRow);
+    String s = Bytes.toString(cloneRow);
     int index = s.lastIndexOf(NULL);
     return s.substring(index + 1);
   }
@@ -260,8 +262,7 @@ public final class BackupSystemTableHelper {
   static Put createPutForRegionServerLastLogRollResult(String server, Long timestamp,
       String backupRoot) {
     Put put = new Put(rowkey(RS_LOG_TS_PREFIX, backupRoot, NULL, server));
-    put.addColumn(BackupSystemTable.META_FAMILY, "rs-log-ts".getBytes(), timestamp.toString()
-        .getBytes());
+    put.addColumn(BackupSystemTable.META_FAMILY, Bytes.toBytes("rs-log-ts"), Bytes.toBytes(timestamp));
     return put;
   }
 
@@ -288,7 +289,7 @@ public final class BackupSystemTableHelper {
    * @return server's name
    */
   static String getServerNameForReadRegionServerLastLogRollResult(byte[] row) {
-    String s = new String(row);
+    String s = Bytes.toString(row);
     int index = s.lastIndexOf(NULL);
     return s.substring(index + 1);
   }
@@ -306,9 +307,11 @@ public final class BackupSystemTableHelper {
     List<Put> puts = new ArrayList<Put>();
     for (String file : files) {
       Put put = new Put(rowkey(WALS_PREFIX, BackupClientUtil.getUniqueWALFileNamePart(file)));
-      put.addColumn(BackupSystemTable.META_FAMILY, "backupId".getBytes(), backupId.getBytes());
-      put.addColumn(BackupSystemTable.META_FAMILY, "file".getBytes(), file.getBytes());
-      put.addColumn(BackupSystemTable.META_FAMILY, "root".getBytes(), backupRoot.getBytes());
+      put.addColumn(BackupSystemTable.META_FAMILY, Bytes.toBytes("backupId"),
+        Bytes.toBytes(backupId));
+      put.addColumn(BackupSystemTable.META_FAMILY, Bytes.toBytes("file"), Bytes.toBytes(file));
+      put.addColumn(BackupSystemTable.META_FAMILY, Bytes.toBytes("root"),
+        Bytes.toBytes(backupRoot));
       puts.add(put);
     }
     return puts;
@@ -321,7 +324,7 @@ public final class BackupSystemTableHelper {
    */
   public static Scan createScanForGetWALs(String backupRoot) {
     Scan scan = new Scan();
-    byte[] startRow = WALS_PREFIX.getBytes();
+    byte[] startRow = Bytes.toBytes(WALS_PREFIX);
     byte[] stopRow = Arrays.copyOf(startRow, startRow.length);
     stopRow[stopRow.length - 1] = (byte) (stopRow[stopRow.length - 1] + 1);
     scan.setStartRow(startRow);
@@ -349,7 +352,7 @@ public final class BackupSystemTableHelper {
    */
   static Scan createScanForBackupSetList() {
     Scan scan = new Scan();
-    byte[] startRow = SET_KEY_PREFIX.getBytes();
+    byte[] startRow = Bytes.toBytes(SET_KEY_PREFIX);
     byte[] stopRow = Arrays.copyOf(startRow, startRow.length);
     stopRow[stopRow.length - 1] = (byte) (stopRow[stopRow.length - 1] + 1);
     scan.setStartRow(startRow);
@@ -388,7 +391,7 @@ public final class BackupSystemTableHelper {
   static Put createPutForBackupSet(String name, String[] tables) {
     Put put = new Put(rowkey(SET_KEY_PREFIX, name));
     byte[] value = convertToByteArray(tables);
-    put.addColumn(BackupSystemTable.META_FAMILY, "tables".getBytes(), value);
+    put.addColumn(BackupSystemTable.META_FAMILY, Bytes.toBytes("tables"), value);
     return put;
   }
 
@@ -405,7 +408,7 @@ public final class BackupSystemTableHelper {
   static String[] cellValueToBackupSet(Cell current) throws IOException {
     byte[] data = CellUtil.cloneValue(current);
     if (data != null && data.length > 0) {
-      return new String(data).split(",");
+      return Bytes.toString(data).split(",");
     } else {
       return new String[0];
     }
@@ -419,7 +422,7 @@ public final class BackupSystemTableHelper {
    */
   static String cellKeyToBackupSetName(Cell current) throws IOException {
     byte[] data = CellUtil.cloneRow(current);
-    return new String(data).substring(SET_KEY_PREFIX.length());
+    return Bytes.toString(data).substring(SET_KEY_PREFIX.length());
   }
 
   static byte[] rowkey(String s, String... other) {

@@ -44,7 +44,7 @@ public interface RestoreTask extends Configurable{
    * @param fullBackupRestore - full backup restore
    * @throws IOException
    */
-  public void run(Path[] dirPaths, TableName[] fromTables, 
+  void run(Path[] dirPaths, TableName[] fromTables,
       TableName[] toTables, boolean fullBackupRestore)
     throws IOException;
 }

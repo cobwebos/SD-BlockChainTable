@@ -47,8 +47,6 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.regionserver.wal.WALEdit;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.wal.WALKey;
-import org.apache.hadoop.mapreduce.Counter;
-import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -141,8 +139,7 @@ public class WALPlayer extends Configured implements Tool {
   protected static class WALMapper
     extends Mapper<WALKey, WALEdit, ImmutableBytesWritable, Mutation> {
     private Map<TableName, TableName> tables = new TreeMap<TableName, TableName>();
-    
-    
+
     @Override
     public void map(WALKey key, WALEdit value, Context context)
     throws IOException {
@@ -155,7 +152,6 @@ public class WALPlayer extends Configured implements Tool {
           Put put = null;
           Delete del = null;
           Cell lastCell = null;
-                    
           for (Cell cell : value.getCells()) {
             // filtering WAL meta entries
             if (WALEdit.isMetaEditFamily(cell)) {
@@ -204,11 +200,6 @@ public class WALPlayer extends Configured implements Tool {
       }
     }
 
-    /**
-     * Filter cell
-     * @param cell cell
-     * @return Return true if we are to emit this cell.
-     */
     protected boolean filter(Context context, final Cell cell) {
       return true;
     }
@@ -288,12 +279,12 @@ public class WALPlayer extends Configured implements Tool {
     conf.setStrings(TABLE_MAP_KEY, tableMap);
     Job job = Job.getInstance(conf, conf.get(JOB_NAME_CONF_KEY, NAME + "_" + System.currentTimeMillis()));
     job.setJarByClass(WALPlayer.class);
-        
-    FileInputFormat.addInputPaths(job, inputDirs);    
-    
+
+    FileInputFormat.addInputPaths(job, inputDirs);
+
     job.setInputFormatClass(WALInputFormat.class);
     job.setMapOutputKeyClass(ImmutableBytesWritable.class);
-    
+
     String hfileOutPath = conf.get(BULK_OUTPUT_CONF_KEY);
     if (hfileOutPath != null) {
       LOG.debug("add incremental job :" + hfileOutPath + " from " + inputDirs);
@@ -314,7 +305,7 @@ public class WALPlayer extends Configured implements Tool {
         HFileOutputFormat2.configureIncrementalLoad(job, table.getTableDescriptor(), regionLocator);
       }
       LOG.debug("success configuring load incremental job");
-      
+
       TableMapReduceUtil.addDependencyJars(job.getConfiguration(),
           com.google.common.base.Preconditions.class);
     } else {
@@ -329,7 +320,7 @@ public class WALPlayer extends Configured implements Tool {
     return job;
   }
 
- 
+
   /**
    * Print usage
    * @param errorMsg Error message.  Can be null.
@@ -380,6 +371,6 @@ public class WALPlayer extends Configured implements Tool {
     }
     Job job = createSubmittableJob(args);
     int result =job.waitForCompletion(true) ? 0 : 1;
-    return result; 
+    return result;
   }
 }

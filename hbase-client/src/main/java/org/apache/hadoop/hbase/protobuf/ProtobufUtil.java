@@ -3063,7 +3063,7 @@ public final class ProtobufUtil {
    * @param builder current message builder
    * @param in InputStream containing protobuf data
    * @param size known size of protobuf data
-   * @throws IOException 
+   * @throws IOException
    */
   public static void mergeFrom(Message.Builder builder, InputStream in, int size)
       throws IOException {
@@ -3078,7 +3078,7 @@ public final class ProtobufUtil {
    * buffers where the message size is not known
    * @param builder current message builder
    * @param in InputStream containing protobuf data
-   * @throws IOException 
+   * @throws IOException
    */
   public static void mergeFrom(Message.Builder builder, InputStream in)
       throws IOException {
@@ -3092,8 +3092,8 @@ public final class ProtobufUtil {
    * This version of protobuf's mergeFrom avoids the hard-coded 64MB limit for decoding
    * buffers when working with ByteStrings
    * @param builder current message builder
-   * @param bs ByteString containing the 
-   * @throws IOException 
+   * @param bs ByteString containing the
+   * @throws IOException
    */
   public static void mergeFrom(Message.Builder builder, ByteString bs) throws IOException {
     final CodedInputStream codedInput = bs.newCodedInput();
@@ -3107,7 +3107,7 @@ public final class ProtobufUtil {
    * buffers when working with byte arrays
    * @param builder current message builder
    * @param b byte array
-   * @throws IOException 
+   * @throws IOException
    */
   public static void mergeFrom(Message.Builder builder, byte[] b) throws IOException {
     final CodedInputStream codedInput = CodedInputStream.newInstance(b);

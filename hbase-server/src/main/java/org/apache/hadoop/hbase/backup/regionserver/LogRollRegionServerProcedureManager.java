@@ -36,6 +36,7 @@ import org.apache.hadoop.hbase.procedure.Subprocedure;
 import org.apache.hadoop.hbase.procedure.SubprocedureFactory;
 import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.hadoop.hbase.regionserver.RegionServerServices;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * This manager class handles the work dealing with backup for a {@link HRegionServer}.
@@ -140,7 +141,7 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
   }
 
   @Override
-  public void initialize(RegionServerServices rss) throws IOException {
+  public void initialize(RegionServerServices rss) throws KeeperException {
     this.rss = rss;
     BaseCoordinatedStateManager coordManager =
         (BaseCoordinatedStateManager) CoordinatedStateManagerFactory.getCoordinatedStateManager(rss

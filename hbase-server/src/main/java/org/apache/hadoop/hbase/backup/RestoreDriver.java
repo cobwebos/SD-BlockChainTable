@@ -33,52 +33,39 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
+import org.apache.hadoop.hbase.backup.util.LogUtils;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.util.AbstractHBaseTool;
 import org.apache.hadoop.hbase.util.FSUtils;
-import org.apache.hadoop.hbase.util.LogUtils;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreConstants{
+public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreConstants {
 
   private static final Log LOG = LogFactory.getLog(RestoreDriver.class);
   private CommandLine cmd;
 
   private static final String USAGE_STRING =
-      "Usage: bin/hbase restore <backup_path> <backup_id> <table(s)> [options]\n"+
-      "  backup_path     Path to a backup destination root\n"+
-      "  backup_id       Backup image ID to restore" +
-      "  table(s)        Comma-separated list of tables to restore";
-  
-  
+      "Usage: bin/hbase restore <backup_path> <backup_id> <table(s)> [options]\n"
+          + "  backup_path     Path to a backup destination root\n"
+          + "  backup_id       Backup image ID to restore"
+          + "  table(s)        Comma-separated list of tables to restore";
+
   private static final String USAGE_FOOTER = "";
 
-    
-  protected RestoreDriver() throws IOException
-  {
+  protected RestoreDriver() throws IOException {
     init();
   }
-  
-  protected void init() throws IOException {
-    // define supported options
-    addOptNoArg(OPTION_OVERWRITE, OPTION_OVERWRITE_DESC);
-    addOptNoArg(OPTION_CHECK, OPTION_CHECK_DESC);
-    addOptNoArg(OPTION_DEBUG,  OPTION_DEBUG_DESC);
-    addOptWithArg(OPTION_SET, OPTION_SET_RESTORE_DESC);
-    addOptWithArg(OPTION_TABLE_MAPPING, OPTION_TABLE_MAPPING_DESC);
-    
-    
 
+  protected void init() throws IOException {
     // disable irrelevant loggers to avoid it mess up command output
-    LogUtils.disableUselessLoggers(LOG);
+    LogUtils.disableZkAndClientLoggers(LOG);
   }
 
-  private int parseAndRun(String[] args) throws IOException{
-
+  private int parseAndRun(String[] args) throws IOException {
     // enable debug logging
     Logger backupClientLogger = Logger.getLogger("org.apache.hadoop.hbase.backup");
     if (cmd.hasOption(OPTION_DEBUG)) {
@@ -103,26 +90,26 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
 
     // parse main restore command options
     String[] remainArgs = cmd.getArgs();
-    if (remainArgs.length < 3 && !cmd.hasOption(OPTION_SET) ||
-        (cmd.hasOption(OPTION_SET) && remainArgs.length < 2)) {
+    if (remainArgs.length < 3 && !cmd.hasOption(OPTION_SET)
+        || (cmd.hasOption(OPTION_SET) && remainArgs.length < 2)) {
       printToolUsage();
       return -1;
-    } 
+    }
 
     String backupRootDir = remainArgs[0];
     String backupId = remainArgs[1];
     String tables = null;
-    String tableMapping =  cmd.hasOption(OPTION_TABLE_MAPPING)? 
-        cmd.getOptionValue(OPTION_TABLE_MAPPING): null;
+    String tableMapping =
+        cmd.hasOption(OPTION_TABLE_MAPPING) ? cmd.getOptionValue(OPTION_TABLE_MAPPING) : null;
     try (final Connection conn = ConnectionFactory.createConnection(conf);
         BackupAdmin client = new HBaseBackupAdmin(conn);) {
       // Check backup set
       if (cmd.hasOption(OPTION_SET)) {
         String setName = cmd.getOptionValue(OPTION_SET);
-        try{
+        try {
           tables = getTablesForSet(conn, setName, conf);
-        } catch(IOException e){
-          System.out.println("ERROR: "+ e.getMessage()+" for setName="+setName);
+        } catch (IOException e) {
+          System.out.println("ERROR: " + e.getMessage() + " for setName=" + setName);
           printToolUsage();
           return -2;
         }
@@ -133,21 +120,22 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
           return -3;
         }
       } else {
-        tables = remainArgs[2];    
-      }    
+        tables = remainArgs[2];
+      }
 
       TableName[] sTableArray = BackupServerUtil.parseTableNames(tables);
       TableName[] tTableArray = BackupServerUtil.parseTableNames(tableMapping);
 
-      if (sTableArray != null && tTableArray != null && (sTableArray.length != tTableArray.length)){
+      if (sTableArray != null && tTableArray != null 
+          && (sTableArray.length != tTableArray.length)) {
         System.out.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
         printToolUsage();
         return -4;
       }
 
       client.restore(RestoreServerUtil.createRestoreRequest(backupRootDir, backupId, check,
-          sTableArray, tTableArray, overwrite));
-    } catch (Exception e){
+        sTableArray, tTableArray, overwrite));
+    } catch (Exception e) {
       e.printStackTrace();
       return -5;
     }
@@ -162,9 +150,15 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
       return StringUtils.join(tables, BackupRestoreConstants.TABLENAME_DELIMITER_IN_COMMAND);
     }
   }
-  
+
   @Override
   protected void addOptions() {
+    // define supported options
+    addOptNoArg(OPTION_OVERWRITE, OPTION_OVERWRITE_DESC);
+    addOptNoArg(OPTION_CHECK, OPTION_CHECK_DESC);
+    addOptNoArg(OPTION_DEBUG, OPTION_DEBUG_DESC);
+    addOptWithArg(OPTION_SET, OPTION_SET_RESTORE_DESC);
+    addOptWithArg(OPTION_TABLE_MAPPING, OPTION_TABLE_MAPPING_DESC);
   }
 
   @Override
@@ -185,7 +179,7 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
     int ret = ToolRunner.run(conf, new RestoreDriver(), args);
     System.exit(ret);
   }
-  
+
   @Override
   public int run(String[] args) throws IOException {
     if (conf == null) {
@@ -204,8 +198,8 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
       return EXIT_FAILURE;
     }
 
-    if (!sanityCheckOptions(cmd) || cmd.hasOption(SHORT_HELP_OPTION) ||
-        cmd.hasOption(LONG_HELP_OPTION)) {
+    if (!sanityCheckOptions(cmd) || cmd.hasOption(SHORT_HELP_OPTION)
+        || cmd.hasOption(LONG_HELP_OPTION)) {
       printToolUsage();
       return EXIT_FAILURE;
     }
@@ -221,7 +215,7 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
     }
     return ret;
   }
-  
+
   protected boolean sanityCheckOptions(CommandLine cmd) {
     boolean success = true;
     for (String reqOpt : requiredOptions) {
@@ -232,7 +226,7 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
     }
     return success;
   }
-  
+
   protected void printToolUsage() throws IOException {
     System.out.println(USAGE_STRING);
     HelpFormatter helpFormatter = new HelpFormatter();
@@ -240,6 +234,6 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
     helpFormatter.setDescPadding(8);
     helpFormatter.setWidth(100);
     helpFormatter.setSyntaxPrefix("Options:");
-    helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);  
- }
+    helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);
+  }
 }

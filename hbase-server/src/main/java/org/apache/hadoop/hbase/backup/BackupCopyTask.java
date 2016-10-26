@@ -32,22 +32,22 @@ public interface BackupCopyTask extends Configurable {
 
   /**
    * Copy backup data task
-   * @param backupContext - context
-   * @param backupManager  - manager
+   * @param backupContext - backup context
+   * @param backupManager  - backup manager
    * @param conf - configuration
    * @param copyType - copy type
    * @param options - array of options (implementation-specific)
    * @return result (0 - success)
-   * @throws IOException
+   * @throws IOException excpetion
    */
-  public int copy(BackupInfo backupContext, BackupManager backupManager, Configuration conf,
+  int copy(BackupInfo backupContext, BackupManager backupManager, Configuration conf,
       BackupType copyType, String[] options) throws IOException;
-  
+
 
    /**
     * Cancel copy job
     * @param jobHandler - copy job handler
-    * @throws IOException
+    * @throws IOException exception
     */
-   public void cancelCopyJob(String jobHandler) throws IOException;  
+   void cancelCopyJob(String jobHandler) throws IOException;
 }

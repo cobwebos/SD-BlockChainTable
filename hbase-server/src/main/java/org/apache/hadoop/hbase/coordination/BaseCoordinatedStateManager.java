@@ -24,6 +24,7 @@ import org.apache.hadoop.hbase.procedure.ProcedureCoordinatorRpcs;
 import org.apache.hadoop.hbase.procedure.ProcedureMemberRpcs;
 import org.apache.hadoop.hbase.CoordinatedStateManager;
 import org.apache.hadoop.hbase.Server;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * Base class for {@link org.apache.hadoop.hbase.CoordinatedStateManager} implementations.
@@ -70,6 +71,6 @@ public abstract class BaseCoordinatedStateManager implements CoordinatedStateMan
    * Method to retrieve {@link org.apache.hadoop.hbase.procedure.ProcedureMemberRpc}
    */
   public abstract ProcedureMemberRpcs
-    getProcedureMemberRpcs(String procType) throws IOException;
+    getProcedureMemberRpcs(String procType) throws KeeperException;
     
 }

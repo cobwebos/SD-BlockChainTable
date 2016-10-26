@@ -30,9 +30,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.backup.BackupAdmin;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
-import org.apache.hadoop.hbase.backup.BackupAdmin;
 import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
@@ -80,6 +80,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
   private static int rowsInBatch;
   private static String BACKUP_ROOT_DIR = "backupIT";
 
+  @Override
   @Before
   public void setUp() throws Exception {
     util = new IntegrationTestingUtility();
@@ -89,7 +90,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     rowsInBatch = util.getConfiguration().getInt(NB_ROWS_IN_BATCH_KEY, DEFAULT_NB_ROWS_IN_BATCH);
     LOG.info(String.format("Initializing cluster with %d region servers.", regionServerCount));
     util.initializeCluster(regionServerCount);
-    LOG.info("Cluster initialized");    
+    LOG.info("Cluster initialized");
     util.deleteTableIfAny(TABLE_NAME1);
     util.deleteTableIfAny(TABLE_NAME2);
     util.waitTableAvailable(BackupSystemTable.getTableName());
@@ -113,7 +114,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
 
   private void cleanUpBackupDir() throws IOException {
     FileSystem fs = FileSystem.get(util.getConfiguration());
-    fs.delete(new Path(BACKUP_ROOT_DIR), true);    
+    fs.delete(new Path(BACKUP_ROOT_DIR), true);
   }
 
   @Test
@@ -124,21 +125,21 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     runTest();
   }
 
-  
+
   private void createTable(TableName tableName) throws Exception {
     long startTime, endTime;
     HTableDescriptor desc = new HTableDescriptor(tableName);
-    HColumnDescriptor[] columns = 
+    HColumnDescriptor[] columns =
         new HColumnDescriptor[]{new HColumnDescriptor(COLUMN_NAME)};
     SplitAlgorithm algo = new RegionSplitter.UniformSplit();
-    LOG.info(String.format("Creating table %s with %d splits.", tableName, 
+    LOG.info(String.format("Creating table %s with %d splits.", tableName,
       regionsCountPerServer));
     startTime = System.currentTimeMillis();
-    HBaseTestingUtility.createPreSplitLoadTestTable(util.getConfiguration(), desc, columns, 
+    HBaseTestingUtility.createPreSplitLoadTestTable(util.getConfiguration(), desc, columns,
       algo, regionsCountPerServer);
     util.waitTableAvailable(tableName);
     endTime = System.currentTimeMillis();
-    LOG.info(String.format("Pre-split table created successfully in %dms.", 
+    LOG.info(String.format("Pre-split table created successfully in %dms.",
       (endTime - startTime)));
   }
 
@@ -151,7 +152,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
   }
 
   private void runTest() throws IOException {
-    Connection conn = util.getConnection();    
+    Connection conn = util.getConnection();
 
     // #0- insert some data to table TABLE_NAME1, TABLE_NAME2
     loadData(TABLE_NAME1, rowsInBatch);

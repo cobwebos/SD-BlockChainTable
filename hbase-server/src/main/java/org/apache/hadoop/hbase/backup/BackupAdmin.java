@@ -45,12 +45,7 @@ public interface BackupAdmin extends Closeable{
   /**
    * Backs up given list of tables fully. Synchronous operation.
    * 
-   * @param userRequest BackupRequest instance which contains the following members:
-   *  type whether the backup is full or incremental
-   *  tableList list of tables to backup
-   *  targetRootDir root directory for saving the backup
-   *  workers number of parallel workers. -1 - system defined
-   *  bandwidth bandwidth per worker in MB per second. -1 - unlimited
+   * @param userRequest BackupRequest instance 
    * @return the backup Id
    */
   
@@ -59,12 +54,7 @@ public interface BackupAdmin extends Closeable{
   /**
    * Backs up given list of tables fully. Asynchronous operation.
    * 
-   * @param userRequest BackupRequest instance which contains the following members:
-   *  type whether the backup is full or incremental
-   *  tableList list of tables to backup
-   *  targetRootDir root dir for saving the backup
-   *  workers number of paralle workers. -1 - system defined
-   *  bandwidth bandwidth per worker in MB per sec. -1 - unlimited
+   * @param userRequest BackupRequest instance 
    * @return the backup Id future
    */
   public Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException;
