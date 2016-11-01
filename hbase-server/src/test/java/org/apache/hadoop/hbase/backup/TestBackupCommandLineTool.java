@@ -36,13 +36,14 @@ public class TestBackupCommandLineTool {
   @Before
   public void setUpBefore() throws Exception {
     conf = HBaseConfiguration.create();
+    conf.setBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, true);
   }
 
   @Test
   public void testBackupDriverDescribeHelp() throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"describe", "-help" }; 
+    String[] args = new String[]{"describe", "-help" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
@@ -51,16 +52,16 @@ public class TestBackupCommandLineTool {
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"describe", "-h" }; 
+    args = new String[]{"describe", "-h" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backupId>") >= 0);     
-    
+    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backupId>") >= 0);
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"describe" }; 
+    args = new String[]{"describe" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     output = baos.toString();
@@ -72,37 +73,37 @@ public class TestBackupCommandLineTool {
   public void testBackupDriverCreateHelp() throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"create", "-help" }; 
+    String[] args = new String[]{"create", "-help" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"create", "-h" }; 
+    args = new String[]{"create", "-h" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"create"}; 
+    args = new String[]{"create"};
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);    
+    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
   }
 
   @Test
   public void testBackupDriverHistoryHelp () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"history", "-help" }; 
+    String[] args = new String[]{"history", "-help" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
@@ -111,20 +112,20 @@ public class TestBackupCommandLineTool {
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"history", "-h" }; 
+    args = new String[]{"history", "-h" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup history") >= 0);
-    
+
   }
 
   @Test
   public void testBackupDriverDeleteHelp () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"delete", "-help" }; 
+    String[] args = new String[]{"delete", "-help" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
@@ -133,39 +134,39 @@ public class TestBackupCommandLineTool {
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"delete", "-h" }; 
+    args = new String[]{"delete", "-h" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"delete" }; 
+    args = new String[]{"delete" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);    
+    assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);
   }
 
   @Test
   public void testBackupDriverProgressHelp() throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"progress", "-help" }; 
+    String[] args = new String[]{"progress", "-help" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup progress") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"progress", "-h" }; 
+    args = new String[]{"progress", "-h" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup progress") >= 0);
@@ -175,238 +176,238 @@ public class TestBackupCommandLineTool {
   public void testBackupDriverSetHelp () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"set", "-help" }; 
+    String[] args = new String[]{"set", "-help" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup set") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"set", "-h" }; 
+    args = new String[]{"set", "-h" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup set") >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"set"}; 
+    args = new String[]{"set"};
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup set") >= 0);
-    
+
   }
-  
+
   @Test
   public void testBackupDriverHelp () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"-help" }; 
+    String[] args = new String[]{"-help" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"-h" }; 
+    args = new String[]{"-h" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
   }
-  
+
   @Test
   public void testRestoreDriverHelp () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"-help" }; 
+    String[] args = new String[]{"-help" };
     ToolRunner.run(conf, new RestoreDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase restore") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"-h" }; 
+    args = new String[]{"-h" };
     ToolRunner.run(conf, new RestoreDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase restore") >= 0);
   }
-  
+
   @Test
   public void testBackupDriverUnrecognizedCommand () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"command" }; 
+    String[] args = new String[]{"command" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"command" }; 
+    args = new String[]{"command" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
   }
-  
-  
-  
+
+
+
   @Test
   public void testBackupDriverUnrecognizedOption () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"create", "-xx" }; 
+    String[] args = new String[]{"create", "-xx" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"describe", "-xx" }; 
+    args = new String[]{"describe", "-xx" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"history", "-xx" }; 
+    args = new String[]{"history", "-xx" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"delete", "-xx" }; 
+    args = new String[]{"delete", "-xx" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"set", "-xx" }; 
+    args = new String[]{"set", "-xx" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
   }
-  
+
   @Test
   public void testRestoreDriverUnrecognizedOption () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"-xx" }; 
+    String[] args = new String[]{"-xx" };
     ToolRunner.run(conf, new RestoreDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase restore") >= 0);
-     
+
   }
-  
+
   @Test
   public void testBackupDriverCreateWrongArgNumber () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"create" }; 
+    String[] args = new String[]{"create" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"create", "22" }; 
+    args = new String[]{"create", "22" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
-    
+
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    args = new String[]{"create", "22", "22", "22", "22", "22" }; 
+    args = new String[]{"create", "22", "22", "22", "22", "22" };
     ToolRunner.run(conf, new BackupDriver(), args);
-    
+
     output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
   }
-  
+
   @Test
   public void testBackupDriverDeleteWrongArgNumber () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"delete" }; 
+    String[] args = new String[]{"delete" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);
-    
+
   }
-    
+
   @Test
   public void testBackupDriverHistoryWrongArgs () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"history", "-n", "xx" }; 
+    String[] args = new String[]{"history", "-n", "xx" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("Usage: bin/hbase backup history") >= 0);
-    
+
   }
-  
+
   @Test
   public void testBackupDriverWrongBackupDestination () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"create", "full", "clicks" }; 
+    String[] args = new String[]{"create", "full", "clicks" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("ERROR: invalid backup destination") >= 0);
-    
+
   }
-  
+
   @Test
   public void testBackupDriverBackupSetAndList () throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
-    String[] args = new String[]{"create", "full", "file:/", "clicks", "-s", "s" }; 
+    String[] args = new String[]{"create", "full", "file:/", "clicks", "-s", "s" };
     ToolRunner.run(conf, new BackupDriver(), args);
 
     String output = baos.toString();
     System.out.println(baos.toString());
     assertTrue(output.indexOf("ERROR: You can specify either backup set or list") >= 0);
-    
+
   }
 }

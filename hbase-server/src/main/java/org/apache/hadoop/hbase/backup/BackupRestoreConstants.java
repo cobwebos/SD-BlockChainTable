@@ -79,7 +79,7 @@ public interface BackupRestoreConstants {
    * Backup/Restore constants
    */
   public final static String BACKUP_ENABLE_KEY = "hbase.backup.enable";
-  public final static boolean BACKUP_ENABLE_DEFAULT = true;
+  public final static boolean BACKUP_ENABLE_DEFAULT = false;
   public final static String BACKUP_SYSTEM_TTL_KEY = "hbase.backup.system.ttl";
   public final static int BACKUP_SYSTEM_TTL_DEFAULT = HConstants.FOREVER;
 

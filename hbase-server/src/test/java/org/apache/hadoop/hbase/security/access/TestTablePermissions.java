@@ -37,12 +37,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Abortable;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.exceptions.DeserializationException;
-import org.apache.hadoop.hbase.HBaseTestingUtility;
-import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.testclassification.LargeTests;
 import org.apache.hadoop.hbase.testclassification.SecurityTests;
@@ -92,16 +93,13 @@ public class TestTablePermissions {
   public static void beforeClass() throws Exception {
     // setup configuration
     Configuration conf = UTIL.getConfiguration();
+    conf.setBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, true);
     SecureTestUtil.enableSecurity(conf);
-
     UTIL.startMiniCluster();
-
     // Wait for the ACL table to become available
     UTIL.waitTableEnabled(AccessControlLists.ACL_TABLE_NAME);
-
     ZKW = new ZooKeeperWatcher(UTIL.getConfiguration(),
       "TestTablePermissions", ABORTABLE);
-
     UTIL.createTable(TEST_TABLE, TEST_FAMILY);
     UTIL.createTable(TEST_TABLE2, TEST_FAMILY);
   }

@@ -36,6 +36,7 @@ import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.master.HMaster;
 import org.apache.hadoop.hbase.master.MasterCoprocessorHost;
@@ -144,6 +145,7 @@ public class TestMasterCoprocessorExceptionWithAbort {
   @BeforeClass
   public static void setupBeforeClass() throws Exception {
     Configuration conf = UTIL.getConfiguration();
+    conf.setBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, true);
     conf.set(CoprocessorHost.MASTER_COPROCESSOR_CONF_KEY,
         BuggyMasterObserver.class.getName());
     conf.setBoolean(CoprocessorHost.ABORT_ON_ERROR_KEY, true);

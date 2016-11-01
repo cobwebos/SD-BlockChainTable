@@ -30,6 +30,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
 import org.apache.hadoop.hbase.backup.util.BackupServerUtil;
@@ -66,6 +67,13 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
   }
 
   private int parseAndRun(String[] args) throws IOException {
+    // Check if backup is enabled
+    if (!BackupManager.isBackupEnabled(getConf())) {
+      System.err.println("Backup is not enabled. To enable backup, "+
+          "set \'hbase.backup.enabled'=true and restart "+
+          "the cluster");
+      return -1;
+    }
     // enable debug logging
     Logger backupClientLogger = Logger.getLogger("org.apache.hadoop.hbase.backup");
     if (cmd.hasOption(OPTION_DEBUG)) {
@@ -126,7 +134,7 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
       TableName[] sTableArray = BackupServerUtil.parseTableNames(tables);
       TableName[] tTableArray = BackupServerUtil.parseTableNames(tableMapping);
 
-      if (sTableArray != null && tTableArray != null 
+      if (sTableArray != null && tTableArray != null
           && (sTableArray.length != tTableArray.length)) {
         System.out.println("ERROR: table mapping mismatch: " + tables + " : " + tableMapping);
         printToolUsage();
@@ -216,6 +224,7 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
     return ret;
   }
 
+  @Override
   protected boolean sanityCheckOptions(CommandLine cmd) {
     boolean success = true;
     for (String reqOpt : requiredOptions) {

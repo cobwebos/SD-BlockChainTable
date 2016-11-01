@@ -19,6 +19,33 @@
 
 package org.apache.hadoop.hbase.util;
 
+import static org.apache.hadoop.hbase.util.hbck.HbckTestingUtil.assertErrors;
+import static org.apache.hadoop.hbase.util.hbck.HbckTestingUtil.assertNoErrors;
+import static org.apache.hadoop.hbase.util.hbck.HbckTestingUtil.doFsck;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -33,6 +60,7 @@ import org.apache.hadoop.hbase.MetaTableAccessor;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.client.ClusterConnection;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -51,8 +79,8 @@ import org.apache.hadoop.hbase.master.RegionStates;
 import org.apache.hadoop.hbase.master.TableLockManager;
 import org.apache.hadoop.hbase.regionserver.HRegion;
 import org.apache.hadoop.hbase.regionserver.HRegionServer;
-import org.apache.hadoop.hbase.regionserver.SplitTransactionImpl;
 import org.apache.hadoop.hbase.regionserver.SplitTransactionFactory;
+import org.apache.hadoop.hbase.regionserver.SplitTransactionImpl;
 import org.apache.hadoop.hbase.regionserver.TestEndToEndSplitTransaction;
 import org.apache.hadoop.hbase.replication.ReplicationFactory;
 import org.apache.hadoop.hbase.replication.ReplicationQueues;
@@ -68,26 +96,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.apache.hadoop.hbase.util.hbck.HbckTestingUtil.*;
-import static org.junit.Assert.*;
 
 @Category({MiscTests.class, LargeTests.class})
 public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
@@ -105,6 +113,8 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     conf.setInt("hbase.hconnection.threads.core", POOL_SIZE);
     conf.setInt("hbase.hbck.close.timeout", 2 * REGION_ONLINE_TIMEOUT);
     conf.setInt(HConstants.HBASE_RPC_TIMEOUT_KEY, 8 * REGION_ONLINE_TIMEOUT);
+    conf.setBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, true);
+
     TEST_UTIL.startMiniCluster(1);
 
     tableExecutorService = new ThreadPoolExecutor(1, POOL_SIZE, 60, TimeUnit.SECONDS,
@@ -122,7 +132,7 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     admin.setBalancerRunning(false, true);
 
     TEST_UTIL.waitUntilAllSystemRegionsAssigned();
-    
+
   }
 
   @AfterClass
@@ -603,7 +613,7 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
       hbck.close();
     }
   }
-  
+
   @Test (timeout=180000)
   public void testHbckAfterRegionMerge() throws Exception {
     TableName table = TableName.valueOf("testMergeRegionFilesInHdfs");
@@ -1521,7 +1531,7 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     // check no errors
     HBaseFsck hbck = doFsck(conf, false);
     assertNoErrors(hbck);
-    
+
     // create peer
     ReplicationAdmin replicationAdmin = new ReplicationAdmin(conf);
     Assert.assertEquals(0, replicationAdmin.getPeersCount());
@@ -1530,7 +1540,7 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     replicationAdmin.addPeer("1", "127.0.0.1:" + zkPort + ":/hbase");
     replicationAdmin.getPeersCount();
     Assert.assertEquals(1, replicationAdmin.getPeersCount());
-    
+
     // create replicator
     ZooKeeperWatcher zkw = new ZooKeeperWatcher(conf, "Test Hbase Fsck", connection);
     ReplicationQueues repQueues =
@@ -1542,7 +1552,7 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     Assert.assertEquals(2, repQueues.getAllQueues().size());
     hbck = doFsck(conf, false);
     assertNoErrors(hbck);
-    
+
     // queues for removed peer
     repQueues.addLog("2", "file1");
     repQueues.addLog("2-server2", "file1");
@@ -1551,7 +1561,7 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     assertErrors(hbck, new HBaseFsck.ErrorReporter.ERROR_CODE[] {
         HBaseFsck.ErrorReporter.ERROR_CODE.UNDELETED_REPLICATION_QUEUE,
         HBaseFsck.ErrorReporter.ERROR_CODE.UNDELETED_REPLICATION_QUEUE });
-    
+
     // fix the case
     hbck = doFsck(conf, true);
     hbck = doFsck(conf, false);
@@ -1560,7 +1570,7 @@ public class TestHBaseFsckOneRS extends BaseTestHBaseFsck {
     Assert.assertEquals(2, repQueues.getAllQueues().size());
     Assert.assertNull(repQueues.getLogsInQueue("2"));
     Assert.assertNull(repQueues.getLogsInQueue("2-sever2"));
-    
+
     replicationAdmin.removePeer("1");
     repQueues.removeAllQueues();
     zkw.close();

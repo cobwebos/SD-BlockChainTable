@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.backup.impl.BackupCommands;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.util.LogUtils;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -53,6 +54,14 @@ public class BackupDriver extends AbstractHBaseTool implements BackupRestoreCons
   }
 
   private int parseAndRun(String[] args) throws IOException {
+
+    // Check if backup is enabled
+    if (!BackupManager.isBackupEnabled(getConf())) {
+      System.err.println("Backup is not enabled. To enable backup, "+
+          "set \'hbase.backup.enabled'=true and restart "+
+          "the cluster");
+      return -1;
+    }
 
     String cmd = null;
     String[] remainArgs = null;

@@ -38,10 +38,10 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
-import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.backup.master.BackupController;
 import org.apache.hadoop.hbase.backup.master.BackupLogCleaner;
@@ -49,10 +49,8 @@ import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
 import org.apache.hadoop.hbase.backup.regionserver.LogRollRegionServerProcedureManager;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ClusterConnection;
-import org.apache.hadoop.hbase.master.MasterServices;
+import org.apache.hadoop.hbase.client.Connection;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -65,16 +63,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 @InterfaceStability.Evolving
 public class BackupManager implements Closeable {
   private static final Log LOG = LogFactory.getLog(BackupManager.class);
-
   private Configuration conf = null;
   private BackupInfo backupContext = null;
-
   private ExecutorService pool = null;
-
-  private boolean backupComplete = false;
-
   private BackupSystemTable systemTable;
-
   private final Connection conn;
 
   /**
@@ -90,7 +82,7 @@ public class BackupManager implements Closeable {
     this.conf = conf;
     this.conn = conn;
     this.systemTable = new BackupSystemTable(conn);
-     
+
   }
 
   /**
@@ -113,31 +105,31 @@ public class BackupManager implements Closeable {
     String cleanerClass = BackupLogCleaner.class.getCanonicalName();
     if (!plugins.contains(cleanerClass)) {
       conf.set(HConstants.HBASE_MASTER_LOGCLEANER_PLUGINS, plugins + "," + cleanerClass);
-    }    
-    
+    }
+
     String classes = conf.get("hbase.procedure.master.classes");
     String masterProcedureClass = LogRollMasterProcedureManager.class.getName();
-    if(classes == null){    
+    if(classes == null){
       conf.set("hbase.procedure.master.classes", masterProcedureClass);
     } else if(!classes.contains(masterProcedureClass)){
       conf.set("hbase.procedure.master.classes", classes +","+masterProcedureClass);
-    }    
- 
+    }
+
     // Set Master Observer - Backup Controller
     classes = conf.get("hbase.coprocessor.master.classes");
     String observerClass = BackupController.class.getName();
-    if(classes == null){    
+    if(classes == null){
       conf.set("hbase.coprocessor.master.classes", observerClass);
     } else if(!classes.contains(observerClass)){
       conf.set("hbase.coprocessor.master.classes", classes +","+observerClass);
-    }    
+    }
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("Added log cleaner: " + cleanerClass);
       LOG.debug("Added master procedure manager: "+masterProcedureClass);
-      LOG.debug("Added master observer: "+observerClass);      
+      LOG.debug("Added master observer: "+observerClass);
     }
-    
+
   }
 
   /**
@@ -148,23 +140,24 @@ public class BackupManager implements Closeable {
     if (!isBackupEnabled(conf)) {
       return;
     }
-    
+
     String classes = conf.get("hbase.procedure.regionserver.classes");
     String regionProcedureClass = LogRollRegionServerProcedureManager.class.getName();
-    if(classes == null){    
+    if(classes == null){
       conf.set("hbase.procedure.regionserver.classes", regionProcedureClass);
     } else if(!classes.contains(regionProcedureClass)){
       conf.set("hbase.procedure.regionserver.classes", classes +","+regionProcedureClass);
-    }    
+    }
     if (LOG.isDebugEnabled()) {
       LOG.debug("Added region procedure manager: "+regionProcedureClass);
     }
-    
+
   }
-  
-  
-  private static boolean isBackupEnabled(Configuration conf) {
-    return conf.getBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, BackupRestoreConstants.BACKUP_ENABLE_DEFAULT);
+
+
+  public static boolean isBackupEnabled(Configuration conf) {
+    return conf.getBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY,
+      BackupRestoreConstants.BACKUP_ENABLE_DEFAULT);
   }
 
   /**
@@ -242,7 +235,7 @@ public class BackupManager implements Closeable {
     }
 
     // there are one or more tables in the table list
-    backupContext = new BackupInfo(backupId, type, 
+    backupContext = new BackupInfo(backupId, type,
       tableList.toArray(new TableName[tableList.size()]),
       targetRootDir);
     backupContext.setBandwidth(bandwidth);
@@ -301,7 +294,7 @@ public class BackupManager implements Closeable {
    */
   public ArrayList<BackupImage> getAncestors(BackupInfo backupCtx) throws IOException,
       BackupException {
-    LOG.debug("Getting the direct ancestors of the current backup "+ 
+    LOG.debug("Getting the direct ancestors of the current backup "+
       backupCtx.getBackupId());
 
     ArrayList<BackupImage> ancestors = new ArrayList<BackupImage>();
@@ -448,7 +441,7 @@ public class BackupManager implements Closeable {
    */
   public void writeRegionServerLogTimestamp(Set<TableName> tables,
       HashMap<String, Long> newTimestamps) throws IOException {
-    systemTable.writeRegionServerLogTimestamp(tables, newTimestamps, 
+    systemTable.writeRegionServerLogTimestamp(tables, newTimestamps,
       backupContext.getTargetRootDir());
   }
 
@@ -487,7 +480,7 @@ public class BackupManager implements Closeable {
    * safely purged.
    */
   public void recordWALFiles(List<String> files) throws IOException {
-    systemTable.addWALFiles(files, 
+    systemTable.addWALFiles(files,
       backupContext.getBackupId(), backupContext.getTargetRootDir());
   }
 

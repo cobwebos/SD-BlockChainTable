@@ -65,21 +65,22 @@ public class TestBackupSystemTable {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    cluster = UTIL.startMiniCluster(); 
+    conf.setBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, true);
+    cluster = UTIL.startMiniCluster();
     conn = UTIL.getConnection();
     waitForSystemTable();
   }
-  
+
   static void waitForSystemTable() throws Exception
   {
     try(Admin admin = UTIL.getAdmin();) {
-      while (!admin.tableExists(BackupSystemTable.getTableName()) 
+      while (!admin.tableExists(BackupSystemTable.getTableName())
           || !admin.isTableAvailable(BackupSystemTable.getTableName())) {
         Thread.sleep(1000);
-      }      
+      }
     }
   }
-  
+
   @Before
   public void before() throws IOException {
     table = new BackupSystemTable(conn);
@@ -156,7 +157,7 @@ public class TestBackupSystemTable {
 
   @Test
   public void testBackupDelete() throws IOException {
-    
+
     try (BackupSystemTable table = new BackupSystemTable(conn)) {
 
       int n = 10;
@@ -189,8 +190,8 @@ public class TestBackupSystemTable {
 
   }
 
-  
-  
+
+
   @Test
   public void testRegionServerLastLogRollResults() throws IOException {
     String[] servers = new String[] { "server1", "server2", "server3" };
@@ -233,7 +234,7 @@ public class TestBackupSystemTable {
 
     table.addIncrementalBackupTableSet(tables1, "root");
     BackupSystemTable table = new BackupSystemTable(conn);
-    TreeSet<TableName> res1 = (TreeSet<TableName>) 
+    TreeSet<TableName> res1 = (TreeSet<TableName>)
         table.getIncrementalBackupTableSet("root");
     assertTrue(tables1.size() == res1.size());
     Iterator<TableName> desc1 = tables1.descendingIterator();
@@ -243,7 +244,7 @@ public class TestBackupSystemTable {
     }
 
     table.addIncrementalBackupTableSet(tables2, "root");
-    TreeSet<TableName> res2 = (TreeSet<TableName>) 
+    TreeSet<TableName> res2 = (TreeSet<TableName>)
         table.getIncrementalBackupTableSet("root");
     assertTrue((tables2.size() + tables1.size() - 1) == res2.size());
 
@@ -349,7 +350,7 @@ public class TestBackupSystemTable {
     cleanBackupTable();
   }
 
-  
+
   /**
    * Backup set tests
    */
@@ -409,7 +410,7 @@ public class TestBackupSystemTable {
         assertTrue(tnames.get(i).getNameAsString().equals("table" + (i + 1)));
       }
       cleanBackupTable();
-    } 
+    }
   }
 
   @Test
@@ -486,7 +487,7 @@ public class TestBackupSystemTable {
       cleanBackupTable();
     }
   }
-   
+
 
   private boolean compare(BackupInfo one, BackupInfo two) {
     return one.getBackupId().equals(two.getBackupId()) && one.getType().equals(two.getType())

@@ -97,6 +97,7 @@ public class TestBackupBase {
   public static void setUpBeforeClass() throws Exception {
     TEST_UTIL = new HBaseTestingUtility();
     conf1 = TEST_UTIL.getConfiguration();
+    conf1.setBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, true);
     conf1.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/1");
     // Set MultiWAL (with 2 default WAL files per RS)
     conf1.set(WALFactory.WAL_PROVIDER, provider);
@@ -120,22 +121,22 @@ public class TestBackupBase {
     createTables();
     populateFromMasterConfig(TEST_UTIL.getHBaseCluster().getMaster().getConfiguration(), conf1);
   }
-  
+
   private static void populateFromMasterConfig(Configuration masterConf, Configuration conf) {
-    Iterator<Entry<String,String>> it = masterConf.iterator();  
+    Iterator<Entry<String,String>> it = masterConf.iterator();
     while(it.hasNext()) {
       Entry<String,String> e = it.next();
       conf.set(e.getKey(), e.getValue());
     }
   }
-  
+
   public static void waitForSystemTable() throws Exception
   {
     try (Admin admin = TEST_UTIL.getAdmin();) {
-      while (!admin.tableExists(BackupSystemTable.getTableName()) 
+      while (!admin.tableExists(BackupSystemTable.getTableName())
           || !admin.isTableAvailable(BackupSystemTable.getTableName())) {
         Thread.sleep(1000);
-      }      
+      }
     }
     LOG.debug("backup table exists and available");
 
@@ -173,7 +174,7 @@ public class TestBackupBase {
     try {
       conn = ConnectionFactory.createConnection(conf1);
       badmin = new HBaseBackupAdmin(conn);
-      BackupRequest request = new BackupRequest();      
+      BackupRequest request = new BackupRequest();
       request.setBackupType(type).setTableList(tables).setTargetRootDir(path);
       backupId = badmin.backupTables(request);
     } finally {
@@ -194,7 +195,7 @@ public class TestBackupBase {
   protected String incrementalTableBackup(List<TableName> tables) throws IOException {
     return backupTables(BackupType.INCREMENTAL, tables, BACKUP_ROOT_DIR);
   }
-  
+
   protected static void loadTable(HTable table) throws Exception {
 
     Put p; // 100 + 1 row to t1_syncup
@@ -211,19 +212,19 @@ public class TestBackupBase {
     long tid = System.currentTimeMillis();
     table1 = TableName.valueOf("ns1:test-" + tid);
     HBaseAdmin ha = TEST_UTIL.getHBaseAdmin();
-    
+
     // Create namespaces
     NamespaceDescriptor desc1 = NamespaceDescriptor.create("ns1").build();
     NamespaceDescriptor desc2 = NamespaceDescriptor.create("ns2").build();
     NamespaceDescriptor desc3 = NamespaceDescriptor.create("ns3").build();
     NamespaceDescriptor desc4 = NamespaceDescriptor.create("ns4").build();
-    
+
     ha.createNamespace(desc1);
     ha.createNamespace(desc2);
     ha.createNamespace(desc3);
     ha.createNamespace(desc4);
 
-    
+
     HTableDescriptor desc = new HTableDescriptor(table1);
     HColumnDescriptor fam = new HColumnDescriptor(famName);
     desc.addFamily(fam);
@@ -283,7 +284,7 @@ public class TestBackupBase {
     }
     return ret;
   }
-    
+
   protected void dumpBackupDir() throws IOException
   {
     // Dump Backup Dir

@@ -68,6 +68,7 @@ import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.SplitLogCounters;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.Waiter;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.client.ClusterConnection;
 import org.apache.hadoop.hbase.client.ConnectionUtils;
 import org.apache.hadoop.hbase.client.Delete;
@@ -80,7 +81,6 @@ import org.apache.hadoop.hbase.client.RegionLocator;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.coordination.BaseCoordinatedStateManager;
 import org.apache.hadoop.hbase.coordination.ZKSplitLogManagerCoordination;
 import org.apache.hadoop.hbase.exceptions.OperationConflictException;
 import org.apache.hadoop.hbase.exceptions.RegionInRecoveryException;
@@ -163,6 +163,7 @@ public class TestDistributedLogSplitting {
   private void startCluster(int num_rs) throws Exception {
     SplitLogCounters.resetCounters();
     LOG.info("Starting cluster");
+    conf.setBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, true);
     conf.getLong("hbase.splitlog.max.resubmit", 0);
     // Make the failure test faster
     conf.setInt("zookeeper.recovery.retry", 0);
@@ -1136,8 +1137,8 @@ public class TestDistributedLogSplitting {
       out.write(Bytes.toBytes("corrupted bytes"));
       out.close();
       ZKSplitLogManagerCoordination coordination =
-          (ZKSplitLogManagerCoordination) ((BaseCoordinatedStateManager) master
-              .getCoordinatedStateManager()).getSplitLogManagerCoordination();
+          (ZKSplitLogManagerCoordination) master
+              .getCoordinatedStateManager().getSplitLogManagerCoordination();
       coordination.setIgnoreDeleteForTesting(true);
       executor = Executors.newSingleThreadExecutor();
       Runnable runnable = new Runnable() {
