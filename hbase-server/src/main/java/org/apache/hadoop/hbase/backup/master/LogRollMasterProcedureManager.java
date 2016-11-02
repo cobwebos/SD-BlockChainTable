@@ -27,6 +27,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.CoordinatedStateManagerFactory;
 import org.apache.hadoop.hbase.ServerName;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.coordination.BaseCoordinatedStateManager;
 import org.apache.hadoop.hbase.errorhandling.ForeignException;
 import org.apache.hadoop.hbase.errorhandling.ForeignExceptionDispatcher;
@@ -87,7 +89,12 @@ public class LogRollMasterProcedureManager extends MasterProcedureManager {
 
   @Override
   public void execProcedure(ProcedureDescription desc) throws IOException {
-    this.done = false;
+
+    if (!BackupManager.isBackupEnabled(master.getConfiguration())) {
+      LOG.error("Backup is not enabled. Please enable '"+
+          BackupRestoreConstants.BACKUP_ENABLE_KEY +"' configuration setting.");
+      return;
+    }
     // start the process on the RS
     ForeignExceptionDispatcher monitor = new ForeignExceptionDispatcher(desc.getInstance());
     List<ServerName> serverNames = master.getServerManager().getOnlineServersList();
@@ -95,7 +102,7 @@ public class LogRollMasterProcedureManager extends MasterProcedureManager {
     for (ServerName sn : serverNames) {
       servers.add(sn.toString());
     }
-    
+
     List<NameStringPair> conf = desc.getConfigurationList();
     byte[] data = new byte[0];
     if(conf.size() > 0){

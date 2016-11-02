@@ -26,6 +26,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.CoordinatedStateManagerFactory;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.master.LogRollMasterProcedureManager;
 import org.apache.hadoop.hbase.coordination.BaseCoordinatedStateManager;
 import org.apache.hadoop.hbase.errorhandling.ForeignExceptionDispatcher;
@@ -70,6 +72,7 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
   private RegionServerServices rss;
   private ProcedureMemberRpcs memberRpcs;
   private ProcedureMember member;
+  private boolean started = false;
 
   /**
    * Create a default backup procedure manager
@@ -82,7 +85,13 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
    */
   @Override
   public void start() {
+    if (!BackupManager.isBackupEnabled(rss.getConfiguration())) {
+      LOG.error("Backup is not enabled. Please enable '"+
+          BackupRestoreConstants.BACKUP_ENABLE_KEY +"' configuration setting.");
+      return;
+    }
     this.memberRpcs.start(rss.getServerName().toString(), member);
+    this.started = true;
     LOG.info("Started region server backup manager.");
   }
 
@@ -93,6 +102,9 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
    */
   @Override
   public void stop(boolean force) throws IOException {
+    if (!started) {
+      return;
+    }
     String mode = force ? "abruptly" : "gracefully";
     LOG.info("Stopping RegionServerBackupManager " + mode + ".");
 
@@ -143,6 +155,11 @@ public class LogRollRegionServerProcedureManager extends RegionServerProcedureMa
   @Override
   public void initialize(RegionServerServices rss) throws KeeperException {
     this.rss = rss;
+    if (!BackupManager.isBackupEnabled(rss.getConfiguration())) {
+      LOG.error("Initialization skipped. Backup is not enabled. Please enable '"+
+          BackupRestoreConstants.BACKUP_ENABLE_KEY +"' configuration setting.");
+      return;
+    }
     BaseCoordinatedStateManager coordManager =
         (BaseCoordinatedStateManager) CoordinatedStateManagerFactory.getCoordinatedStateManager(rss
           .getConfiguration());

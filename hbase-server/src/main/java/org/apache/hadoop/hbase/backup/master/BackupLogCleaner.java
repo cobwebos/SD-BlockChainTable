@@ -28,9 +28,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.hbase.HBaseInterfaceAudience;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
@@ -39,8 +39,6 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.master.HMaster;
 import org.apache.hadoop.hbase.master.MasterServices;
 import org.apache.hadoop.hbase.master.cleaner.BaseLogCleanerDelegate;
-
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Implementation of a log cleaner that checks if a log is still scheduled for
@@ -79,10 +77,10 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
   public Iterable<FileStatus> getDeletableFiles(Iterable<FileStatus> files) {
     // all members of this class are null if backup is disabled,
     // so we cannot filter the files
-    if (this.getConf() == null) {
+    if (this.getConf() == null || !BackupManager.isBackupEnabled(getConf())) {
       return files;
     }
-    
+
     List<FileStatus> list = new ArrayList<FileStatus>();
     try (final BackupSystemTable table = new BackupSystemTable(conn)) {
       // If we do not have recorded backup sessions
@@ -95,7 +93,7 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
         LOG.warn("hbase:backup is not available" + tnfe.getMessage());
         return files;
       }
-      
+
       for(FileStatus file: files){
         String wal = file.getPath().toString();
         boolean logInSystemTable = table.isWALFileDeletable(wal);
@@ -108,7 +106,7 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
           }
         }
       }
-      return list;  
+      return list;
     } catch (IOException e) {
       LOG.error("Failed to get hbase:backup table, therefore will keep all files", e);
       // nothing to delete
@@ -119,7 +117,7 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
   @Override
   public void setConf(Configuration config) {
     // If backup is disabled, keep all members null
-    if (!config.getBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY, 
+    if (!config.getBoolean(BackupRestoreConstants.BACKUP_ENABLE_KEY,
       BackupRestoreConstants.BACKUP_ENABLE_DEFAULT)) {
       LOG.warn("Backup is disabled - allowing all wals to be deleted");
       return;

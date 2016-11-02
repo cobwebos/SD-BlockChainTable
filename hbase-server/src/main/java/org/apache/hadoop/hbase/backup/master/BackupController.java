@@ -25,6 +25,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
+import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
 import org.apache.hadoop.hbase.coprocessor.BaseMasterAndRegionObserver;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessorEnvironment;
@@ -32,9 +34,9 @@ import org.apache.hadoop.hbase.coprocessor.ObserverContext;
 import org.apache.hadoop.hbase.master.MasterServices;
 
 /**
- * The current implementation checks if the backup system table 
+ * The current implementation checks if the backup system table
  * (hbase:backup) exists on HBasae Master startup and if it does not -
- * it creates it. We need to make sure that backup system table is  
+ * it creates it. We need to make sure that backup system table is
  * created under HBase user with ADMIN privileges
  */
 public class BackupController extends BaseMasterAndRegionObserver {
@@ -45,12 +47,17 @@ public class BackupController extends BaseMasterAndRegionObserver {
       throws IOException {
     // Need to create the new system table for backups (if does not exist)
     MasterServices master = ctx.getEnvironment().getMasterServices();
+    if (!BackupManager.isBackupEnabled(master.getConfiguration())) {
+      LOG.error("Aborted BackupController. Backup is not enabled. Please enable '"+
+          BackupRestoreConstants.BACKUP_ENABLE_KEY +"' configuration setting.");
+      return;
+    }
     HTableDescriptor backupHTD = BackupSystemTable.getSystemTableDescriptor();
     try{
       master.createTable(backupHTD, null, HConstants.NO_NONCE, HConstants.NO_NONCE);
       LOG.info("Created "+ BackupSystemTable.getTableNameAsString()+" table");
     } catch(TableExistsException e) {
       LOG.info("Table "+ BackupSystemTable.getTableNameAsString() +" already exists");
-    } 
+    }
   }
 }
