@@ -59,6 +59,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Waiter.ExplainingPredicate;
 import org.apache.hadoop.hbase.Waiter.Predicate;
+import org.apache.hadoop.hbase.backup.impl.BackupManager;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
@@ -3185,7 +3186,9 @@ public class HBaseTestingUtility extends HBaseCommonTestingUtility {
   public void waitUntilAllSystemRegionsAssigned() throws IOException {
     waitUntilAllRegionsAssigned(TableName.META_TABLE_NAME);
     waitUntilAllRegionsAssigned(TableName.NAMESPACE_TABLE_NAME);
-    waitUntilAllRegionsAssigned(TableName.BACKUP_TABLE_NAME);
+    if (BackupManager.isBackupEnabled(conf)) {
+      waitUntilAllRegionsAssigned(TableName.BACKUP_TABLE_NAME);
+    }
   }
 
   /**
