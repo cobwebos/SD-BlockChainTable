@@ -44,7 +44,7 @@ public class ClientSnapshotDescriptionUtils {
       // make sure the table name is valid, this will implicitly check validity
       TableName tableName = TableName.valueOf(snapshot.getTable());
 
-      if (tableName.isSystemTable() && !tableName.toString().equals("hbase:backup")) {
+      if (tableName.isSystemTable() && !TableName.BACKUP_TABLE_NAME.equals(tableName)) {
         // allow hbase:backup table snapshot
         throw new IllegalArgumentException("System table snapshots are not allowed");
       }

@@ -29,10 +29,10 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 /**
- * The administrative API for HBase Backup. Construct an instance from 
+ * The administrative API for HBase Backup. Construct an instance from
  * {@link HBaseBackupAdmin(Connection)} and call {@link #close()} afterwards.
- * <p>BackupAdmin can be used to create backups, restore data from backups and for 
- * other backup-related operations. 
+ * <p>BackupAdmin can be used to create backups, restore data from backups and for
+ * other backup-related operations.
  *
  * @see Admin
  * @since 2.0
@@ -44,31 +44,31 @@ public interface BackupAdmin extends Closeable{
 
   /**
    * Backs up given list of tables fully. Synchronous operation.
-   * 
-   * @param userRequest BackupRequest instance 
+   *
+   * @param userRequest BackupRequest instance
    * @return the backup Id
    */
-  
+
   public String backupTables(final BackupRequest userRequest) throws IOException;
-  
+
   /**
    * Backs up given list of tables fully. Asynchronous operation.
-   * 
-   * @param userRequest BackupRequest instance 
+   *
+   * @param userRequest BackupRequest instance
    * @return the backup Id future
    */
   public Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException;
 
   /**
    * Restore backup
-   * @param request - restore request
+   * @param request restore request
    * @throws IOException exception
    */
   public void restore(RestoreRequest request) throws IOException;
 
   /**
    * Restore backup
-   * @param request - restore request
+   * @param request restore request
    * @return Future which client can wait on
    * @throws IOException exception
    */
@@ -76,7 +76,7 @@ public interface BackupAdmin extends Closeable{
 
   /**
    * Describe backup image command
-   * @param backupId - backup id
+   * @param backupId backup id
    * @return backup info
    * @throws IOException exception
    */
@@ -84,7 +84,7 @@ public interface BackupAdmin extends Closeable{
 
   /**
    * Show backup progress command
-   * @param backupId - backup id (may be null)
+   * @param backupId backup id (may be null)
    * @return backup progress (0-100%), -1 if no active sessions
    *  or session not found
    * @throws IOException exception
@@ -93,7 +93,7 @@ public interface BackupAdmin extends Closeable{
 
   /**
    * Delete backup image command
-   * @param backupIds - backup id
+   * @param backupIds list of backup ids
    * @return total number of deleted sessions
    * @throws IOException exception
    */
@@ -101,7 +101,7 @@ public interface BackupAdmin extends Closeable{
 
   /**
    * Show backup history command
-   * @param n - last n backup sessions
+   * @param n last n backup sessions
    * @return list of backup infos
    * @throws IOException exception
    */
@@ -110,17 +110,17 @@ public interface BackupAdmin extends Closeable{
 
   /**
    * Show backup history command with filters
-   * @param n - last n backup sessions
-   * @param f - list of filters
+   * @param n last n backup sessions
+   * @param f list of filters
    * @return list of backup infos
    * @throws IOException exception
    */
   public List<BackupInfo> getHistory(int n, BackupInfo.Filter ... f) throws IOException;
 
-  
+
   /**
-   * Backup sets list command - list all backup sets. Backup set is 
-   * a named group of tables. 
+   * Backup sets list command - list all backup sets. Backup set is
+   * a named group of tables.
    * @return all registered backup sets
    * @throws IOException exception
    */
@@ -137,24 +137,24 @@ public interface BackupAdmin extends Closeable{
 
   /**
    * Delete backup set command
-   * @param name - backup set name
-   * @return true, if success, false - otherwise 
+   * @param name backup set name
+   * @return true, if success, false - otherwise
    * @throws IOException exception
    */
   public boolean deleteBackupSet(String name) throws IOException;
 
   /**
    * Add tables to backup set command
-   * @param name - name of backup set.
-   * @param tables - list of tables to be added to this set.
+   * @param name name of backup set.
+   * @param tables list of tables to be added to this set.
    * @throws IOException exception
    */
   public void addToBackupSet(String name, TableName[] tables) throws IOException;
 
   /**
    * Remove tables from backup set
-   * @param name - name of backup set.
-   * @param tables - list of tables to be removed from this set.
+   * @param name name of backup set.
+   * @param tables list of tables to be removed from this set.
    * @throws IOException exception
    */
   public void removeFromBackupSet(String name, String[] tables) throws IOException;
