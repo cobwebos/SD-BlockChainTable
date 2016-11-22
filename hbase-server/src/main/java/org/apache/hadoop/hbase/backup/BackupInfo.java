@@ -52,16 +52,16 @@ public class BackupInfo implements Comparable<BackupInfo> {
   private static final Log LOG = LogFactory.getLog(BackupInfo.class);
 
   public static interface Filter {
-    
+
     /**
      * Filter interface
      * @param info backup info
-     * @return true if info passes filter, false otherwise 
+     * @return true if info passes filter, false otherwise
      */
     public boolean apply(BackupInfo info);
   }
-  
-  /** 
+
+  /**
    * Backup status flag
    */
   public static enum BackupState {
@@ -77,7 +77,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
 
   /**
    *  Backup id
-   */  
+   */
   private String backupId;
 
   /**
@@ -537,7 +537,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
       date = cal.getTime();
       sb.append("End time       : " + date).append("\n");
     }
-    sb.append("Progress       : " + getProgress()).append("\n");
+    sb.append("Progress       : " + getProgress()+"%").append("\n");
     return sb.toString();
   }
 
