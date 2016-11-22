@@ -52,8 +52,8 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
   private static final String USAGE_STRING =
       "Usage: bin/hbase restore <backup_path> <backup_id> <table(s)> [options]\n"
           + "  backup_path     Path to a backup destination root\n"
-          + "  backup_id       Backup image ID to restore"
-          + "  table(s)        Comma-separated list of tables to restore";
+          + "  backup_id       Backup image ID to restore\n"
+          + "  table(s)        Comma-separated list of tables to restore\n";
 
   private static final String USAGE_FOOTER = "";
 
@@ -70,7 +70,7 @@ public class RestoreDriver extends AbstractHBaseTool implements BackupRestoreCon
     // Check if backup is enabled
     if (!BackupManager.isBackupEnabled(getConf())) {
       System.err.println("Backup is not enabled. To enable backup, "+
-          "set \'hbase.backup.enabled'=true and restart "+
+          "set "+ BackupRestoreConstants.BACKUP_ENABLE_KEY+"=true and restart "+
           "the cluster");
       return -1;
     }

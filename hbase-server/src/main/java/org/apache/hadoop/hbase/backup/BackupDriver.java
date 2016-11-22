@@ -58,7 +58,7 @@ public class BackupDriver extends AbstractHBaseTool implements BackupRestoreCons
     // Check if backup is enabled
     if (!BackupManager.isBackupEnabled(getConf())) {
       System.err.println("Backup is not enabled. To enable backup, "+
-          "set \'hbase.backup.enabled'=true and restart "+
+          "set " +BackupRestoreConstants.BACKUP_ENABLE_KEY+"=true and restart "+
           "the cluster");
       return -1;
     }

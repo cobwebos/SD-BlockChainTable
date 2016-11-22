@@ -36,7 +36,6 @@ import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.BackupType;
-import org.apache.hadoop.hbase.backup.BackupRestoreConstants.BackupCommand;
 import org.apache.hadoop.hbase.backup.util.BackupClientUtil;
 import org.apache.hadoop.hbase.backup.util.BackupSet;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
@@ -52,11 +51,11 @@ import com.google.common.collect.Lists;
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public final class BackupCommands implements BackupRestoreConstants {
-  
+
   public final static String INCORRECT_USAGE = "Incorrect usage";
 
   public static final String USAGE = "Usage: bin/hbase backup COMMAND [command-specific arguments]\n"
-      + "where COMMAND is one of:\n" 
+      + "where COMMAND is one of:\n"
       + "  create          Create a new backup image\n"
       + "  delete          Delete an existing backup image\n"
       + "  describe        Show detailed information of a backup image\n"
@@ -66,37 +65,37 @@ public final class BackupCommands implements BackupRestoreConstants {
       + "Run \'bin/hbase backup COMMAND -h\' to see help message for each command\n";
 
   public static final String CREATE_CMD_USAGE =
-      "Usage: bin/hbase backup create <type> <backup_root> [tables] [options]\n"     
-      + "  type            \"full\" to create a full backup image\n"
-      + "                  \"incremental\" to create an incremental backup image\n"
-      + "  backup_root     Full path to store the backup image\n" 
+      "Usage: bin/hbase backup create <type> <backup_path> [tables] [options]\n"
+      + "  type           \"full\" to create a full backup image\n"
+      + "                 \"incremental\" to create an incremental backup image\n"
+      + "  backup_path     Full path to store the backup image\n"
       + "  tables          If no tables (\"\") are specified, all tables are backed up.\n"
-      + "                  otherwise it is a comma separated list of tables.";      
+      + "                  otherwise it is a comma separated list of tables.";
 
 
-  public static final String PROGRESS_CMD_USAGE = "Usage: bin/hbase backup progress <backupId>\n"
-      + "  backupId        Backup image id\n";
+  public static final String PROGRESS_CMD_USAGE = "Usage: bin/hbase backup progress <backup_id>\n"
+      + "  backup_id       Backup image id\n";
   public static final String NO_INFO_FOUND = "No info was found for backup id: ";
 
-  public static final String DESCRIBE_CMD_USAGE = "Usage: bin/hbase backup describe <backupId>\n"
-      + "  backupId        Backup image id\n";
+  public static final String DESCRIBE_CMD_USAGE = "Usage: bin/hbase backup describe <backup_id>\n"
+      + "  backup_id       Backup image id\n";
 
-  public static final String HISTORY_CMD_USAGE = 
+  public static final String HISTORY_CMD_USAGE =
       "Usage: bin/hbase backup history [options]";
 
-  
 
-  public static final String DELETE_CMD_USAGE = "Usage: bin/hbase backup delete <backupId>\n"
-      + "  backupId        Backup image id\n";
 
-  public static final String CANCEL_CMD_USAGE = "Usage: bin/hbase backup cancel <backupId>\n"
-      + "  backupId        Backup image id\n";
+  public static final String DELETE_CMD_USAGE = "Usage: bin/hbase backup delete <backup_id>\n"
+      + "  backup_id       Backup image id\n";
+
+  public static final String CANCEL_CMD_USAGE = "Usage: bin/hbase backup cancel <backup_id>\n"
+      + "  backup_id       Backup image id\n";
 
   public static final String SET_CMD_USAGE = "Usage: bin/hbase backup set COMMAND [name] [tables]\n"
       + "  name            Backup set name\n"
       + "  tables          If no tables (\"\") are specified, all tables will belong to the set.\n"
       + "                  Otherwise it is a comma separated list of tables.\n"
-      + "COMMAND is one of:\n" 
+      + "COMMAND is one of:\n"
       + "  add             Add tables to a set, create a set if needed\n"
       + "  remove          Remove tables from a set\n"
       + "  list            List all backup sets in the system\n"
@@ -104,14 +103,14 @@ public final class BackupCommands implements BackupRestoreConstants {
       + "  delete          Delete backup set\n";
 
   public static final String USAGE_FOOTER = "";
-    
+
   public static abstract class Command extends Configured {
     CommandLine cmdline;
-    
+
     Command(Configuration conf) {
       super(conf);
     }
-    
+
     public void execute() throws IOException
     {
       if (cmdline.hasOption("h") || cmdline.hasOption("help")) {
@@ -119,7 +118,7 @@ public final class BackupCommands implements BackupRestoreConstants {
         throw new IOException(INCORRECT_USAGE);
       }
     }
-    
+
     protected abstract void printUsage();
   }
 
@@ -170,7 +169,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       super(conf);
       this.cmdline = cmdline;
     }
-    
+
     @Override
     public void execute() throws IOException {
       super.execute();
@@ -195,7 +194,7 @@ public final class BackupCommands implements BackupRestoreConstants {
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-      
+
       String tables = null;
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
 
@@ -206,7 +205,7 @@ public final class BackupCommands implements BackupRestoreConstants {
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-      
+
       // Check backup set
       String setName = null;
       if (cmdline.hasOption(OPTION_SET)) {
@@ -221,9 +220,9 @@ public final class BackupCommands implements BackupRestoreConstants {
       } else {
         tables = (args.length == 4) ? args[3] : null;
       }
-      int bandwidth = cmdline.hasOption(OPTION_BANDWIDTH) ? 
+      int bandwidth = cmdline.hasOption(OPTION_BANDWIDTH) ?
           Integer.parseInt(cmdline.getOptionValue(OPTION_BANDWIDTH)) : -1;
-      int workers = cmdline.hasOption(OPTION_WORKERS) ? 
+      int workers = cmdline.hasOption(OPTION_WORKERS) ?
           Integer.parseInt(cmdline.getOptionValue(OPTION_WORKERS)) : -1;
 
       try (Connection conn = ConnectionFactory.createConnection(getConf());
@@ -233,7 +232,7 @@ public final class BackupCommands implements BackupRestoreConstants {
         .setTableList(tables != null?Lists.newArrayList(BackupClientUtil.parseTableNames(tables)): null)
         .setTargetRootDir(args[2]).setWorkers(workers).setBandwidth(bandwidth)
         .setBackupSetName(setName);
-        
+
         String backupId = admin.backupTables(request);
         System.out.println("Backup session "+ backupId+" finished. Status: SUCCESS");
       } catch (IOException e) {
@@ -241,11 +240,11 @@ public final class BackupCommands implements BackupRestoreConstants {
         throw e;
       }
     }
-    
+
     private boolean verifyPath(String path) {
       try{
         Path p = new Path(path);
-        Configuration conf = getConf() != null? getConf(): 
+        Configuration conf = getConf() != null? getConf():
             HBaseConfiguration.create();
         URI uri = p.toUri();
         if(uri.getScheme() == null) return false;
@@ -262,7 +261,7 @@ public final class BackupCommands implements BackupRestoreConstants {
           final BackupSystemTable table = new BackupSystemTable(conn)) {
         List<TableName> tables = table.describeBackupSet(name);
         if (tables == null) return null;
-        return StringUtils.join(tables, BackupRestoreConstants.TABLENAME_DELIMITER_IN_COMMAND);        
+        return StringUtils.join(tables, BackupRestoreConstants.TABLENAME_DELIMITER_IN_COMMAND);
       }
     }
 
@@ -279,8 +278,8 @@ public final class BackupCommands implements BackupRestoreConstants {
       helpFormatter.setDescPadding(8);
       helpFormatter.setWidth(100);
       helpFormatter.setSyntaxPrefix("Options:");
-      helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);  
-   
+      helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);
+
     }
   }
 
@@ -335,7 +334,7 @@ public final class BackupCommands implements BackupRestoreConstants {
 
     @Override
     protected void printUsage() {
-      System.out.println(USAGE);           
+      System.out.println(USAGE);
     }
   }
 
@@ -358,7 +357,7 @@ public final class BackupCommands implements BackupRestoreConstants {
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-            
+
       String backupId = args[1];
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
       try (final Connection conn = ConnectionFactory.createConnection(conf);
@@ -389,7 +388,7 @@ public final class BackupCommands implements BackupRestoreConstants {
     @Override
     public void execute() throws IOException {
       super.execute();
-      
+
       if (cmdline == null || cmdline.getArgs() == null ||
           cmdline.getArgs().length == 1) {
         System.err.println("No backup id was specified, "
@@ -404,7 +403,7 @@ public final class BackupCommands implements BackupRestoreConstants {
 
       String backupId = (args == null || args.length <= 1) ? null : args[1];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
-      try(final Connection conn = ConnectionFactory.createConnection(conf); 
+      try(final Connection conn = ConnectionFactory.createConnection(conf);
           final BackupSystemTable sysTable = new BackupSystemTable(conn);){
         BackupInfo info = sysTable.readBackupInfo(backupId);
         int progress = info == null? -1: info.getProgress();
@@ -413,17 +412,17 @@ public final class BackupCommands implements BackupRestoreConstants {
         } else{
           System.out.println(backupId+" progress=" + progress+"%");
         }
-      } 
+      }
     }
 
     @Override
     protected void printUsage() {
-      System.out.println(PROGRESS_CMD_USAGE);      
+      System.out.println(PROGRESS_CMD_USAGE);
     }
   }
 
   private static class DeleteCommand extends Command {
-    
+
     DeleteCommand(Configuration conf, CommandLine cmdline) {
       super(conf);
       this.cmdline = cmdline;
@@ -436,7 +435,7 @@ public final class BackupCommands implements BackupRestoreConstants {
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-            
+
       String[] args = cmdline.getArgs();
 
       String[] backupIds = new String[args.length - 1];
@@ -452,12 +451,12 @@ public final class BackupCommands implements BackupRestoreConstants {
 
     @Override
     protected void printUsage() {
-      System.out.println(DELETE_CMD_USAGE);      
+      System.out.println(DELETE_CMD_USAGE);
     }
   }
 
-// TODO Cancel command  
-  
+// TODO Cancel command
+
   private static class CancelCommand extends Command {
 
     CancelCommand(Configuration conf, CommandLine cmdline) {
@@ -484,9 +483,9 @@ public final class BackupCommands implements BackupRestoreConstants {
   }
 
   private static class HistoryCommand extends Command {
-    
+
     private final static int DEFAULT_HISTORY_LENGTH = 10;
-    
+
     HistoryCommand(Configuration conf, CommandLine cmdline) {
       super(conf);
       this.cmdline = cmdline;
@@ -515,7 +514,7 @@ public final class BackupCommands implements BackupRestoreConstants {
           String backupId = info.getBackupId();
           return backupId.startsWith(setName);
         }
-      };                
+      };
       Path backupRootPath = getBackupRootPath();
       List<BackupInfo> history = null;
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
@@ -523,19 +522,19 @@ public final class BackupCommands implements BackupRestoreConstants {
         // Load from hbase:backup
         try (final Connection conn = ConnectionFactory.createConnection(conf);
              final BackupSystemTable sysTable = new BackupSystemTable(conn);) {
- 
+
           history = sysTable.getBackupHistory(n, tableNameFilter, tableSetFilter);
         }
       } else {
         // load from backup FS
-        history = BackupClientUtil.getHistory(conf, n, backupRootPath, 
+        history = BackupClientUtil.getHistory(conf, n, backupRootPath,
           tableNameFilter, tableSetFilter);
       }
       for (BackupInfo info : history) {
         System.out.println(info.getShortDescription());
       }
     }
-    
+
     private Path getBackupRootPath() throws IOException {
       String value = null;
       try{
@@ -550,7 +549,7 @@ public final class BackupCommands implements BackupRestoreConstants {
     }
 
     private TableName getTableName() throws IOException {
-      String value = cmdline.getOptionValue(OPTION_TABLE); 
+      String value = cmdline.getOptionValue(OPTION_TABLE);
       if (value == null) return null;
       try{
         return TableName.valueOf(value);
@@ -562,10 +561,10 @@ public final class BackupCommands implements BackupRestoreConstants {
     }
 
     private String getTableSetName() throws IOException {
-      String value = cmdline.getOptionValue(OPTION_SET); 
+      String value = cmdline.getOptionValue(OPTION_SET);
       return value;
     }
-    
+
     private int parseHistoryLength() throws IOException {
       String value = cmdline.getOptionValue(OPTION_RECORD_NUMBER);
       try{
@@ -592,7 +591,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       helpFormatter.setDescPadding(8);
       helpFormatter.setWidth(100);
       helpFormatter.setSyntaxPrefix("Options:");
-      helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);       
+      helpFormatter.printHelp(" ", null, options, USAGE_FOOTER);
     }
   }
 
@@ -610,13 +609,13 @@ public final class BackupCommands implements BackupRestoreConstants {
 
     @Override
     public void execute() throws IOException {
-      super.execute();      
+      super.execute();
       // Command-line must have at least one element
       if (cmdline == null || cmdline.getArgs() == null || cmdline.getArgs().length < 2) {
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-            
+
       String[] args = cmdline.getArgs();
       String cmdStr = args[1];
       BackupCommand cmd = getCommand(cmdStr);
@@ -647,7 +646,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       // List all backup set names
       // does not expect any args
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
-      try(final Connection conn = ConnectionFactory.createConnection(conf); 
+      try(final Connection conn = ConnectionFactory.createConnection(conf);
           HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         List<BackupSet> list = admin.listBackupSets();
         for(BackupSet bs: list){
@@ -663,7 +662,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       }
       String setName = args[2];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
-      try(final Connection conn = ConnectionFactory.createConnection(conf); 
+      try(final Connection conn = ConnectionFactory.createConnection(conf);
           final BackupSystemTable sysTable = new BackupSystemTable(conn);){
         List<TableName> tables = sysTable.describeBackupSet(setName);
         BackupSet set = tables == null? null : new BackupSet(setName, tables);
@@ -682,7 +681,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       }
       String setName = args[2];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
-      try(final Connection conn = ConnectionFactory.createConnection(conf); 
+      try(final Connection conn = ConnectionFactory.createConnection(conf);
           final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         boolean result = admin.deleteBackupSet(setName);
         if(result){
@@ -698,11 +697,11 @@ public final class BackupCommands implements BackupRestoreConstants {
         printUsage();
         throw new IOException(INCORRECT_USAGE);
       }
-      
+
       String setName = args[2];
       String[] tables = args[3].split(",");
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
-      try(final Connection conn = ConnectionFactory.createConnection(conf); 
+      try(final Connection conn = ConnectionFactory.createConnection(conf);
           final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         admin.removeFromBackupSet(setName, tables);
       }
@@ -720,11 +719,11 @@ public final class BackupCommands implements BackupRestoreConstants {
         tableNames[i] = TableName.valueOf(tables[i]);
       }
       Configuration conf = getConf() != null? getConf():HBaseConfiguration.create();
-      try(final Connection conn = ConnectionFactory.createConnection(conf); 
+      try(final Connection conn = ConnectionFactory.createConnection(conf);
           final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
         admin.addToBackupSet(setName, tableNames);
       }
-      
+
     }
 
     private BackupCommand getCommand(String cmdStr) throws IOException {
@@ -750,5 +749,5 @@ public final class BackupCommands implements BackupRestoreConstants {
       System.out.println(SET_CMD_USAGE);
     }
 
-  }  
+  }
 }

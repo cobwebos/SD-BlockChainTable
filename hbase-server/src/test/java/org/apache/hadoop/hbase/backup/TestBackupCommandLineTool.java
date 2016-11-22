@@ -48,7 +48,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backupId>") >= 0);
+    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backup_id>") >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -57,7 +57,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backupId>") >= 0);
+    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backup_id>") >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -66,7 +66,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backupId>") >= 0);
+    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backup_id>") >= 0);
   }
 
   @Test
