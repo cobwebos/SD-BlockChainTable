@@ -73,7 +73,7 @@ public class RestoreServerUtil {
   public static final Log LOG = LogFactory.getLog(RestoreServerUtil.class);
 
   private final String[] ignoreDirs = { "recovered.edits" };
-  
+
   private final long TABLE_AVAILABILITY_WAIT_TIME = 180000;
 
   protected Configuration conf = null;
@@ -108,7 +108,7 @@ public class RestoreServerUtil {
   Path getTableArchivePath(TableName tableName)
       throws IOException {
 
-    Path baseDir = new Path(HBackupFileSystem.getTableBackupPath(tableName, backupRootPath, 
+    Path baseDir = new Path(HBackupFileSystem.getTableBackupPath(tableName, backupRootPath,
       backupId), HConstants.HFILE_ARCHIVE_DIRECTORY);
     Path dataDir = new Path(baseDir, HConstants.BASE_NAMESPACE_DIR);
     Path archivePath = new Path(dataDir, tableName.getNamespaceAsString());
@@ -152,7 +152,7 @@ public class RestoreServerUtil {
   ArrayList<Path> getRegionList(TableName tableName, String backupId) throws FileNotFoundException,
       IOException {
     Path tableArchivePath =
-        new Path(BackupClientUtil.getTableBackupDir(backupRootPath.toString(), 
+        new Path(BackupClientUtil.getTableBackupDir(backupRootPath.toString(),
           backupId, tableName));
 
     ArrayList<Path> regionDirList = new ArrayList<Path>();
@@ -164,15 +164,15 @@ public class RestoreServerUtil {
     }
     return regionDirList;
   }
-  
+
   static void modifyTableSync(Connection conn, HTableDescriptor desc) throws IOException {
-    
+
     try (Admin admin = conn.getAdmin();) {
       admin.modifyTable(desc.getTableName(), desc);
       int attempt = 0;
       int maxAttempts = 600;
       while( !admin.isTableAvailable(desc.getTableName())) {
-        Thread.sleep(100); 
+        Thread.sleep(100);
         attempt++;
         if( attempt++ > maxAttempts) {
           throw new IOException("Timeout expired "+(maxAttempts * 100)+"ms");
@@ -310,7 +310,7 @@ public class RestoreServerUtil {
       LOG.error("couldn't find Table Desc for table: " + tableName + " under tableInfoPath: "
           + tableInfoPath.toString());
       LOG.error("tableDescriptor.getNameAsString() = " + tableDescriptor.getNameAsString());
-      throw new FileNotFoundException("couldn't find Table Desc for table: " + tableName + 
+      throw new FileNotFoundException("couldn't find Table Desc for table: " + tableName +
         " under tableInfoPath: " + tableInfoPath.toString());
     }
     return tableDescriptor;
@@ -563,23 +563,6 @@ public class RestoreServerUtil {
    */
   private LoadIncrementalHFiles createLoader(Path tableArchivePath, boolean multipleTables)
       throws IOException {
-    // set configuration for restore:
-    // LoadIncrementalHFile needs more time
-    // <name>hbase.rpc.timeout</name> <value>600000</value>
-    // calculates
-    Integer milliSecInMin = 60000;
-    Integer previousMillis = this.conf.getInt("hbase.rpc.timeout", 0);
-    Integer numberOfFilesInDir =
-        multipleTables ? getMaxNumberOfFilesInSubDir(tableArchivePath) :
-            getNumberOfFilesInDir(tableArchivePath);
-    Integer calculatedMillis = numberOfFilesInDir * milliSecInMin; // 1 minute per file
-    Integer resultMillis = Math.max(calculatedMillis, previousMillis);
-    if (resultMillis > previousMillis) {
-      LOG.info("Setting configuration for restore with LoadIncrementalHFile: "
-          + "hbase.rpc.timeout to " + calculatedMillis / milliSecInMin
-          + " minutes, to handle the number of files in backup " + tableArchivePath);
-      this.conf.setInt("hbase.rpc.timeout", resultMillis);
-    }
 
     // By default, it is 32 and loader will fail if # of files in any region exceed this
     // limit. Bad for snapshot restore.
@@ -686,7 +669,7 @@ public class RestoreServerUtil {
    * @throws IOException exception
    */
   private void checkAndCreateTable(Connection conn, Path tableBackupPath, TableName tableName,
-      TableName targetTableName, ArrayList<Path> regionDirList, 
+      TableName targetTableName, ArrayList<Path> regionDirList,
       HTableDescriptor htd, boolean truncateIfExists)
           throws IOException {
     try (Admin admin = conn.getAdmin();){
