@@ -549,7 +549,11 @@ public class BackupInfo implements Comparable<BackupInfo> {
   }
 
   public String getTableListAsString() {
-    return StringUtils.join(backupStatusMap.keySet(), ",");
+    StringBuffer sb = new StringBuffer();
+    sb.append("{");
+    sb.append(StringUtils.join(backupStatusMap.keySet(), ","));
+    sb.append("}");
+    return sb.toString();
   }
 
   @Override
