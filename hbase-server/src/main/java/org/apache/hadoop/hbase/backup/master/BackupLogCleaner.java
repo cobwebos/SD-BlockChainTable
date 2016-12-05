@@ -86,7 +86,7 @@ public class BackupLogCleaner extends BaseLogCleanerDelegate {
       // If we do not have recorded backup sessions
       try {
         if (!table.hasBackupSessions()) {
-          LOG.debug("BackupLogCleaner has no backup sessions");
+          LOG.trace("BackupLogCleaner has no backup sessions");
           return files;
         }
       } catch (TableNotFoundException tnfe) {
