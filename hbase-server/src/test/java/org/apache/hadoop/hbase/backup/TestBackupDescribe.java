@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,24 +51,24 @@ public class TestBackupDescribe extends TestBackupBase {
   public void testBackupDescribe() throws Exception {
 
     LOG.info("test backup describe on a single table with data");
-    
-    String[] args = new String[]{"describe",  "backup_2" }; 
+
+    String[] args = new String[]{"describe",  "backup_2" };
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertTrue(ret < 0);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(baos));
+    System.setErr(new PrintStream(baos));
     args = new String[]{"progress" };
     ToolRunner.run(TEST_UTIL.getConfiguration(), new BackupDriver(), args);
 
     String output = baos.toString();
     LOG.info("Output from progress: " + output);
-    assertTrue(output.indexOf(BackupCommands.NO_INFO_FOUND) >= 0);
+    assertTrue(output.indexOf(BackupCommands.NO_ACTIVE_SESSION_FOUND) >= 0);
   }
 
   @Test
   public void testBackupSetCommandWithNonExistentTable() throws Exception {
-    String[] args = new String[]{"set", "add", "some_set", "table" }; 
+    String[] args = new String[]{"set", "add", "some_set", "table" };
     // Run backup
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertNotEquals(ret, 0);
@@ -78,10 +78,10 @@ public class TestBackupDescribe extends TestBackupBase {
   public void testBackupDescribeCommand() throws Exception {
 
     LOG.info("test backup describe on a single table with data: command-line");
-    
+
     List<TableName> tableList = Lists.newArrayList(table1);
     String backupId = fullTableBackup(tableList);
-    
+
     LOG.info("backup complete");
     assertTrue(checkSucceeded(backupId));
 
@@ -91,7 +91,7 @@ public class TestBackupDescribe extends TestBackupBase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
 
-    String[] args = new String[]{"describe",  backupId }; 
+    String[] args = new String[]{"describe",  backupId };
     // Run backup
     int ret = ToolRunner.run(conf1, new BackupDriver(), args);
     assertTrue(ret == 0);
@@ -106,6 +106,6 @@ public class TestBackupDescribe extends TestBackupBase {
     assertTrue(response.indexOf(desc) >= 0);
 
   }
-  
-  
+
+
 }

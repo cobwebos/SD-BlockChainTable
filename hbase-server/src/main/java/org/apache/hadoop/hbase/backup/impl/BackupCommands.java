@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo;
+import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.BackupType;
@@ -74,8 +75,10 @@ public final class BackupCommands implements BackupRestoreConstants {
 
 
   public static final String PROGRESS_CMD_USAGE = "Usage: bin/hbase backup progress <backup_id>\n"
-      + "  backup_id       Backup image id\n";
+      + "  backup_id       Backup image id (optional). If no id specified, the command will show\n"+
+        "                  progress for currently running backup session.";
   public static final String NO_INFO_FOUND = "No info was found for backup id: ";
+  public static final String NO_ACTIVE_SESSION_FOUND = "No active backup sessions found.";
 
   public static final String DESCRIBE_CMD_USAGE = "Usage: bin/hbase backup describe <backup_id>\n"
       + "  backup_id       Backup image id\n";
@@ -391,8 +394,8 @@ public final class BackupCommands implements BackupRestoreConstants {
 
       if (cmdline == null || cmdline.getArgs() == null ||
           cmdline.getArgs().length == 1) {
-        System.err.println("No backup id was specified, "
-            + "will retrieve the most recent (ongoing) sessions");
+        System.out.println("No backup id was specified, "
+            + "will retrieve the most recent (ongoing) session");
       }
       String[] args = cmdline == null ? null : cmdline.getArgs();
       if (args != null && args.length > 2) {
@@ -405,10 +408,26 @@ public final class BackupCommands implements BackupRestoreConstants {
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf);
           final BackupSystemTable sysTable = new BackupSystemTable(conn);){
-        BackupInfo info = sysTable.readBackupInfo(backupId);
+        BackupInfo info = null;
+
+        if (backupId != null) {
+          info = sysTable.readBackupInfo(backupId);
+        } else {
+          List<BackupInfo> infos = sysTable.getBackupContexts(BackupState.RUNNING);
+          if(infos != null && infos.size() > 0) {
+            info = infos.get(0);
+            backupId = info.getBackupId();
+            System.out.println("Found ongoing session with backupId="+ backupId);
+          } else {
+          }
+        }
         int progress = info == null? -1: info.getProgress();
         if(progress < 0){
-          System.out.println(NO_INFO_FOUND + backupId);
+          if(backupId != null) {
+            System.out.println(NO_INFO_FOUND + backupId);
+          } else {
+            System.err.println(NO_ACTIVE_SESSION_FOUND);
+          }
         } else{
           System.out.println(backupId+" progress=" + progress+"%");
         }
