@@ -38,10 +38,17 @@ import org.apache.hadoop.hbase.procedure.MasterProcedureManager;
 import org.apache.hadoop.hbase.procedure.Procedure;
 import org.apache.hadoop.hbase.procedure.ProcedureCoordinator;
 import org.apache.hadoop.hbase.procedure.ProcedureCoordinatorRpcs;
+import org.apache.hadoop.hbase.procedure.RegionServerProcedureManager;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.NameStringPair;
 import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.ProcedureDescription;
 import org.apache.zookeeper.KeeperException;
 
+/**
+ *  Master procedure manager for coordinated cluster-wide
+ *  WAL roll operation, which is run during backup operation,
+ *  see {@link MasterProcedureManager} and and {@link RegionServerProcedureManager}
+ *
+ */
 public class LogRollMasterProcedureManager extends MasterProcedureManager {
 
   public static final String ROLLLOG_PROCEDURE_SIGNATURE = "rolllog-proc";

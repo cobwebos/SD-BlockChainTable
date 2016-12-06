@@ -176,7 +176,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
     this.addTables(tables);
 
     if (type == BackupType.INCREMENTAL) {
-      setHlogTargetDir(BackupClientUtil.getLogBackupDir(targetRootDir, backupId));
+      setHLogTargetDir(BackupClientUtil.getLogBackupDir(targetRootDir, backupId));
     }
 
     this.startTs = 0;
@@ -218,10 +218,6 @@ public class BackupInfo implements Comparable<BackupInfo> {
   public void
       setTableSetTimestampMap(HashMap<TableName, HashMap<String, Long>> tableSetTimestampMap) {
     this.tableSetTimestampMap = tableSetTimestampMap;
-  }
-
-  public String getHlogTargetDir() {
-    return hlogTargetDir;
   }
 
   public void setType(BackupType type) {
@@ -355,7 +351,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
     return targetRootDir;
   }
 
-  public void setHlogTargetDir(String hlogTagetDir) {
+  public void setHLogTargetDir(String hlogTagetDir) {
     this.hlogTargetDir = hlogTagetDir;
   }
 
@@ -488,7 +484,7 @@ public class BackupInfo implements Comparable<BackupInfo> {
       context.setState(BackupInfo.BackupState.valueOf(proto.getState().name()));
     }
 
-    context.setHlogTargetDir(BackupClientUtil.getLogBackupDir(proto.getTargetRootDir(),
+    context.setHLogTargetDir(BackupClientUtil.getLogBackupDir(proto.getTargetRootDir(),
       proto.getBackupId()));
 
     if (proto.hasPhase()) {

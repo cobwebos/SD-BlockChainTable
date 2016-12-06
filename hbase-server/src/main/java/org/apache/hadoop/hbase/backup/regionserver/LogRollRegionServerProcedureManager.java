@@ -36,12 +36,11 @@ import org.apache.hadoop.hbase.procedure.ProcedureMemberRpcs;
 import org.apache.hadoop.hbase.procedure.RegionServerProcedureManager;
 import org.apache.hadoop.hbase.procedure.Subprocedure;
 import org.apache.hadoop.hbase.procedure.SubprocedureFactory;
-import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.hadoop.hbase.regionserver.RegionServerServices;
 import org.apache.zookeeper.KeeperException;
 
 /**
- * This manager class handles the work dealing with backup for a {@link HRegionServer}.
+ * This manager class handles the work dealing with distributed WAL roll request.
  * <p>
  * This provides the mechanism necessary to kick off a backup specific {@link Subprocedure} that is
  * responsible by this region server. If any failures occur with the subprocedure, the manager's

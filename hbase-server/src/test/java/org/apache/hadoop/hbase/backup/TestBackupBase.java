@@ -41,7 +41,7 @@ import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
-import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
+import org.apache.hadoop.hbase.backup.impl.BackupAdminImpl;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -173,7 +173,7 @@ public class TestBackupBase {
     String backupId;
     try {
       conn = ConnectionFactory.createConnection(conf1);
-      badmin = new HBaseBackupAdmin(conn);
+      badmin = new BackupAdminImpl(conn);
       BackupRequest request = new BackupRequest();
       request.setBackupType(type).setTableList(tables).setTargetRootDir(path);
       backupId = badmin.backupTables(request);
@@ -271,7 +271,7 @@ public class TestBackupBase {
   }
 
   protected BackupAdmin getBackupAdmin() throws IOException {
-    return new HBaseBackupAdmin(TEST_UTIL.getConnection());
+    return new BackupAdminImpl(TEST_UTIL.getConnection());
   }
 
   /**

@@ -72,7 +72,7 @@ public class RestoreServerUtil {
 
   public static final Log LOG = LogFactory.getLog(RestoreServerUtil.class);
 
-  private final String[] ignoreDirs = { "recovered.edits" };
+  private final String[] ignoreDirs = { HConstants.RECOVERED_EDITS_DIR };
 
   private final long TABLE_AVAILABILITY_WAIT_TIME = 180000;
 

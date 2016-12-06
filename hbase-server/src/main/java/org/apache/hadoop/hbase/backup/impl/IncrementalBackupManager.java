@@ -53,16 +53,11 @@ import org.apache.hadoop.hbase.wal.DefaultWALProvider;
  */
 @InterfaceAudience.Public
 @InterfaceStability.Evolving
-public class IncrementalBackupManager {
+public class IncrementalBackupManager extends BackupManager{
   public static final Log LOG = LogFactory.getLog(IncrementalBackupManager.class);
 
-  // parent manager
-  private final BackupManager backupManager;
-  private final Configuration conf;
-
-  public IncrementalBackupManager(BackupManager bm) {
-    this.backupManager = bm;
-    this.conf = bm.getConf();
+  public IncrementalBackupManager(Connection conn, Configuration conf) throws IOException {
+    super(conn, conf);
   }
 
   /**
@@ -79,14 +74,13 @@ public class IncrementalBackupManager {
     HashMap<String, Long> newTimestamps;
     HashMap<String, Long> previousTimestampMins;
 
-    String savedStartCode = backupManager.readBackupStartCode();
+    String savedStartCode = readBackupStartCode();
 
     // key: tableName
     // value: <RegionServer,PreviousTimeStamp>
-    HashMap<TableName, HashMap<String, Long>> previousTimestampMap =
-        backupManager.readLogTimestampMap();
+    HashMap<TableName, HashMap<String, Long>> previousTimestampMap = readLogTimestampMap();
 
-    previousTimestampMins = BackupServerUtil.getRSLogTimestampMins(previousTimestampMap);    
+    previousTimestampMins = BackupServerUtil.getRSLogTimestampMins(previousTimestampMap);
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("StartCode " + savedStartCode + "for backupID " + backupContext.getBackupId());
@@ -102,19 +96,19 @@ public class IncrementalBackupManager {
     LOG.info("Execute roll log procedure for incremental backup ...");
     HashMap<String, String> props = new HashMap<String, String>();
     props.put("backupRoot", backupContext.getTargetRootDir());
-    
+
     try(Admin admin = conn.getAdmin();) {
-    
-      admin.execProcedure(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE, 
+
+      admin.execProcedure(LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_SIGNATURE,
         LogRollMasterProcedureManager.ROLLLOG_PROCEDURE_NAME, props);
 
     }
-    newTimestamps = backupManager.readRegionServerLastLogRollResult();
+    newTimestamps = readRegionServerLastLogRollResult();
 
     logList = getLogFilesForNewBackup(previousTimestampMins, newTimestamps, conf, savedStartCode);
-    List<WALItem> logFromSystemTable = 
-        getLogFilesFromBackupSystem(previousTimestampMins, 
-      newTimestamps, backupManager.getBackupContext().getTargetRootDir());
+    List<WALItem> logFromSystemTable =
+        getLogFilesFromBackupSystem(previousTimestampMins,
+      newTimestamps, getBackupContext().getTargetRootDir());
     addLogsFromBackupSystemToContext(logFromSystemTable);
 
     logList = excludeAlreadyBackedUpWALs(logList, logFromSystemTable);
@@ -126,14 +120,14 @@ public class IncrementalBackupManager {
 
   private List<String> excludeAlreadyBackedUpWALs(List<String> logList,
       List<WALItem> logFromSystemTable) {
-    
+
     List<String> backupedWALList = toWALList(logFromSystemTable);
     logList.removeAll(backupedWALList);
     return logList;
   }
 
   private List<String> toWALList(List<WALItem> logFromSystemTable) {
-    
+
     List<String> list = new ArrayList<String>(logFromSystemTable.size());
     for(WALItem item : logFromSystemTable){
       list.add(item.getWalFile());
@@ -149,7 +143,7 @@ public class IncrementalBackupManager {
       String backupId = item.getBackupId();
       String relWALPath = backupId + Path.SEPARATOR+walFileName;
       walFiles.add(relWALPath);
-    }    
+    }
   }
 
 
@@ -164,7 +158,7 @@ public class IncrementalBackupManager {
   private List<WALItem> getLogFilesFromBackupSystem(HashMap<String, Long> olderTimestamps,
       HashMap<String, Long> newestTimestamps, String backupRoot) throws IOException {
     List<WALItem> logFiles = new ArrayList<WALItem>();
-    Iterator<WALItem> it = backupManager.getWALFilesFromBackupSystem();
+    Iterator<WALItem> it = getWALFilesFromBackupSystem();
     while (it.hasNext()) {
       WALItem item = it.next();
       String rootDir = item.getBackupRoot();

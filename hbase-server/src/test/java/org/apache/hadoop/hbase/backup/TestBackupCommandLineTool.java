@@ -32,6 +32,19 @@ import org.junit.experimental.categories.Category;
 
 @Category(SmallTests.class)
 public class TestBackupCommandLineTool {
+
+  private final static String USAGE_DESCRIBE = "Usage: bin/hbase backup describe <backup_id>";
+  private final static String USAGE_CREATE = "Usage: bin/hbase backup create";
+  private final static String USAGE_HISTORY = "Usage: bin/hbase backup history";
+  private final static String USAGE_BACKUP = "Usage: bin/hbase backup";
+  private final static String USAGE_DELETE = "Usage: bin/hbase backup delete";
+  private final static String USAGE_PROGRESS = "Usage: bin/hbase backup progress";
+  private final static String USAGE_SET = "Usage: bin/hbase backup set";
+  private final static String USAGE_RESTORE = "Usage: bin/hbase restore";
+
+
+
+
   Configuration conf;
   @Before
   public void setUpBefore() throws Exception {
@@ -48,7 +61,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backup_id>") >= 0);
+    assertTrue(output.indexOf(USAGE_DESCRIBE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -57,7 +70,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backup_id>") >= 0);
+    assertTrue(output.indexOf(USAGE_DESCRIBE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -66,7 +79,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup describe <backup_id>") >= 0);
+    assertTrue(output.indexOf(USAGE_DESCRIBE) >= 0);
   }
 
   @Test
@@ -78,7 +91,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
+    assertTrue(output.indexOf(USAGE_CREATE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -87,7 +100,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
+    assertTrue(output.indexOf(USAGE_CREATE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -96,7 +109,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
+    assertTrue(output.indexOf(USAGE_CREATE) >= 0);
   }
 
   @Test
@@ -108,7 +121,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup history") >= 0);
+    assertTrue(output.indexOf(USAGE_HISTORY) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -117,7 +130,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup history") >= 0);
+    assertTrue(output.indexOf(USAGE_HISTORY) >= 0);
 
   }
 
@@ -130,7 +143,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);
+    assertTrue(output.indexOf(USAGE_DELETE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -139,7 +152,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);
+    assertTrue(output.indexOf(USAGE_DELETE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -148,7 +161,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);
+    assertTrue(output.indexOf(USAGE_DELETE) >= 0);
   }
 
   @Test
@@ -160,7 +173,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup progress") >= 0);
+    assertTrue(output.indexOf(USAGE_PROGRESS) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -169,7 +182,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup progress") >= 0);
+    assertTrue(output.indexOf(USAGE_PROGRESS) >= 0);
   }
 
   @Test
@@ -181,7 +194,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup set") >= 0);
+    assertTrue(output.indexOf(USAGE_SET) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -190,7 +203,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup set") >= 0);
+    assertTrue(output.indexOf(USAGE_SET) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -199,7 +212,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup set") >= 0);
+    assertTrue(output.indexOf(USAGE_SET) >= 0);
 
   }
 
@@ -212,7 +225,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -221,7 +234,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
   }
 
   @Test
@@ -233,7 +246,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase restore") >= 0);
+    assertTrue(output.indexOf(USAGE_RESTORE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -242,7 +255,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase restore") >= 0);
+    assertTrue(output.indexOf(USAGE_RESTORE) >= 0);
   }
 
   @Test
@@ -254,7 +267,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -263,7 +276,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
   }
 
 
@@ -277,7 +290,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -286,7 +299,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -295,7 +308,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -304,7 +317,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -313,7 +326,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup") >= 0);
+    assertTrue(output.indexOf(USAGE_BACKUP) >= 0);
   }
 
   @Test
@@ -325,7 +338,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase restore") >= 0);
+    assertTrue(output.indexOf(USAGE_RESTORE) >= 0);
 
   }
 
@@ -338,7 +351,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
+    assertTrue(output.indexOf(USAGE_CREATE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -347,7 +360,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
+    assertTrue(output.indexOf(USAGE_CREATE) >= 0);
 
     baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos));
@@ -356,7 +369,7 @@ public class TestBackupCommandLineTool {
 
     output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup create") >= 0);
+    assertTrue(output.indexOf(USAGE_CREATE) >= 0);
   }
 
   @Test
@@ -368,7 +381,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup delete") >= 0);
+    assertTrue(output.indexOf(USAGE_DELETE) >= 0);
 
   }
 
@@ -381,7 +394,7 @@ public class TestBackupCommandLineTool {
 
     String output = baos.toString();
     System.out.println(baos.toString());
-    assertTrue(output.indexOf("Usage: bin/hbase backup history") >= 0);
+    assertTrue(output.indexOf(USAGE_HISTORY) >= 0);
 
   }
 

@@ -51,10 +51,9 @@ public class ZKProcedureCoordinatorRpcs implements ProcedureCoordinatorRpcs {
    * @param procedureClass procedure type name is a category for when there are multiple kinds of
    *    procedures.-- this becomes a znode so be aware of the naming restrictions
    * @param coordName name of the node running the coordinator
-   * @throws KeeperException if an unexpected zk error occurs
    */
   public ZKProcedureCoordinatorRpcs(ZooKeeperWatcher watcher,
-      String procedureClass, String coordName) throws IOException {
+      String procedureClass, String coordName) {
     this.watcher = watcher;
     this.procedureType = procedureClass;
     this.coordName = coordName;
@@ -181,6 +180,7 @@ public class ZKProcedureCoordinatorRpcs implements ProcedureCoordinatorRpcs {
    * Start monitoring znodes in ZK - subclass hook to start monitoring znodes they are about.
    * @return true if succeed, false if encountered initialization errors.
    */
+  @Override
   final public boolean start(final ProcedureCoordinator coordinator) {
     if (this.coordinator != null) {
       throw new IllegalStateException(

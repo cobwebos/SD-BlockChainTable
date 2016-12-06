@@ -30,7 +30,7 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 /**
  * The administrative API for HBase Backup. Construct an instance from
- * {@link HBaseBackupAdmin(Connection)} and call {@link #close()} afterwards.
+ * {@link BackupAdminImpl(Connection)} and call {@link #close()} afterwards.
  * <p>BackupAdmin can be used to create backups, restore data from backups and for
  * other backup-related operations.
  *

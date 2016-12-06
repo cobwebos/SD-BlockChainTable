@@ -66,7 +66,7 @@ public class HBackupFileSystem {
    */
   public static String getTableBackupDir(String backupRootDir, String backupId,
       TableName tableName) {
-    return backupRootDir + Path.SEPARATOR+ backupId + Path.SEPARATOR + 
+    return backupRootDir + Path.SEPARATOR+ backupId + Path.SEPARATOR +
         tableName.getNamespaceAsString() + Path.SEPARATOR
         + tableName.getQualifierAsString() + Path.SEPARATOR ;
   }
@@ -84,8 +84,8 @@ public class HBackupFileSystem {
     return new Path(getTableBackupDir(backupRootPath.toString(), backupId, tableName));
   }
 
-  
-  public static List<HRegionInfo> loadRegionInfos(TableName tableName, 
+
+  public static List<HRegionInfo> loadRegionInfos(TableName tableName,
     Path backupRootPath, String backupId, Configuration conf) throws IOException
   {
     Path backupTableRoot = getTableBackupPath(tableName, backupRootPath, backupId);
@@ -100,11 +100,11 @@ public class HBackupFileSystem {
         infos.add(info);
       }
     }
-    
+
     Collections.sort(infos);
     return infos;
   }
-  
+
   /**
    * Given the backup root dir and the backup id, return the log file location for an incremental
    * backup.
@@ -125,6 +125,7 @@ public class HBackupFileSystem {
       Path backupRootPath, String backupId) throws IOException {
     Path manifestPath = new Path(getTableBackupPath(tableName, backupRootPath, backupId),
       BackupManifest.MANIFEST_FILE_NAME);
+
     FileSystem fs = backupRootPath.getFileSystem(conf);
     if (!fs.exists(manifestPath)) {
       // check log dir for incremental backup case
@@ -134,8 +135,8 @@ public class HBackupFileSystem {
       if (!fs.exists(manifestPath)) {
         String errorMsg =
             "Could not find backup manifest " + BackupManifest.MANIFEST_FILE_NAME + " for " +
-                backupId + " in " + backupRootPath.toString() +
-                ". Did " + backupId + " correspond to previously taken backup ?";
+                backupId + ". File " + manifestPath +
+                " does not exists. Did " + backupId + " correspond to previously taken backup ?";
         throw new IOException(errorMsg);
       }
     }

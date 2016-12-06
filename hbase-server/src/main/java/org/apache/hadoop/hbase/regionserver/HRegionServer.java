@@ -183,6 +183,9 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -193,9 +196,6 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 import com.google.protobuf.ServiceException;
-
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 /**
  * HRegionServer makes a set of HRegions available to clients. It checks in with
@@ -368,7 +368,7 @@ public class HRegionServer extends HasThread implements
 
   // WAL roller. log is protected rather than private to avoid
   // eclipse warning when accessed by inner classes
-  public final LogRoller walRoller;
+  protected final LogRoller walRoller;
   // Lazily initialized if this RegionServer hosts a meta table.
   final AtomicReference<LogRoller> metawalRoller = new AtomicReference<LogRoller>();
 
@@ -621,6 +621,7 @@ public class HRegionServer extends HasThread implements
 
     if (!SystemUtils.IS_OS_WINDOWS) {
       Signal.handle(new Signal("HUP"), new SignalHandler() {
+        @Override
         public void handle(Signal signal) {
           getConfiguration().reloadConfiguration();
           configurationManager.notifyAllObservers(getConfiguration());
@@ -635,7 +636,7 @@ public class HRegionServer extends HasThread implements
     int cleanerInterval =
         conf.getInt("hbase.hfile.compaction.discharger.interval", 2 * 60 * 1000);
     this.compactedFileDischarger =
-        new CompactedHFilesDischarger(cleanerInterval, (Stoppable)this, (RegionServerServices)this);
+        new CompactedHFilesDischarger(cleanerInterval, this, this);
     choreService.scheduleChore(compactedFileDischarger);
   }
 
@@ -1895,6 +1896,10 @@ public class HRegionServer extends HasThread implements
     }
     roller.addWAL(wal);
     return wal;
+  }
+
+  public LogRoller getWalRoller() {
+    return walRoller;
   }
 
   @Override

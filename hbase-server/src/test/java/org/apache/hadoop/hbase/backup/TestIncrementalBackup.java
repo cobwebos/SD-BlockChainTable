@@ -30,7 +30,7 @@ import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
+import org.apache.hadoop.hbase.backup.impl.BackupAdminImpl;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -84,7 +84,7 @@ public class TestIncrementalBackup extends TestBackupBase {
 
     HBaseAdmin admin = null;
     admin = (HBaseAdmin) conn.getAdmin();
-    HBaseBackupAdmin client = new HBaseBackupAdmin(conn);
+    BackupAdminImpl client = new BackupAdminImpl(conn);
 
     BackupRequest request = new BackupRequest();
     request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);

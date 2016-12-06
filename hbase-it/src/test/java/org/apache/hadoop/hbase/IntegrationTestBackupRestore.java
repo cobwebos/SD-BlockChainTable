@@ -37,7 +37,7 @@ import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
 import org.apache.hadoop.hbase.backup.impl.BackupSystemTable;
-import org.apache.hadoop.hbase.backup.impl.HBaseBackupAdmin;
+import org.apache.hadoop.hbase.backup.impl.BackupAdminImpl;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -162,7 +162,7 @@ public class IntegrationTestBackupRestore extends IntegrationTestBase {
     List<TableName> tables = Lists.newArrayList(TABLE_NAME1, TABLE_NAME2);
     HBaseAdmin admin = null;
     admin = (HBaseAdmin) conn.getAdmin();
-    BackupAdmin client = new HBaseBackupAdmin(util.getConnection());
+    BackupAdmin client = new BackupAdminImpl(util.getConnection());
 
     BackupRequest request = new BackupRequest();
     request.setBackupType(BackupType.FULL).setTableList(tables).setTargetRootDir(BACKUP_ROOT_DIR);

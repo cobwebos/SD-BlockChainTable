@@ -33,9 +33,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.backup.BackupAdmin;
 import org.apache.hadoop.hbase.backup.BackupInfo;
 import org.apache.hadoop.hbase.backup.BackupInfo.BackupState;
-import org.apache.hadoop.hbase.backup.BackupAdmin;
 import org.apache.hadoop.hbase.backup.BackupRequest;
 import org.apache.hadoop.hbase.backup.BackupRestoreConstants;
 import org.apache.hadoop.hbase.backup.BackupType;
@@ -48,16 +48,15 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.EnvironmentEdgeManager;
 
 import com.google.common.collect.Lists;
 
 /**
- * The administrative API implementation for HBase Backup . Create an instance from 
- * {@link HBaseBackupAdmin(Connection)} and call {@link #close()} afterwards.
- * <p>BackupAdmin can be used to create backups, restore data from backups and for 
- * other backup-related operations. 
+ * The administrative API implementation for HBase Backup . Create an instance from
+ * {@link BackupAdminImpl(Connection)} and call {@link #close()} afterwards.
+ * <p>BackupAdmin can be used to create backups, restore data from backups and for
+ * other backup-related operations.
  *
  * @see Admin
  * @since 2.0
@@ -65,17 +64,20 @@ import com.google.common.collect.Lists;
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 
-public class HBaseBackupAdmin implements BackupAdmin {
-  private static final Log LOG = LogFactory.getLog(HBaseBackupAdmin.class);
+public class BackupAdminImpl implements BackupAdmin {
+  private static final Log LOG = LogFactory.getLog(BackupAdminImpl.class);
 
   private final Connection conn;
 
-  public HBaseBackupAdmin(Connection conn) {
+  public BackupAdminImpl(Connection conn) {
     this.conn = conn;
   }
 
   @Override
   public void close() throws IOException {
+    if (conn != null) {
+      conn.close();
+    }
   }
 
   @Override
@@ -152,14 +154,14 @@ public class HBaseBackupAdmin implements BackupAdmin {
       throws IOException {
     for (String backupRoot : tablesMap.keySet()) {
       Set<TableName> incrTableSet = table.getIncrementalBackupTableSet(backupRoot);
-      Map<TableName, ArrayList<BackupInfo>> tableMap = 
-          table.getBackupHistoryForTableSet(incrTableSet, backupRoot);      
+      Map<TableName, ArrayList<BackupInfo>> tableMap =
+          table.getBackupHistoryForTableSet(incrTableSet, backupRoot);
       for(Map.Entry<TableName, ArrayList<BackupInfo>> entry: tableMap.entrySet()) {
         if(entry.getValue() == null) {
           // No more backups for a table
           incrTableSet.remove(entry.getKey());
         }
-      }      
+      }
       if (!incrTableSet.isEmpty()) {
         table.addIncrementalBackupTableSet(incrTableSet, backupRoot);
       } else { // empty
@@ -167,11 +169,11 @@ public class HBaseBackupAdmin implements BackupAdmin {
       }
     }
   }
-  
+
   /**
    * Delete single backup and all related backups
    * Algorithm:
-   * 
+   *
    * Backup type: FULL or INCREMENTAL
    * Is this last backup session for table T: YES or NO
    * For every table T from table list 'tables':
@@ -214,7 +216,7 @@ public class HBaseBackupAdmin implements BackupAdmin {
           removeTableFromBackupImage(info, tn, sysTable);
         }
       }
-      LOG.debug("Delete backup info "+ backupInfo.getBackupId());  
+      LOG.debug("Delete backup info "+ backupInfo.getBackupId());
 
       sysTable.deleteBackupInfo(backupInfo.getBackupId());
       LOG.info("Delete backup " + backupInfo.getBackupId() + " completed.");
@@ -228,13 +230,13 @@ public class HBaseBackupAdmin implements BackupAdmin {
   private void removeTableFromBackupImage(BackupInfo info, TableName tn, BackupSystemTable sysTable)
       throws IOException {
     List<TableName> tables = info.getTableNames();
-    LOG.debug("Remove "+ tn +" from " + info.getBackupId() + " tables=" + 
+    LOG.debug("Remove "+ tn +" from " + info.getBackupId() + " tables=" +
       info.getTableListAsString());
     if (tables.contains(tn)) {
       tables.remove(tn);
 
       if (tables.isEmpty()) {
-        LOG.debug("Delete backup info "+ info.getBackupId());  
+        LOG.debug("Delete backup info "+ info.getBackupId());
 
         sysTable.deleteBackupInfo(info.getBackupId());
         BackupClientUtil.cleanupBackupData(info, conn.getConfiguration());
@@ -275,13 +277,13 @@ public class HBaseBackupAdmin implements BackupAdmin {
     return list;
   }
 
-  
-  
+
+
   /**
    * Clean up the data at target directory
-   * @throws IOException 
+   * @throws IOException
    */
-  private void cleanupBackupDir(BackupInfo backupInfo, TableName table, Configuration conf) 
+  private void cleanupBackupDir(BackupInfo backupInfo, TableName table, Configuration conf)
       throws IOException {
     try {
       // clean up the data at target directory
@@ -350,10 +352,10 @@ public class HBaseBackupAdmin implements BackupAdmin {
         boolean passed = true;
         for(int i=0; i < filters.length; i++) {
           if(!filters[i].apply(bi)) {
-            passed = false; 
+            passed = false;
             break;
           }
-        }        
+        }
         if(passed) {
           result.add(bi);
         }
@@ -436,7 +438,7 @@ public class HBaseBackupAdmin implements BackupAdmin {
         sTableArray, conn.getConfiguration(), rootPath, backupId);
 
       // Check and validate the backup image and its dependencies
-     
+
         if (RestoreServerUtil.validate(backupManifestMap, conn.getConfiguration())) {
           LOG.info("Checking backup images: ok");
         } else {
@@ -444,7 +446,7 @@ public class HBaseBackupAdmin implements BackupAdmin {
           LOG.error(errMsg);
           throw new IOException(errMsg);
         }
-      
+
     }
     // Execute restore request
     new RestoreTablesClient(conn, request).execute();
@@ -452,8 +454,7 @@ public class HBaseBackupAdmin implements BackupAdmin {
 
   @Override
   public Future<Void> restoreAsync(RestoreRequest request) throws IOException {
-    // TBI
-    return null;
+    throw new UnsupportedOperationException("Asynchronous restore is not supported yet");
   }
 
   @Override
@@ -549,8 +550,7 @@ public class HBaseBackupAdmin implements BackupAdmin {
 
   @Override
   public Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException {
-    // TBI
-    return null;
+    throw new UnsupportedOperationException("Asynchronous backup is not supported yet");
   }
 
 }

@@ -229,7 +229,7 @@ public final class BackupCommands implements BackupRestoreConstants {
           Integer.parseInt(cmdline.getOptionValue(OPTION_WORKERS)) : -1;
 
       try (Connection conn = ConnectionFactory.createConnection(getConf());
-          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {
+          BackupAdminImpl admin = new BackupAdminImpl(conn);) {
         BackupRequest request = new BackupRequest();
         request.setBackupType(BackupType.valueOf(args[1].toUpperCase()))
         .setTableList(tables != null?Lists.newArrayList(BackupClientUtil.parseTableNames(tables)): null)
@@ -461,7 +461,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       System.arraycopy(args, 1, backupIds, 0, backupIds.length);
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
       try (final Connection conn = ConnectionFactory.createConnection(conf);
-          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {
+          BackupAdminImpl admin = new BackupAdminImpl(conn);) {
         int deleted = admin.deleteBackups(args);
         System.out.println("Deleted " + deleted + " backups. Total requested: " + args.length);
       }
@@ -491,7 +491,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       }
       Configuration conf = getConf() != null ? getConf() : HBaseConfiguration.create();
       try (final Connection conn = ConnectionFactory.createConnection(conf);
-          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);) {
+          BackupAdminImpl admin = new BackupAdminImpl(conn);) {
         // TODO cancel backup
       }
     }
@@ -666,7 +666,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       // does not expect any args
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf);
-          HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
+          BackupAdminImpl admin = new BackupAdminImpl(conn);){
         List<BackupSet> list = admin.listBackupSets();
         for(BackupSet bs: list){
           System.out.println(bs);
@@ -701,7 +701,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       String setName = args[2];
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf);
-          final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
+          final BackupAdminImpl admin = new BackupAdminImpl(conn);){
         boolean result = admin.deleteBackupSet(setName);
         if(result){
           System.out.println("Delete set "+setName+" OK.");
@@ -721,7 +721,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       String[] tables = args[3].split(",");
       Configuration conf = getConf() != null? getConf(): HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf);
-          final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
+          final BackupAdminImpl admin = new BackupAdminImpl(conn);){
         admin.removeFromBackupSet(setName, tables);
       }
     }
@@ -739,7 +739,7 @@ public final class BackupCommands implements BackupRestoreConstants {
       }
       Configuration conf = getConf() != null? getConf():HBaseConfiguration.create();
       try(final Connection conn = ConnectionFactory.createConnection(conf);
-          final HBaseBackupAdmin admin = new HBaseBackupAdmin(conn);){
+          final BackupAdminImpl admin = new BackupAdminImpl(conn);){
         admin.addToBackupSet(setName, tableNames);
       }
 

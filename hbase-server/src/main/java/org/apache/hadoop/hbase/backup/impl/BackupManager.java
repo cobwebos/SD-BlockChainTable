@@ -25,10 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -52,8 +48,6 @@ import org.apache.hadoop.hbase.classification.InterfaceStability;
 import org.apache.hadoop.hbase.client.ClusterConnection;
 import org.apache.hadoop.hbase.client.Connection;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 /**
  * Handles backup requests on server-side, creates backup context records in hbase:backup
  * to keep track backup. The timestamps kept in hbase:backup table will be used for future
@@ -63,11 +57,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 @InterfaceStability.Evolving
 public class BackupManager implements Closeable {
   private static final Log LOG = LogFactory.getLog(BackupManager.class);
-  private Configuration conf = null;
-  private BackupInfo backupContext = null;
-  private ExecutorService pool = null;
-  private BackupSystemTable systemTable;
-  private final Connection conn;
+  protected Configuration conf = null;
+  protected BackupInfo backupContext = null;
+  protected BackupSystemTable systemTable;
+  protected final Connection conn;
 
   /**
    * Backup manager constructor.
@@ -173,22 +166,11 @@ public class BackupManager implements Closeable {
    */
   @Override
   public void close() {
-    // currently, we shutdown now for all ongoing back handlers, we may need to do something like
-    // record the failed list somewhere later
-    if (this.pool != null) {
-      this.pool.shutdownNow();
-    }
+
     if (systemTable != null) {
       try {
         systemTable.close();
       } catch (Exception e) {
-        LOG.error(e);
-      }
-    }
-    if (conn != null) {
-      try {
-        conn.close();
-      } catch (IOException e) {
         LOG.error(e);
       }
     }
@@ -270,15 +252,6 @@ public class BackupManager implements Closeable {
           + ". Can not launch new backup until no ongoing backup remains.");
       throw new BackupException("There is ongoing backup.");
     }
-
-    // Initialize thread pools
-    int nrThreads = this.conf.getInt("hbase.backup.threads.max", 1);
-    ThreadFactoryBuilder builder = new ThreadFactoryBuilder();
-    builder.setNameFormat("BackupHandler-%1$d");
-    this.pool =
-        new ThreadPoolExecutor(nrThreads, nrThreads, 60, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>(), builder.build());
-    ((ThreadPoolExecutor) pool).allowCoreThreadTimeOut(true);
   }
 
   public void setBackupContext(BackupInfo backupContext) {
@@ -309,11 +282,14 @@ public class BackupManager implements Closeable {
 
     ArrayList<BackupInfo> allHistoryList = getBackupHistory(true);
     for (BackupInfo backup : allHistoryList) {
-      BackupImage image =
-          new BackupImage(backup.getBackupId(), backup.getType(),
-            backup.getTargetRootDir(),
-              backup.getTableNames(), backup.getStartTs(), backup
-                  .getEndTs());
+
+      BackupImage.Builder builder = BackupImage.newBuilder();
+
+      BackupImage image = builder.withBackupId(backup.getBackupId()).
+        withType(backup.getType()).withRootDir(backup.getTargetRootDir()).
+        withTableList(backup.getTableNames()).withStartTime(backup.getStartTs()).
+        withCompleteTime(backup.getEndTs()).build();
+
       // add the full backup image as an ancestor until the last incremental backup
       if (backup.getType().equals(BackupType.FULL)) {
         // check the backup image coverage, if previous image could be covered by the newer ones,
@@ -328,10 +304,9 @@ public class BackupManager implements Closeable {
         // Otherwise, this incremental backup ancestor is the dependent ancestor of the ongoing
         // incremental backup
         if (BackupManifest.canCoverImage(ancestors, image)) {
-          LOG.debug("Met the backup boundary of the current table set. "
-              + "The root full backup images for the current backup scope:");
+          LOG.debug("Met the backup boundary of the current table set:");
           for (BackupImage image1 : ancestors) {
-            LOG.debug("  BackupId: " + image1.getBackupId() + ", Backup directory: "
+            LOG.debug("  BackupID=" + image1.getBackupId() + ", BackupDir="
                 + image1.getRootDir());
           }
         } else {
@@ -345,9 +320,10 @@ public class BackupManager implements Closeable {
           BackupImage lastIncrImage = lastIncrImgManifest.getBackupImage();
           ancestors.add(lastIncrImage);
 
-          LOG.debug("Last dependent incremental backup image information:");
-          LOG.debug("  Token: " + lastIncrImage.getBackupId());
-          LOG.debug("  Backup directory: " + lastIncrImage.getRootDir());
+          LOG.debug("Last dependent incremental backup image: "
+               + "{BackupID=" + lastIncrImage.getBackupId()+","
+               + "BackupDir=" + lastIncrImage.getRootDir()+"}"
+              );
         }
       }
     }

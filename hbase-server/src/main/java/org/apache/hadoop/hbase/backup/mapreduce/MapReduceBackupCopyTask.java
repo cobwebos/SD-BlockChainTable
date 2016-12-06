@@ -48,12 +48,9 @@ import org.apache.hadoop.tools.DistCpOptions;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 /**
  * Copier for backup operation. Basically, there are 2 types of copy. One is copying from snapshot,
- * which bases on extending ExportSnapshot's function with copy progress reporting to ZooKeeper
- * implementation. The other is copying for incremental log files, which bases on extending
- * DistCp's function with copy progress reporting to ZooKeeper implementation.
+ * which bases on extending ExportSnapshot's function. The other is copying for incremental
+ * log files, which bases on extending DistCp's function.
  *
- * For now this is only a wrapper. The other features such as progress and increment backup will be
- * implemented in future jira
  */
 
 @InterfaceAudience.Private
@@ -122,7 +119,7 @@ public class MapReduceBackupCopyTask implements BackupCopyTask {
   /**
    * Update the ongoing backup with new progress.
    * @param backupContext backup context
-   * 
+   *
    * @param newProgress progress
    * @param bytesCopied bytes copied
    * @throws NoNodeException exception
@@ -199,7 +196,7 @@ public class MapReduceBackupCopyTask implements BackupCopyTask {
 
         // Get the total length of the source files
         List<Path> srcs = ((DistCpOptions) fieldInputOptions.get(this)).getSourcePaths();
-        
+
         long totalSrcLgth = 0;
         for (Path aSrc : srcs) {
           totalSrcLgth += BackupServerUtil.getFilesLength(aSrc.getFileSystem(getConf()), aSrc);
@@ -277,7 +274,7 @@ public class MapReduceBackupCopyTask implements BackupCopyTask {
 
   }
 
-  
+
   /**
    * Do backup copy based on different types.
    * @param context The backup context
@@ -327,7 +324,7 @@ public class MapReduceBackupCopyTask implements BackupCopyTask {
 
    @Override
    public void cancelCopyJob(String jobId) throws IOException {
-     JobID id = JobID.forName(jobId);     
+     JobID id = JobID.forName(jobId);
      Cluster cluster = new Cluster(getConf());
      try {
        Job job = cluster.getJob(id);
@@ -338,7 +335,7 @@ public class MapReduceBackupCopyTask implements BackupCopyTask {
        if (job.isComplete() || job.isRetired()) {
          return;
        }
- 
+
        job.killJob();
        LOG.debug("Killed job " + id);
      } catch (InterruptedException e) {

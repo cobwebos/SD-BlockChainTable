@@ -33,7 +33,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.backup.BackupType;
 import org.apache.hadoop.hbase.backup.HBackupFileSystem;
 import org.apache.hadoop.hbase.backup.RestoreRequest;
-import org.apache.hadoop.hbase.backup.impl.BackupManifest;
 import org.apache.hadoop.hbase.backup.impl.BackupManifest.BackupImage;
 import org.apache.hadoop.hbase.backup.util.RestoreServerUtil;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
@@ -51,10 +50,6 @@ public class RestoreTablesClient {
   private TableName[] tTableArray;
   private String targetRootDir;
   private boolean isOverwrite;
-
-  public RestoreTablesClient() {
-    // Required by the Procedure framework to create the procedure on replay
-  }
 
   public RestoreTablesClient(Connection conn, RestoreRequest request)
       throws IOException {

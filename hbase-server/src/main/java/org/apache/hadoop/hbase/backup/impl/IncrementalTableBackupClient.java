@@ -26,7 +26,6 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HConstants;
@@ -44,33 +43,15 @@ import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.client.Connection;
 
 @InterfaceAudience.Private
-public class IncrementalTableBackupClient {
+public class IncrementalTableBackupClient extends TableBackupClient {
   private static final Log LOG = LogFactory.getLog(IncrementalTableBackupClient.class);
 
-  private Configuration conf;
-  private Connection conn;
-  //private String backupId;
-  HashMap<String, Long> newTimestamps = null;
-
-  private String backupId;
-  private BackupManager backupManager;
-  private BackupInfo backupContext;
-
-  public IncrementalTableBackupClient() {
-    // Required by the Procedure framework to create the procedure on replay
-  }
 
   public IncrementalTableBackupClient(final Connection conn, final String backupId,
       BackupRequest request)
-      throws IOException {
-
-    this.conn = conn;
-    this.conf = conn.getConfiguration();
-    backupManager = new BackupManager(conn, conf);
-    this.backupId = backupId;
-    backupContext =
-        backupManager.createBackupContext(backupId, BackupType.INCREMENTAL, request.getTableList(),
-          request.getTargetRootDir(), request.getWorkers(), (int) request.getBandwidth());
+      throws IOException
+  {
+    super(conn, backupId, request);
   }
 
   private List<String> filterMissingFiles(List<String> incrBackupFileList) throws IOException {
@@ -172,19 +153,19 @@ public class IncrementalTableBackupClient {
     return list;
   }
 
+  @Override
   public void execute() throws IOException {
 
     // case PREPARE_INCREMENTAL:
-    FullTableBackupClient.beginBackup(backupManager, backupContext);
+    beginBackup(backupManager, backupContext);
     LOG.debug("For incremental backup, current table set is "
         + backupManager.getIncrementalBackupTableSet());
     try {
-      IncrementalBackupManager incrBackupManager = new IncrementalBackupManager(backupManager);
-
-      newTimestamps = incrBackupManager.getIncrBackupLogFileList(conn, backupContext);
+      newTimestamps = ((IncrementalBackupManager)backupManager).
+          getIncrBackupLogFileList(conn, backupContext);
     } catch (Exception e) {
       // fail the overall backup and return
-      FullTableBackupClient.failBackup(conn, backupContext, backupManager, e,
+      failBackup(conn, backupContext, backupManager, e,
         "Unexpected Exception : ", BackupType.INCREMENTAL, conf);
     }
 
@@ -198,7 +179,7 @@ public class IncrementalTableBackupClient {
     } catch (Exception e) {
       String msg = "Unexpected exception in incremental-backup: incremental copy " + backupId;
       // fail the overall backup and return
-      FullTableBackupClient.failBackup(conn, backupContext, backupManager, e, msg,
+      failBackup(conn, backupContext, backupManager, e, msg,
         BackupType.INCREMENTAL, conf);
     }
     // case INCR_BACKUP_COMPLETE:
@@ -223,11 +204,11 @@ public class IncrementalTableBackupClient {
               .getRSLogTimestampMins(newTableSetTimestampMap));
       backupManager.writeBackupStartCode(newStartCode);
       // backup complete
-      FullTableBackupClient.completeBackup(conn, backupContext, backupManager,
+      completeBackup(conn, backupContext, backupManager,
         BackupType.INCREMENTAL, conf);
 
     } catch (IOException e) {
-      FullTableBackupClient.failBackup(conn, backupContext, backupManager, e,
+      failBackup(conn, backupContext, backupManager, e,
         "Unexpected Exception : ", BackupType.INCREMENTAL, conf);
     }
   }

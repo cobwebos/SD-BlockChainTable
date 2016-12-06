@@ -45,7 +45,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
-public final class BackupSystemTableHelper {
+
+final class BackupSystemTableHelper {
 
   /**
    * hbase:backup schema:

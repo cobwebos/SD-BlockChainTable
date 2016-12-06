@@ -32,6 +32,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -90,7 +91,8 @@ public final class BackupSystemTable implements Closeable {
 
     @Override
     public String toString() {
-      return "/" + backupRoot + "/" + backupId + "/" + walFile;
+      return Path.SEPARATOR + backupRoot +
+          Path.SEPARATOR + backupId + Path.SEPARATOR + walFile;
     }
 
   }
