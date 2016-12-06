@@ -911,7 +911,8 @@ public class LoadIncrementalHFiles extends Configured implements Tool {
 
         try {
           LOG.debug("Going to connect to server " + getLocation() + " for row "
-              + Bytes.toStringBinary(getRow()) + " with hfile group " + famPaths);
+              + Bytes.toStringBinary(getRow()) + " with hfile group " +
+              LoadIncrementalHFiles.this.toString(famPaths));
           byte[] regionName = getLocation().getRegionInfo().getRegionName();
           if (!isSecureBulkLoadEndpointAvailable()) {
             success = ProtobufUtil.bulkLoadHFile(getStub(), famPaths, regionName, assignSeqIds);
@@ -981,6 +982,22 @@ public class LoadIncrementalHFiles extends Configured implements Tool {
           + svrCallable.getExceptionMessageAdditionalDetail(), e);
       throw e;
     }
+  }
+
+  private final String toString(List<Pair<byte[], String>> list) {
+    StringBuffer sb = new StringBuffer();
+    sb.append("[");
+    if(list != null){
+      for(Pair<byte[], String> pair: list) {
+        sb.append("{");
+        sb.append(Bytes.toStringBinary(pair.getFirst()));
+        sb.append(",");
+        sb.append(pair.getSecond());
+        sb.append("}");
+      }
+    }
+    sb.append("]");
+    return sb.toString();
   }
 
   private boolean isSecureBulkLoadEndpointAvailable() {
