@@ -95,7 +95,7 @@ public class IncrementalTableBackupClient extends TableBackupClient {
     String[] strArr = incrBackupFileList.toArray(new String[incrBackupFileList.size() + 1]);
     strArr[strArr.length - 1] = backupContext.getHLogTargetDir();
 
-    BackupCopyTask copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
+    BackupCopyTask copyService = BackupRestoreServerFactory.getBackupCopyTask(conf);
     int counter = 0;
     int MAX_ITERAIONS = 2;
     while (counter++ < MAX_ITERAIONS) {

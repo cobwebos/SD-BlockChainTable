@@ -67,7 +67,7 @@ public class FullTableBackupClient extends TableBackupClient{
 
     // call ExportSnapshot to copy files based on hbase snapshot for backup
     // ExportSnapshot only support single snapshot export, need loop for multiple tables case
-    BackupCopyTask copyService = BackupRestoreServerFactory.getBackupCopyService(conf);
+    BackupCopyTask copyService = BackupRestoreServerFactory.getBackupCopyTask(conf);
 
     // number of snapshots matches number of tables
     float numOfSnapshots = backupContext.getSnapshotNames().size();

@@ -40,7 +40,7 @@ public final class BackupRestoreServerFactory {
    * @param conf - configuration
    * @return backup restore service instance
    */
-  public static RestoreTask getRestoreService(Configuration conf) {
+  public static RestoreTask getRestoreTask(Configuration conf) {
     Class<? extends RestoreTask> cls =
         conf.getClass(HBASE_INCR_RESTORE_IMPL_CLASS, MapReduceRestoreTask.class,
           RestoreTask.class);
@@ -54,7 +54,7 @@ public final class BackupRestoreServerFactory {
    * @param conf - configuration
    * @return backup copy service
    */
-  public static BackupCopyTask getBackupCopyService(Configuration conf) {
+  public static BackupCopyTask getBackupCopyTask(Configuration conf) {
     Class<? extends BackupCopyTask> cls =
         conf.getClass(HBASE_BACKUP_COPY_IMPL_CLASS, MapReduceBackupCopyTask.class,
           BackupCopyTask.class);

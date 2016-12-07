@@ -242,7 +242,7 @@ public class RestoreServerUtil {
       }
     }
     RestoreTask restoreService =
-        BackupRestoreServerFactory.getRestoreService(conf);
+        BackupRestoreServerFactory.getRestoreTask(conf);
 
     restoreService.run(logDirs, tableNames, newTableNames, false);
     }
@@ -479,7 +479,7 @@ public class RestoreServerUtil {
         Path[] dirs = new Path[regionPathList.size()];
         regionPathList.toArray(dirs);
         RestoreTask restoreService =
-            BackupRestoreServerFactory.getRestoreService(conf);
+            BackupRestoreServerFactory.getRestoreTask(conf);
 
         restoreService.run(dirs, new TableName[] { tableName }, new TableName[] { newTableName },
           true);
