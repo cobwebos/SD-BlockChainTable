@@ -27,7 +27,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.io.hfile.CacheConfig;
 import org.apache.hadoop.hbase.io.hfile.HFile;
 import org.apache.hadoop.hbase.io.hfile.HFile.Reader;
 import org.apache.hadoop.hbase.io.hfile.HFileScanner;
@@ -56,6 +55,7 @@ public class HFileInputFormat2 extends FileInputFormat<NullWritable, Cell> {
    * in the way we're doing exports.
    */
   static final PathFilter HIDDEN_FILE_FILTER = new PathFilter() {
+    @Override
     public boolean accept(Path p) {
       String name = p.getName();
       return !name.startsWith("_") && !name.startsWith(".");
@@ -79,14 +79,14 @@ public class HFileInputFormat2 extends FileInputFormat<NullWritable, Cell> {
     private boolean seeked = false;
 
     @Override
-    public void initialize(InputSplit split, TaskAttemptContext context) 
+    public void initialize(InputSplit split, TaskAttemptContext context)
         throws IOException, InterruptedException {
       FileSplit fileSplit = (FileSplit) split;
       conf = context.getConfiguration();
       Path path = fileSplit.getPath();
       FileSystem fs = path.getFileSystem(conf);
       LOG.info("Initialize HFileRecordReader for {}", path);
-      this.in = HFile.createReader(fs, path, new CacheConfig(conf), conf);
+      this.in = HFile.createReader(fs, path, conf);
 
       // The file info must be loaded before the scanner can be used.
       // This seems like a bug in HBase, but it's easily worked around.
@@ -144,7 +144,7 @@ public class HFileInputFormat2 extends FileInputFormat<NullWritable, Cell> {
   protected List<FileStatus> listStatus(JobContext job) throws IOException {
     List<FileStatus> result = new ArrayList<FileStatus>();
 
-    // Explode out directories that match the original FileInputFormat filters 
+    // Explode out directories that match the original FileInputFormat filters
     // since HFiles are written to directories where the
     // directory name is the column name
     for (FileStatus status : super.listStatus(job)) {
