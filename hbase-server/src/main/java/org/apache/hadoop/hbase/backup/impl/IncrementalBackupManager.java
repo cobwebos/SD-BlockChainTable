@@ -263,7 +263,7 @@ public class IncrementalBackupManager extends BackupManager{
         currentLogTS = BackupClientUtil.getCreationTime(log.getPath());
         // newestTimestamps is up-to-date with the current list of hosts
         // so newestTimestamps.get(host) will not be null.
-        if (Long.valueOf(currentLogTS) > Long.valueOf(newestTimestamps.get(host))) {
+        if (currentLogTS > newestTimestamps.get(host)) {
           newestLogs.add(currentLogFile);
         }
       }
@@ -293,13 +293,13 @@ public class IncrementalBackupManager extends BackupManager{
        * last backup.
        */
       if (oldTimeStamp == null) {
-        if (Long.valueOf(currentLogTS) < Long.valueOf(savedStartCode)) {
+        if (currentLogTS < Long.valueOf(savedStartCode)) {
           // This log file is really old, its region server was before our last backup.
           continue;
         } else {
           resultLogFiles.add(currentLogFile);
         }
-      } else if (Long.valueOf(currentLogTS) > Long.valueOf(oldTimeStamp)) {
+      } else if (currentLogTS > oldTimeStamp) {
         resultLogFiles.add(currentLogFile);
       }
 
@@ -308,7 +308,7 @@ public class IncrementalBackupManager extends BackupManager{
       // Even if these logs belong to a obsolete region server, we still need
       // to include they to avoid loss of edits for backup.
       Long newTimestamp = newestTimestamps.get(host);
-      if (newTimestamp != null && Long.valueOf(currentLogTS) > Long.valueOf(newTimestamp)) {
+      if (newTimestamp != null && currentLogTS > newTimestamp) {
         newestLogs.add(currentLogFile);
       }
     }
@@ -317,34 +317,34 @@ public class IncrementalBackupManager extends BackupManager{
     return resultLogFiles;
   }
 
-  class NewestLogFilter implements PathFilter {
-    private Long lastBackupTS = 0L;
 
-    public NewestLogFilter() {
-    }
+static class NewestLogFilter implements PathFilter {
+  private Long lastBackupTS = 0L;
 
-    protected void setLastBackupTS(Long ts) {
-      this.lastBackupTS = ts;
-    }
-
-    @Override
-    public boolean accept(Path path) {
-      // skip meta table log -- ts.meta file
-      if (DefaultWALProvider.isMetaFile(path)) {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Skip .meta log file: " + path.getName());
-        }
-        return false;
-      }
-      Long timestamp = null;
-      try {
-        timestamp = BackupClientUtil.getCreationTime(path);
-        return timestamp > Long.valueOf(lastBackupTS);
-      } catch (Exception e) {
-        LOG.warn("Cannot read timestamp of log file " + path);
-        return false;
-      }
-    }
+  public NewestLogFilter() {
   }
 
+  protected void setLastBackupTS(Long ts) {
+    this.lastBackupTS = ts;
+  }
+
+  @Override
+  public boolean accept(Path path) {
+    // skip meta table log -- ts.meta file
+    if (DefaultWALProvider.isMetaFile(path)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Skip .meta log file: " + path.getName());
+      }
+      return false;
+    }
+    Long timestamp = null;
+    try {
+      timestamp = BackupClientUtil.getCreationTime(path);
+      return timestamp > lastBackupTS;
+    } catch (Exception e) {
+      LOG.warn("Cannot read timestamp of log file " + path);
+      return false;
+    }
+  }
+}
 }

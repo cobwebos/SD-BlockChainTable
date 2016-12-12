@@ -54,7 +54,7 @@ import com.google.common.collect.Lists;
 
 /**
  * The administrative API implementation for HBase Backup . Create an instance from
- * {@link BackupAdminImpl(Connection)} and call {@link #close()} afterwards.
+ * {@link #BackupAdminImpl(Connection)} and call {@link #close()} afterwards.
  * <p>BackupAdmin can be used to create backups, restore data from backups and for
  * other backup-related operations.
  *

@@ -211,7 +211,8 @@ public class MapReduceBackupCopyTask implements BackupCopyTask {
 
         // Update the copy progress to ZK every 0.5s if progress value changed
         int progressReportFreq =
-            this.getConf().getInt("hbase.backup.progressreport.frequency", 500);
+            MapReduceBackupCopyTask.this.getConf().
+              getInt("hbase.backup.progressreport.frequency", 500);
         float lastProgress = progressDone;
         while (!job.isComplete()) {
           float newProgress =
