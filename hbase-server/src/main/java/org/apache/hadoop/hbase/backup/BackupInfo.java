@@ -514,26 +514,29 @@ public class BackupInfo implements Comparable<BackupInfo> {
 
   public String getShortDescription() {
     StringBuilder sb = new StringBuilder();
-    sb.append("ID             : " + backupId).append("\n");
-    sb.append("Type           : " + getType()).append("\n");
-    sb.append("Tables         : " + getTableListAsString()).append("\n");
-    sb.append("State          : " + getState()).append("\n");
+    sb.append("{");
+    sb.append("ID=" + backupId).append(",");
+    sb.append("Type=" + getType()).append(",");
+    sb.append("Tables=" + getTableListAsString()).append(",");
+    sb.append("State=" + getState()).append(",");
     Date date = null;
     Calendar cal = Calendar.getInstance();
     cal.setTimeInMillis(getStartTs());
     date = cal.getTime();
-    sb.append("Start time     : " + date).append("\n");
+    sb.append("Start time=" + date).append(",");
     if (state == BackupState.FAILED) {
-      sb.append("Failed message : " + getFailedMsg()).append("\n");
+      sb.append("Failed message=" + getFailedMsg()).append(",");
     } else if (state == BackupState.RUNNING) {
-      sb.append("Phase          : " + getPhase()).append("\n");
+      sb.append("Phase=" + getPhase()).append(",");
     } else if (state == BackupState.COMPLETE) {
       cal = Calendar.getInstance();
       cal.setTimeInMillis(getEndTs());
       date = cal.getTime();
-      sb.append("End time       : " + date).append("\n");
+      sb.append("End time=" + date).append(",");
     }
-    sb.append("Progress       : " + getProgress()+"%").append("\n");
+    sb.append("Progress=" + getProgress()+"%");
+    sb.append("}");
+
     return sb.toString();
   }
 
