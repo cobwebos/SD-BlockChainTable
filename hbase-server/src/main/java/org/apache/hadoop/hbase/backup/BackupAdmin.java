@@ -49,7 +49,7 @@ public interface BackupAdmin extends Closeable{
    * @return the backup Id
    */
 
-  public String backupTables(final BackupRequest userRequest) throws IOException;
+  String backupTables(final BackupRequest userRequest) throws IOException;
 
   /**
    * Backs up given list of tables fully. Asynchronous operation.
@@ -57,14 +57,14 @@ public interface BackupAdmin extends Closeable{
    * @param userRequest BackupRequest instance
    * @return the backup Id future
    */
-  public Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException;
+  Future<String> backupTablesAsync(final BackupRequest userRequest) throws IOException;
 
   /**
    * Restore backup
    * @param request restore request
    * @throws IOException exception
    */
-  public void restore(RestoreRequest request) throws IOException;
+  void restore(RestoreRequest request) throws IOException;
 
   /**
    * Restore backup
@@ -72,7 +72,7 @@ public interface BackupAdmin extends Closeable{
    * @return Future which client can wait on
    * @throws IOException exception
    */
-  public Future<Void> restoreAsync(RestoreRequest request) throws IOException;
+  Future<Void> restoreAsync(RestoreRequest request) throws IOException;
 
   /**
    * Describe backup image command
@@ -80,7 +80,7 @@ public interface BackupAdmin extends Closeable{
    * @return backup info
    * @throws IOException exception
    */
-  public BackupInfo getBackupInfo(String backupId) throws IOException;
+  BackupInfo getBackupInfo(String backupId) throws IOException;
 
   /**
    * Show backup progress command
@@ -89,7 +89,7 @@ public interface BackupAdmin extends Closeable{
    *  or session not found
    * @throws IOException exception
    */
-  public int getProgress(String backupId) throws IOException;
+  int getProgress(String backupId) throws IOException;
 
   /**
    * Delete backup image command
@@ -97,7 +97,7 @@ public interface BackupAdmin extends Closeable{
    * @return total number of deleted sessions
    * @throws IOException exception
    */
-  public int deleteBackups(String[] backupIds) throws IOException;
+  int deleteBackups(String[] backupIds) throws IOException;
 
   /**
    * Show backup history command
@@ -105,7 +105,7 @@ public interface BackupAdmin extends Closeable{
    * @return list of backup infos
    * @throws IOException exception
    */
-  public List<BackupInfo> getHistory(int n) throws IOException;
+  List<BackupInfo> getHistory(int n) throws IOException;
 
 
   /**
@@ -115,7 +115,7 @@ public interface BackupAdmin extends Closeable{
    * @return list of backup infos
    * @throws IOException exception
    */
-  public List<BackupInfo> getHistory(int n, BackupInfo.Filter ... f) throws IOException;
+  List<BackupInfo> getHistory(int n, BackupInfo.Filter ... f) throws IOException;
 
 
   /**
@@ -124,7 +124,7 @@ public interface BackupAdmin extends Closeable{
    * @return all registered backup sets
    * @throws IOException exception
    */
-  public List<BackupSet> listBackupSets() throws IOException;
+  List<BackupSet> listBackupSets() throws IOException;
 
   /**
    * Backup set describe command. Shows list of tables in
@@ -133,7 +133,7 @@ public interface BackupAdmin extends Closeable{
    * @return backup set description or null
    * @throws IOException exception
    */
-  public BackupSet getBackupSet(String name) throws IOException;
+  BackupSet getBackupSet(String name) throws IOException;
 
   /**
    * Delete backup set command
@@ -141,7 +141,7 @@ public interface BackupAdmin extends Closeable{
    * @return true, if success, false - otherwise
    * @throws IOException exception
    */
-  public boolean deleteBackupSet(String name) throws IOException;
+  boolean deleteBackupSet(String name) throws IOException;
 
   /**
    * Add tables to backup set command
@@ -149,7 +149,7 @@ public interface BackupAdmin extends Closeable{
    * @param tables list of tables to be added to this set.
    * @throws IOException exception
    */
-  public void addToBackupSet(String name, TableName[] tables) throws IOException;
+  void addToBackupSet(String name, TableName[] tables) throws IOException;
 
   /**
    * Remove tables from backup set
@@ -157,5 +157,5 @@ public interface BackupAdmin extends Closeable{
    * @param tables list of tables to be removed from this set.
    * @throws IOException exception
    */
-  public void removeFromBackupSet(String name, String[] tables) throws IOException;
+  void removeFromBackupSet(String name, String[] tables) throws IOException;
 }
