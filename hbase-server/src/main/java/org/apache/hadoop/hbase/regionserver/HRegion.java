@@ -18,6 +18,7 @@
 package org.apache.hadoop.hbase.regionserver;
 
 import static org.apache.hadoop.hbase.HConstants.REPLICATION_SCOPE_LOCAL;
+import static org.apache.hadoop.hbase.regionserver.HRegionServer.READ_ONLY_ENABLED_KEY;
 import static org.apache.hadoop.hbase.util.CollectionUtils.computeIfAbsent;
 
 import org.apache.hadoop.hbase.shaded.com.google.common.annotations.VisibleForTesting;
@@ -654,6 +655,10 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
 
   // whether to unassign region if we hit FNFE
   private final RegionUnassigner regionUnassigner;
+
+  // Whether the user has specified this region as read-only via READ_ONLY_ENABLED_KEY
+  private boolean readOnly;
+
   /**
    * HRegion constructor. This constructor should only be used for testing and
    * extensions.  Instances of HRegion should be instantiated with the
@@ -821,6 +826,9 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     } else {
       this.regionUnassigner = null;
     }
+
+    this.readOnly = !getRegionInfo().isSystemTable() &&
+        conf.getBoolean(READ_ONLY_ENABLED_KEY, false);
   }
 
   void setHTableSpecificConf() {
@@ -922,7 +930,7 @@ public class HRegion implements HeapSize, PropagatingConfigurationObserver, Regi
     }
     this.lastReplayedOpenRegionSeqId = maxSeqId;
 
-    this.writestate.setReadOnly(ServerRegionReplicaUtil.isReadOnly(this));
+    this.writestate.setReadOnly(readOnly || ServerRegionReplicaUtil.isReadOnly(this));
     this.writestate.flushRequested = false;
     this.writestate.compacting.set(0);
 

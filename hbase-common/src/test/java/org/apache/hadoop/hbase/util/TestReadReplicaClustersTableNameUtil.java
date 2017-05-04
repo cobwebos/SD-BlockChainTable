@@ -18,11 +18,14 @@
 package org.apache.hadoop.hbase.util;
 
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.testclassification.MediumTests;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@Category(MediumTests.class)
 public class TestReadReplicaClustersTableNameUtil {
 
   @Test

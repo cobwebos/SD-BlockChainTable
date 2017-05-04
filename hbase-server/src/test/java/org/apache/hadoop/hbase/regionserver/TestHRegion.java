@@ -22,6 +22,7 @@ import static org.apache.hadoop.hbase.HBaseTestingUtility.COLUMNS;
 import static org.apache.hadoop.hbase.HBaseTestingUtility.fam1;
 import static org.apache.hadoop.hbase.HBaseTestingUtility.fam2;
 import static org.apache.hadoop.hbase.HBaseTestingUtility.fam3;
+import static org.apache.hadoop.hbase.regionserver.HRegionServer.READ_ONLY_ENABLED_KEY;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.apache.hadoop.hbase.DoNotRetryIOException;
 import org.apache.hadoop.hbase.shaded.com.google.common.collect.Lists;
 import org.apache.hadoop.hbase.shaded.com.google.common.collect.Maps;
 
@@ -199,6 +201,7 @@ public class TestHRegion {
   public static final TestRule timeout =
       CategoryBasedTimeout.forClass(TestHRegion.class);
 
+  private static final byte[] READ_ONLY_TABLE = Bytes.toBytes("readOnlyTable");
   private static final String COLUMN_FAMILY = "MyCF";
   private static final byte [] COLUMN_FAMILY_BYTES = Bytes.toBytes(COLUMN_FAMILY);
 
@@ -1384,7 +1387,6 @@ public class TestHRegion {
 
   @Test
   public void testAppendWithReadOnlyTable() throws Exception {
-    final TableName tableName = TableName.valueOf(name.getMethodName());
     this.region = initHRegion(tableName, method, CONF, true, Bytes.toBytes("somefamily"));
     boolean exceptionCaught = false;
     Append append = new Append(Bytes.toBytes("somerow"));
@@ -1393,18 +1395,17 @@ public class TestHRegion {
         Bytes.toBytes("somevalue"));
     try {
       region.append(append);
-    } catch (IOException e) {
+    } catch (DoNotRetryIOException e) {
       exceptionCaught = true;
     } finally {
       HBaseTestingUtility.closeRegionAndWAL(this.region);
       this.region = null;
     }
-    assertTrue(exceptionCaught == true);
+    assertTrue(exceptionCaught);
   }
 
   @Test
   public void testIncrWithReadOnlyTable() throws Exception {
-    final TableName tableName = TableName.valueOf(name.getMethodName());
     this.region = initHRegion(tableName, method, CONF, true, Bytes.toBytes("somefamily"));
     boolean exceptionCaught = false;
     Increment inc = new Increment(Bytes.toBytes("somerow"));
@@ -1412,13 +1413,65 @@ public class TestHRegion {
     inc.addColumn(Bytes.toBytes("somefamily"), Bytes.toBytes("somequalifier"), 1L);
     try {
       region.increment(inc);
-    } catch (IOException e) {
+    } catch (DoNotRetryIOException e) {
       exceptionCaught = true;
     } finally {
       HBaseTestingUtility.closeRegionAndWAL(this.region);
       this.region = null;
     }
-    assertTrue(exceptionCaught == true);
+    assertTrue(exceptionCaught);
+  }
+
+  @Test
+  public void testPutWithReadOnlyTable() throws Exception {
+    this.region = initHRegion(tableName, method, CONF, true, Bytes.toBytes("somefamily"));
+    boolean exceptionCaught = false;
+    Put put = new Put(Bytes.toBytes("somerow"));
+    put.setDurability(Durability.SKIP_WAL);
+    put.addColumn(Bytes.toBytes("somefamily"), Bytes.toBytes("somequalifier"), Bytes.toBytes("value"));
+    try {
+      region.put(put);
+    } catch (DoNotRetryIOException e) {
+      exceptionCaught = true;
+    } finally {
+      HBaseTestingUtility.closeRegionAndWAL(this.region);
+      this.region = null;
+    }
+    assertTrue(exceptionCaught);
+  }
+
+  @Test
+  public void testDeleteWithReadOnlyTable() throws Exception {
+    this.region = initHRegion(tableName, method, CONF, true, Bytes.toBytes("somefamily"));
+    boolean exceptionCaught = false;
+    Delete delete = new Delete(Bytes.toBytes("somerow"));
+    delete.setDurability(Durability.SKIP_WAL);
+    delete.addColumn(Bytes.toBytes("somefamily"), Bytes.toBytes("somequalifier"), 1L);
+    try {
+      region.delete(delete);
+    } catch (DoNotRetryIOException e) {
+      exceptionCaught = true;
+    } finally {
+      HBaseTestingUtility.closeRegionAndWAL(this.region);
+      this.region = null;
+    }
+    assertTrue(exceptionCaught);
+  }
+
+  @Test
+  public void testGlobalReadOnly() throws IOException {
+    TableName writableTable = TableName.valueOf("writableTable");
+    this.region = initHRegion(writableTable, method, CONF, false, Bytes.toBytes("somefamily"));
+    assertFalse(this.region.isReadOnly());
+
+    CONF.setBoolean(READ_ONLY_ENABLED_KEY, true);
+    //Don't set the table attribute to ReadOnly
+    this.region = initHRegion(writableTable, method, CONF, false, Bytes.toBytes("somefamily"));
+    assertTrue(this.region.isReadOnly());
+
+    this.region = initHRegion(TableName.META_TABLE_NAME, null, CONF, Bytes.toBytes("somefamily"));
+    assertFalse(this.region.isReadOnly());
+    assertTrue(this.region.getTableDescriptor().getTableName().isMeta());
   }
 
   private void deleteColumns(HRegion r, String value, String keyPrefix) throws IOException {

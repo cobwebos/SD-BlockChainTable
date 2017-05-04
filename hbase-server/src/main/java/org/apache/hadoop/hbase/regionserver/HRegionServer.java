@@ -459,6 +459,11 @@ public class HRegionServer extends HasThread implements
     "hbase.regionserver.hostname.disable.master.reversedns";
 
   /**
+   * boolean value that disables modifications when enabled.
+   */
+  public static final String READ_ONLY_ENABLED_KEY = "hbase.readonly";
+
+  /**
    * This servers startcode.
    */
   protected final long startcode;

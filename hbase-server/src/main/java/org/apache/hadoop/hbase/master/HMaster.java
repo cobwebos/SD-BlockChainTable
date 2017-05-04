@@ -373,6 +373,8 @@ public class HMaster extends HRegionServer implements MasterServices {
   // the key is table name, the value is the number of compactions in that table.
   private Map<TableName, AtomicInteger> mobCompactionStates = Maps.newConcurrentMap();
 
+  private final boolean readOnly;
+
   MasterCoprocessorHost cpHost;
 
   private final boolean preLoadTableDescriptors;
@@ -535,6 +537,8 @@ public class HMaster extends HRegionServer implements MasterServices {
     } else {
       activeMasterManager = null;
     }
+
+    this.readOnly = conf.getBoolean(READ_ONLY_ENABLED_KEY, false);
   }
 
   // Main run loop. Calls through to the regionserver run loop.
@@ -1733,6 +1737,7 @@ public class HMaster extends HRegionServer implements MasterServices {
       final long nonceGroup,
       final long nonce) throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     String namespace = tableDescriptor.getTableName().getNamespaceAsString();
     this.clusterSchemaService.getNamespace(namespace);
@@ -2100,6 +2105,7 @@ public class HMaster extends HRegionServer implements MasterServices {
       final long nonceGroup,
       final long nonce) throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     return MasterProcedureUtil.submitProcedure(
         new MasterProcedureUtil.NonceProcedureRunnable(this, nonceGroup, nonce) {
@@ -2132,6 +2138,7 @@ public class HMaster extends HRegionServer implements MasterServices {
       final long nonceGroup,
       final long nonce) throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     return MasterProcedureUtil.submitProcedure(
         new MasterProcedureUtil.NonceProcedureRunnable(this, nonceGroup, nonce) {
@@ -2163,6 +2170,7 @@ public class HMaster extends HRegionServer implements MasterServices {
       final long nonce)
       throws IOException {
     checkInitialized();
+    checkReadOnly();
     checkCompression(columnDescriptor);
     checkEncryption(conf, columnDescriptor);
     checkReplicationScope(columnDescriptor);
@@ -2199,6 +2207,7 @@ public class HMaster extends HRegionServer implements MasterServices {
       final long nonce)
       throws IOException {
     checkInitialized();
+    checkReadOnly();
     checkCompression(descriptor);
     checkEncryption(conf, descriptor);
     checkReplicationScope(descriptor);
@@ -2238,6 +2247,7 @@ public class HMaster extends HRegionServer implements MasterServices {
       final long nonce)
       throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     return MasterProcedureUtil.submitProcedure(
         new MasterProcedureUtil.NonceProcedureRunnable(this, nonceGroup, nonce) {
@@ -2269,6 +2279,7 @@ public class HMaster extends HRegionServer implements MasterServices {
   public long enableTable(final TableName tableName, final long nonceGroup, final long nonce)
       throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     return MasterProcedureUtil.submitProcedure(
         new MasterProcedureUtil.NonceProcedureRunnable(this, nonceGroup, nonce) {
@@ -2322,6 +2333,7 @@ public class HMaster extends HRegionServer implements MasterServices {
   public long disableTable(final TableName tableName, final long nonceGroup, final long nonce)
       throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     return MasterProcedureUtil.submitProcedure(
         new MasterProcedureUtil.NonceProcedureRunnable(this, nonceGroup, nonce) {
@@ -2391,6 +2403,7 @@ public class HMaster extends HRegionServer implements MasterServices {
   public long modifyTable(final TableName tableName, final TableDescriptor descriptor,
       final long nonceGroup, final long nonce) throws IOException {
     checkInitialized();
+    checkReadOnly();
     sanityCheckTableDescriptor(descriptor);
 
     return MasterProcedureUtil.submitProcedure(
@@ -2444,6 +2457,7 @@ public class HMaster extends HRegionServer implements MasterServices {
   @Override
   public void checkTableModifiable(final TableName tableName)
       throws IOException, TableNotFoundException, TableNotDisabledException {
+    checkReadOnly();
     if (isCatalogTable(tableName)) {
       throw new IOException("Can't modify catalog tables");
     }
@@ -2901,11 +2915,16 @@ public class HMaster extends HRegionServer implements MasterServices {
   long createNamespace(final NamespaceDescriptor namespaceDescriptor, final long nonceGroup,
       final long nonce) throws IOException {
     checkInitialized();
+    if (!namespaceDescriptor.getName().equals(NamespaceDescriptor.SYSTEM_NAMESPACE_NAME_STR) &&
+        !namespaceDescriptor.getName().equals(NamespaceDescriptor.DEFAULT_NAMESPACE_NAME_STR)) {
+      checkReadOnly();
+    }
 
     TableName.isLegalNamespaceName(Bytes.toBytes(namespaceDescriptor.getName()));
 
     return MasterProcedureUtil.submitProcedure(
         new MasterProcedureUtil.NonceProcedureRunnable(this, nonceGroup, nonce) {
+
       @Override
       protected void run() throws IOException {
         if (getMaster().getMasterCoprocessorHost().preCreateNamespace(namespaceDescriptor)) {
@@ -2935,6 +2954,7 @@ public class HMaster extends HRegionServer implements MasterServices {
   long modifyNamespace(final NamespaceDescriptor namespaceDescriptor, final long nonceGroup,
       final long nonce) throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     TableName.isLegalNamespaceName(Bytes.toBytes(namespaceDescriptor.getName()));
 
@@ -2969,6 +2989,7 @@ public class HMaster extends HRegionServer implements MasterServices {
   long deleteNamespace(final String name, final long nonceGroup, final long nonce)
       throws IOException {
     checkInitialized();
+    checkReadOnly();
 
     return MasterProcedureUtil.submitProcedure(
         new MasterProcedureUtil.NonceProcedureRunnable(this, nonceGroup, nonce) {
@@ -3312,6 +3333,13 @@ public class HMaster extends HRegionServer implements MasterServices {
   public String getLoadBalancerClassName() {
     return conf.get(HConstants.HBASE_MASTER_LOADBALANCER_CLASS, LoadBalancerFactory
         .getDefaultLoadBalancerClass().getName());
+  }
+
+  private void checkReadOnly() throws DoNotRetryIOException {
+    if (readOnly) {
+      throw new AccessDeniedException("No modification is allowed when " +
+          READ_ONLY_ENABLED_KEY + " is set to true");
+    }
   }
 
   /**
