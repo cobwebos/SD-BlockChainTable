@@ -23,12 +23,14 @@ import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.testclassification.MiscTests;
 import org.apache.hadoop.hbase.testclassification.MediumTests;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -63,7 +65,10 @@ public class TestTableName extends TestWatcher {
   String illegalTableNames[] = { ".dot_start_illegal", "-dash_start_illegal", "spaces not ok",
       "-dash-.start_illegal", "new.table with space", "01 .table", "ns:-illegaldash",
       "new:.illegaldot", "new:illegalcolon1:", "new:illegalcolon1:2"};
-
+  String legalMetaTableSuffixNames[] = { "foo", "with-dash_under.dot", "_under_start_ok",
+    "with-dash.with_underscore", "02-01-2012.my_table_01-02", "xyz._mytable_", "9_9_0.table_02"
+    , "dot1.dot2.table", "new.-mytable", "with-dash.with.dot", "legal..t2", "legal..legal.t2",
+    "trailingdots..", "trailing.dots..."};
 
   @Test(expected = IllegalArgumentException.class)
   public void testInvalidNamespace() {
@@ -176,6 +181,42 @@ public class TestTableName extends TestWatcher {
           ByteBuffer.wrap(name.nsb), ByteBuffer.wrap(name.tnb)), name));
     }
 
+  }
+
+  @Test
+  public void testEmptyMetaTableSuffix() {
+    assertFalse(TableName.isValidMetaTableSuffix(null));
+    for (String tn : emptyNames) {
+      assertFalse(TableName.isValidMetaTableSuffix(tn));
+    }
+  }
+
+  @Test
+  public void testLegalMetaTableSuffix() {
+    for (String tn : legalMetaTableSuffixNames) {
+      assertTrue(TableName.isValidMetaTableSuffix(tn));
+    }
+  }
+
+  @Test
+  public void testIllegalMetaTableSuffix() {
+    for (String tn : illegalTableNames) {
+      assertFalse(TableName.isValidMetaTableSuffix(tn));
+    }
+  }
+
+  @Test
+  public void testMetaTableSuffixWithConfig() {
+    String metaTableNameWithSuffix = "hbase:meta_server1";
+    Configuration conf = new Configuration();
+
+    // without setting suffix, meta table name should be "hbase:meta"
+    assertEquals(TableName.getMetaTableName(conf).getNameAsString(), TableName.valueOf(
+      NamespaceDescriptor.SYSTEM_NAMESPACE_NAME_STR, TableName.DEFAULT_META_TABLE_NAME_STR)
+                                                                              .getNameAsString());
+
+    conf.set(TableName.META_TABLE_SUFFIX, "server1");
+    assertEquals(TableName.getMetaTableName(conf).getNameAsString(), metaTableNameWithSuffix);
   }
 
   private TableName validateNames(TableName expected, Names names) {
