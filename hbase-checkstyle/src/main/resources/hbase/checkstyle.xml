@@ -87,8 +87,10 @@
           org.apache.commons.lang,
           org.apache.curator.shaded,
           org.apache.hadoop.classification,
+          org.apache.htrace,
           org.apache.htrace.shaded,
-          org.codehaus.jackson"/>
+          org.codehaus.jackson,
+          org.htrace"/>
       <property name="illegalClasses" value="
           org.apache.commons.logging.Log,
           org.apache.commons.logging.LogFactory"/>
