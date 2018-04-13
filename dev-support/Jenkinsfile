@@ -149,6 +149,9 @@ curl -L  -o personality.sh "${env.PROJECT_PERSONALITY}"
               echo "-- Something went wrong running this stage, please [check relevant console output|${BUILD_URL}/console]." >> "${OUTPUT_DIR}/commentfile"
 '''
             unstash 'yetus'
+            sh '''#!/usr/bin/env bash
+              exit 1
+'''
             dir('component') {
               checkout scm
             }
@@ -214,6 +217,9 @@ curl -L  -o personality.sh "${env.PROJECT_PERSONALITY}"
               echo "-- Something went wrong running this stage, please [check relevant console output|${BUILD_URL}/console]." >> "${OUTPUT_DIR}/commentfile"
 '''
             unstash 'yetus'
+            sh '''#!/usr/bin/env bash
+              exit 1
+'''
             dir('component') {
               checkout scm
             }
@@ -292,6 +298,9 @@ curl -L  -o personality.sh "${env.PROJECT_PERSONALITY}"
               echo "-- Something went wrong running this stage, please [check relevant console output|${BUILD_URL}/console]." >> "${OUTPUT_DIR}/commentfile"
 '''
             unstash 'yetus'
+            sh '''#!/usr/bin/env bash
+              exit 1
+'''
             dir('component') {
               checkout scm
             }
@@ -377,6 +386,9 @@ curl -L  -o personality.sh "${env.PROJECT_PERSONALITY}"
               echo "-- Something went wrong running this stage, please [check relevant console output|${BUILD_URL}/console]." >> "${OUTPUT_DIR}/commentfile"
 '''
             unstash 'yetus'
+            sh '''#!/usr/bin/env bash
+              exit 1
+'''
             dir('component') {
               checkout scm
             }
@@ -451,6 +463,9 @@ curl -L  -o personality.sh "${env.PROJECT_PERSONALITY}"
               rm -rf ".m2-for-repo" && mkdir ".m2-for-repo"
               rm -rf ".m2-for-src" && mkdir ".m2-for-src"
               echo '(x) {color:red}-1 source release artifact{color}\n-- Something went wrong with this stage, [check relevant console output|${BUILD_URL}/console].' >output-srctarball/commentfile
+'''
+            sh '''#!/usr/bin/env bash
+              exit 1
 '''
             dir('component') {
               checkout scm
